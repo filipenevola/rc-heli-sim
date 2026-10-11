@@ -125,6 +125,17 @@ const HELP_HTML = `
 </section>
 
 <section>
+  <h4>The field and the landing challenges</h4>
+  <p>Everything on the field is solid: trees, the fence, houses, the barn, hay bales, cows, sheep, the windsock pole. Blades
+  touching anything is a crash; skids into a wall at speed too. The <b>windsock</b> next to the pad shows the live wind
+  direction and droops when it is calm. Four <b>landing targets</b> have a yellow top with a white ring: the picnic table (right of
+  the pad), the pickup truck bed (left), the pontoon on the pond (far right) and the 7 m tower pad (far ahead). Set all four
+  skids down inside the ring and hold still for a moment: the sim measures your distance from the centre and remembers your
+  best on this device. Try the table in Normal mode first, then the truck, the pontoon, and the tower last (it is high, small
+  and out of ground effect).</p>
+</section>
+
+<section>
   <h4>Learning path</h4>
   <ol>
     <li>Normal mode, 450 trainer, no wind. Spool up, lift to 1 m, hold a hover tail-in (tail toward you). Land. Repeat.</li>

@@ -3,6 +3,7 @@ import { pitchFromCurve, type HeliModel } from './heli-model';
 import { emptyRotorResult, solveRotor, RHO } from './rotor';
 import type { ControlFrame } from '../input/types';
 import type { Wind } from './wind';
+import { World, emptyHit, type LandingTarget } from './world';
 
 export const G = 9.81;
 /** Physics step. 1 kHz keeps stiff skid contacts and the fast flapping dynamics stable with semi-implicit Euler. */
@@ -36,6 +37,10 @@ export interface HeliState {
   governorI: number;
   crashed: boolean;
   crashReason: string;
+  /** Landing-target bookkeeping: which target every skid rests on, for how long, and the last confirmed landing. */
+  restingOn: string | null;
+  restingTime: number;
+  landed: { target: LandingTarget; offset: number } | null;
   onGround: boolean;
   time: number;
 }
@@ -78,6 +83,9 @@ export function initialState(model: HeliModel, yaw = 0): HeliState {
     governorI: 0,
     crashed: false,
     crashReason: '',
+    restingOn: null,
+    restingTime: 0,
+    landed: null,
     onGround: true,
     time: 0,
   };
@@ -106,7 +114,7 @@ export class HelicopterSim {
     altitude: 0, groundSpeed: 0, verticalSpeed: 0, groundEffect: 1, lambda: 0,
   };
 
-  constructor(public model: HeliModel, public wind: Wind) {
+  constructor(public model: HeliModel, public wind: Wind, public world: World = new World()) {
     this.state = initialState(model);
   }
 
@@ -288,38 +296,87 @@ export class HelicopterSim {
     const gravB = rotateInv(s.ori, v3(0, -m.mass * G, 0));
     force = add(force, gravB);
 
-    // ---------- Ground contacts ----------
+    // ---------- Contacts: ground plane and world objects ----------
     let onGround = false;
     const kN = (m.mass * G) / 0.004;
     const cN = 2 * Math.sqrt(kN * m.mass) * 0.6;
+    const hit = emptyHit();
+    let skidsOnTarget: string | null | undefined; // undefined = no skid touching anything yet
+    let skidsTouching = 0;
     for (const cp of m.contacts) {
       const rW = rotate(s.ori, cp.p);
       const pW = add(s.pos, rW);
-      if (pW.y >= 0) continue;
+      let normal: V3;
+      let pen: number;
+      let what = 'the ground';
+      let targetId: string | null = null;
+      if (pW.y < 0) {
+        normal = v3(0, 1, 0);
+        pen = -pW.y;
+      } else if (this.world.hit(pW, hit)) {
+        normal = hit.normal;
+        pen = hit.depth;
+        what = hit.collider.name;
+        targetId = hit.collider.target?.id ?? null;
+      } else continue;
       const vPointW = add(s.vel, cross(rotate(s.ori, s.omega), rW));
+      const vn = dot(vPointW, normal);
       if (cp.kind === 'hard' && !s.crashed && (len(vPointW) > 2.5 || rotorAlive)) {
-        this.crash(cp.p.y > 0.05 ? 'Rotor head hit the ground' : 'Hard contact with the ground');
+        this.crash(cp.p.y > 0.05 ? `Rotor head hit ${what}` : `Hard contact with ${what}`);
       }
+      // Side hits on objects at speed break things too (a skid into a wall).
+      if (cp.kind === 'skid' && normal.y < 0.5 && !s.crashed && len(vPointW) > 3) this.crash(`Hit ${what}`);
       onGround = true;
-      const pen = -pW.y;
-      const fn = Math.max(0, kN * pen - cN * vPointW.y);
-      const vt = v3(vPointW.x, 0, vPointW.z);
+      if (cp.kind === 'skid' && normal.y > 0.5) {
+        skidsTouching++;
+        skidsOnTarget = skidsOnTarget === undefined ? targetId : skidsOnTarget === targetId ? targetId : null;
+      }
+      const fn = Math.max(0, kN * pen - cN * vn);
+      const vt = sub(vPointW, scale(normal, vn));
       const vtl = len(vt);
       const muF = cp.kind === 'skid' ? 0.45 : 0.7;
       const ft = vtl > 1e-4 ? scale(vt, -Math.min(muF * fn, vtl * 40 * m.mass) / vtl) : v3();
-      const fW = add(v3(0, fn, 0), ft);
+      const fW = add(scale(normal, fn), ft);
       const fB = rotateInv(s.ori, fW);
       force = add(force, fB);
       moment = add(moment, cross(cp.p, fB));
     }
     s.onGround = onGround;
 
-    // Blade strike: lowest point of the rotor disc edge below ground while the rotor is spinning.
+    // Landing-target detection: every skid on the same target, barely moving, for a moment.
+    const skidCount = m.contacts.filter((c) => c.kind === 'skid').length;
+    if (skidsTouching === skidCount && skidsOnTarget && len(s.vel) < 0.25 && !s.crashed) {
+      if (s.restingOn !== skidsOnTarget) { s.restingOn = skidsOnTarget; s.restingTime = 0; }
+      s.restingTime += dt;
+      if (s.restingTime > 1.5 && !s.landed) {
+        const target = this.world.targets.find((t) => t.id === skidsOnTarget)!;
+        s.landed = { target, offset: Math.hypot(s.pos.x - target.centre.x, s.pos.z - target.centre.z) };
+      }
+    } else {
+      s.restingOn = null;
+      s.restingTime = 0;
+      if (!onGround) s.landed = null;
+    }
+
+    // Blade strike: the rotor disc edge touching the ground or any object while the rotor is spinning.
     if (rotorAlive && !s.crashed) {
       const nW = rotate(s.ori, n);
       const tiltSin = Math.sqrt(Math.max(0, 1 - nW.y * nW.y));
       const discLow = hubW.y - m.rotor.radius * tiltSin;
       if (discLow < 0.0) this.crash('Blade strike');
+      else if (this.world.colliders.length > 0) {
+        // Sample the disc edge. Two in-plane axes perpendicular to the rotor normal.
+        const ax = norm(cross(nW, Math.abs(nW.y) < 0.9 ? v3(0, 1, 0) : v3(1, 0, 0)));
+        const az = cross(nW, ax);
+        for (let i = 0; i < 16; i++) {
+          const a = (i / 16) * Math.PI * 2;
+          const pt = add(hubW, add(scale(ax, Math.cos(a) * m.rotor.radius), scale(az, Math.sin(a) * m.rotor.radius)));
+          if (this.world.hit(pt, hit)) {
+            this.crash(`Blades hit ${hit.collider.name}`);
+            break;
+          }
+        }
+      }
     }
 
     // ---------- Rotor speed dynamics ----------

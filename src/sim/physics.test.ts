@@ -170,3 +170,37 @@ describe('inverted flight (Idle-Up negative pitch)', () => {
     expect(sim2.telemetry.collectiveDeg).toBeGreaterThan(-3);
   });
 });
+
+describe('world collisions and landing targets', () => {
+  it('a heli set down on the picnic table rests on it and registers a landing', async () => {
+    const { buildField } = await import('./world');
+    const { world, layout } = buildField();
+    const table = layout.platforms.find((p) => p.id === 'table')!;
+    const sim = new HelicopterSim(HELI_450, new Wind(), world);
+    const ctl = neutralFrame();
+    sim.state.pos = { x: table.x + 0.1, y: table.height + 0.2, z: table.z };
+    run(sim, ctl, 4);
+    expect(sim.state.crashed).toBe(false);
+    expect(sim.state.pos.y).toBeGreaterThan(table.height); // sitting on the surface, not on the grass
+    expect(sim.state.landed?.target.id).toBe('table');
+    expect(sim.state.landed!.offset).toBeLessThan(0.3);
+  });
+
+  it('flying the rotor into a tree is a crash', async () => {
+    const { buildField } = await import('./world');
+    const { world, layout } = buildField();
+    const tree = layout.trees[0];
+    const sim = new HelicopterSim(HELI_450, new Wind(), world);
+    const ctl = neutralFrame();
+    ctl.flightMode = 1;
+    ctl.collective = -0.05;
+    run(sim, ctl, 25);
+    sim.state.pos = { x: tree.x + 1.7 * tree.scale + 0.5, y: 3, z: tree.z };
+    sim.state.vel = { x: -4, y: 0, z: 0 };
+    sim.state.onGround = false;
+    ctl.collective = 0.5;
+    run(sim, ctl, 1);
+    expect(sim.state.crashed).toBe(true);
+    expect(sim.state.crashReason).toContain('tree');
+  });
+});

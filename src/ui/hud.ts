@@ -12,6 +12,9 @@ export class Hud {
   private fps = 0;
   private compact = false;
   private lastHtml = '';
+  private toast: HTMLElement;
+  private toastUntil = 0;
+  private lastLanding: object | null = null;
 
   constructor(container: HTMLElement) {
     this.el = document.createElement('div');
@@ -27,6 +30,10 @@ export class Hud {
     this.sticks.width = 200;
     this.sticks.height = 100;
     container.appendChild(this.sticks);
+    this.toast = document.createElement('div');
+    this.toast.className = 'toast';
+    this.toast.style.display = 'none';
+    container.appendChild(this.toast);
     this.crash = document.createElement('div');
     this.crash.className = 'crash-banner';
     this.crash.style.display = 'none';
@@ -67,6 +74,21 @@ export class Hud {
     // The on-screen gimbals already show stick position; the mini display would only cover them.
     this.sticks.style.display = sourceId === 'touch' || sourceId === 'motion' ? 'none' : '';
     this.drawSticks(ctl);
+    if (s.landed && s.landed !== this.lastLanding) {
+      this.lastLanding = s.landed;
+      const cm = Math.round(s.landed.offset * 100);
+      const key = `rc-heli-sim.best.${s.landed.target.id}`;
+      const best = Number(localStorage.getItem(key) ?? Infinity);
+      const record = cm < best;
+      if (record) localStorage.setItem(key, String(cm));
+      this.toast.innerHTML = `<b>Landed on the ${s.landed.target.name}</b><br>${cm} cm from centre${record ? ' · new best!' : best < Infinity ? ` · best ${best} cm` : ''}`;
+      this.toast.style.display = '';
+      this.toastUntil = performance.now() + 5000;
+    }
+    if (this.toastUntil && performance.now() > this.toastUntil) {
+      this.toast.style.display = 'none';
+      this.toastUntil = 0;
+    }
     if (s.crashed) {
       this.crash.style.display = '';
       this.crash.innerHTML = `<h2>Crash</h2><p>${s.crashReason}</p><p class="hint">Press R or tap Reset</p>`;

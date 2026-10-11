@@ -7,6 +7,7 @@ import { createClouds, driftClouds } from './render/clouds';
 import { HelicopterSim, PHYSICS_DT } from './sim/physics';
 import { HELI_MODELS } from './sim/heli-model';
 import { Wind } from './sim/wind';
+import { buildField } from './sim/world';
 import { InputManager } from './input/manager';
 import { Hud } from './ui/hud';
 import { SettingsPanel } from './ui/settings';
@@ -23,13 +24,15 @@ renderer.toneMapping = THREE.ACESFilmicToneMapping;
 renderer.toneMappingExposure = 1.0;
 app.appendChild(renderer.domElement);
 
-const { scene, sun } = createScene();
+const { layout, world } = buildField();
+const field = createScene(layout);
+const { scene } = field;
 const clouds = createClouds();
 scene.add(clouds);
 const pilotCam = new PilotCamera(window.innerWidth / window.innerHeight);
 
 const wind = new Wind();
-const sim = new HelicopterSim(HELI_MODELS[0], wind);
+const sim = new HelicopterSim(HELI_MODELS[0], wind, world);
 let heliMesh = new HeliMesh(sim.model);
 scene.add(heliMesh.root);
 
@@ -75,7 +78,7 @@ window.addEventListener('keydown', (e) => {
 });
 
 // Exposed for automated checks and tinkering from the devtools console.
-(window as unknown as { rcHeli: unknown }).rcHeli = { sim, input, wind, audio, camera: pilotCam, clouds };
+(window as unknown as { rcHeli: unknown }).rcHeli = { sim, input, wind, audio, camera: pilotCam, clouds, world, layout };
 
 function reset(): void {
   sim.reset();
@@ -115,9 +118,10 @@ function frame(now: number): void {
   pilotCam.update(target, heliQuat, dt);
   const w = wind.at(sim.state.pos, sim.state.time);
   driftClouds(clouds, dt, w.x, w.z);
-  // Keep the shadow frustum centred on the model so shadows stay crisp anywhere on the field.
-  sun.target.position.copy(target);
-  sun.position.set(target.x - 40, 70, target.z - 30);
+  // Windsock points downwind and droops when it is calm; animals graze.
+  const windAngle = Math.atan2(-w.x, -w.z);
+  field.windsock.rotation.set(-(1 - Math.min(1, wind.speed / 6)) * 1.2, windAngle + Math.PI, 0, 'YXZ');
+  field.animate(dt, sim.state.time);
 
   hud.update(sim, ctl, input.active.label, input.active.id, dt);
   audio.update(sim, pilotCam.eye, wind.speed);
