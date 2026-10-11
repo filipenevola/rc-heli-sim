@@ -67,6 +67,13 @@ export function createScene(layout: FieldLayout): SceneHandles {
     pad: new THREE.MeshStandardMaterial({ color: 0xf0c000, roughness: 0.8 }),
     orange: new THREE.MeshStandardMaterial({ color: 0xff6a00, roughness: 0.8, side: THREE.DoubleSide }),
   };
+  /** Flat things lying on the grass (pad, pond, road) share its depth; polygon offset pulls them in front so they never flicker. */
+  const decal = (mat: THREE.Material): THREE.Material => {
+    mat.polygonOffset = true;
+    mat.polygonOffsetFactor = -2;
+    mat.polygonOffsetUnits = -2;
+    return mat;
+  };
   const shadowed = <T extends THREE.Object3D>(o: T): T => {
     o.traverse((c) => {
       if ((c as THREE.Mesh).isMesh) {
@@ -88,7 +95,7 @@ export function createScene(layout: FieldLayout): SceneHandles {
   scene.add(ground);
 
   // Helipad where the heli starts.
-  const pad = new THREE.Mesh(new THREE.CircleGeometry(2.2, 48), new THREE.MeshStandardMaterial({ map: makePadTexture(), roughness: 0.9 }));
+  const pad = new THREE.Mesh(new THREE.CircleGeometry(2.2, 48), decal(new THREE.MeshStandardMaterial({ map: makePadTexture(), roughness: 0.9 })));
   pad.rotation.x = -Math.PI / 2;
   pad.position.set(0, 0.005, -6);
   pad.receiveShadow = true;
@@ -161,21 +168,22 @@ export function createScene(layout: FieldLayout): SceneHandles {
   }
 
   // Pond with a pontoon.
-  const pond = new THREE.Mesh(new THREE.CircleGeometry(layout.pond.r, 40), mats.water);
+  const pond = new THREE.Mesh(new THREE.CircleGeometry(layout.pond.r, 40), decal(mats.water));
   pond.rotation.x = -Math.PI / 2;
   pond.position.set(layout.pond.x, 0.01, layout.pond.z);
   pond.receiveShadow = true;
   scene.add(pond);
 
   // Road with a centre line.
-  const road = new THREE.Mesh(new THREE.PlaneGeometry(layout.road.length, layout.road.width), mats.asphalt);
+  const road = new THREE.Mesh(new THREE.PlaneGeometry(layout.road.length, layout.road.width), decal(mats.asphalt));
   road.rotation.x = -Math.PI / 2;
   road.rotation.z = layout.road.rot;
   road.position.set(layout.road.x, 0.012, layout.road.z);
   road.receiveShadow = true;
   scene.add(road);
+  const dashMat = new THREE.MeshStandardMaterial({ color: 0xf2f2f2, roughness: 0.8, polygonOffset: true, polygonOffsetFactor: -4, polygonOffsetUnits: -4 });
   for (let i = -layout.road.length / 2; i < layout.road.length / 2; i += 6) {
-    const dash = new THREE.Mesh(new THREE.PlaneGeometry(3, 0.15), mats.white);
+    const dash = new THREE.Mesh(new THREE.PlaneGeometry(3, 0.15), dashMat);
     dash.rotation.x = -Math.PI / 2;
     dash.position.set(layout.road.x + i, 0.015, layout.road.z);
     scene.add(dash);

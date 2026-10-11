@@ -3,6 +3,11 @@
 All notable changes to RC Heli Sim. The version shown in the game (Help and Settings) matches the latest
 entry here; the commit hash next to it identifies the exact build.
 
+## 0.6.1 — 2026-10-11
+
+- Fixed the pond (and pad/road) flickering against the grass when seen from far away (depth z-fighting): ground
+  decals now use a polygon offset and the camera near plane went from 5 cm to 30 cm for better depth precision.
+
 ## 0.6.0 — 2026-10-11
 
 - Version number and release log: Help and Settings show the version and commit hash with a link to this file.

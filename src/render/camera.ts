@@ -35,7 +35,7 @@ export class PilotCamera {
   private fwd = new THREE.Vector3();
 
   constructor(aspect: number) {
-    this.camera = new THREE.PerspectiveCamera(this.baseFov, aspect, 0.05, 2000);
+    this.camera = new THREE.PerspectiveCamera(this.baseFov, aspect, 0.3, 2000);
     this.camera.position.copy(this.eye);
   }
 
