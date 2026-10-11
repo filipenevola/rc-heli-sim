@@ -1,20 +1,25 @@
 * { box-sizing: border-box; }
-html, body { margin: 0; height: 100%; overflow: hidden; background: #000; font-family: system-ui, -apple-system, Segoe UI, Roboto, sans-serif; color: #fff; }
+html, body { margin: 0; height: 100%; overflow: hidden; background: #000; font-family: system-ui, -apple-system, Segoe UI, Roboto, sans-serif; color: #fff;
+  touch-action: none; overscroll-behavior: none; -webkit-user-select: none; user-select: none; -webkit-touch-callout: none; }
 #app canvas { display: block; }
 #ui { position: fixed; inset: 0; pointer-events: none; }
 #ui > * { pointer-events: auto; }
+#ui > .hud-sticks, #ui > .crash-banner, #ui > .touch-sticks { pointer-events: none; }
+body.ui-hidden .topbar, body.ui-hidden .hud, body.ui-hidden .hud-sticks, body.ui-hidden .settings { display: none !important; }
 
-.topbar { position: absolute; top: 10px; left: 10px; display: flex; gap: 8px; }
+.topbar { position: absolute; top: calc(10px + env(safe-area-inset-top)); left: calc(10px + env(safe-area-inset-left)); display: flex; gap: 8px; flex-wrap: wrap; max-width: calc(100vw - 20px); }
+.show-ui { position: absolute; top: calc(10px + env(safe-area-inset-top)); left: calc(10px + env(safe-area-inset-left)); background: rgba(0,0,0,0.45); color: #fff; border: 1px solid rgba(255,255,255,0.3); border-radius: 6px; padding: 6px 10px; font-size: 16px; }
 .topbar button, .settings button {
   background: rgba(0, 0, 0, 0.55); color: #fff; border: 1px solid rgba(255,255,255,0.3); border-radius: 6px;
   padding: 8px 12px; font-size: 14px; cursor: pointer; touch-action: manipulation;
 }
 .topbar button:hover, .settings button:hover { background: rgba(0,0,0,0.75); }
 
-.hud { position: absolute; top: 10px; right: 10px; background: rgba(0,0,0,0.5); border-radius: 8px; padding: 8px 12px; font-size: 13px; min-width: 190px; pointer-events: none; }
+.hud { position: absolute; top: calc(10px + env(safe-area-inset-top)); right: calc(10px + env(safe-area-inset-right)); background: rgba(0,0,0,0.5); border-radius: 8px; padding: 8px 12px; font-size: 13px; min-width: 0; cursor: pointer; }
+.hud .strip { white-space: nowrap; font-size: 13px; }
 .hud div { display: flex; justify-content: space-between; gap: 14px; line-height: 1.5; }
 .hud span { opacity: 0.75; }
-.hud-sticks { position: absolute; left: 10px; bottom: 10px; pointer-events: none; }
+.hud-sticks { position: absolute; left: 10px; bottom: 10px; }
 
 .crash-banner { position: absolute; top: 25%; left: 50%; transform: translateX(-50%); background: rgba(120, 0, 0, 0.8); padding: 16px 32px; border-radius: 10px; text-align: center; }
 .crash-banner h2 { margin: 0 0 6px; }
@@ -39,10 +44,24 @@ html, body { margin: 0; height: 100%; overflow: hidden; background: #000; font-f
 
 /* Touch gimbals: look and feel like a transmitter. */
 .touch-sticks { position: absolute; inset: 0; pointer-events: none; }
-.gimbal { position: absolute; bottom: 24px; width: 150px; height: 150px; border-radius: 50%; pointer-events: auto; touch-action: none;
+.gimbal { position: absolute; bottom: calc(20px + env(safe-area-inset-bottom)); width: 160px; height: 160px; border-radius: 50%; pointer-events: auto; touch-action: none;
   background: radial-gradient(circle, rgba(0,0,0,0.35) 0%, rgba(0,0,0,0.55) 70%, rgba(0,0,0,0.2) 100%); border: 2px solid rgba(255,255,255,0.35);
   display: flex; align-items: center; justify-content: center; }
-.gimbal-left { left: 24px; }
-.gimbal-right { right: 24px; }
+.gimbal-left { left: calc(20px + env(safe-area-inset-left)); }
+.gimbal-right { right: calc(20px + env(safe-area-inset-right)); }
 .gimbal-knob { width: 44px; height: 44px; border-radius: 50%; background: #ddd; box-shadow: 0 2px 8px rgba(0,0,0,0.6); }
 @media (pointer: fine) and (min-width: 900px) { .gimbal { opacity: 0.85; } }
+
+/* Phones: compact chrome so the field and the gimbals get the screen. */
+@media (max-width: 760px), (max-height: 500px) {
+  .topbar { gap: 5px; }
+  .topbar button { padding: 5px 8px; font-size: 12px; }
+  .hud { padding: 5px 9px; font-size: 12px; }
+  .hud:not(:has(.strip)) { top: calc(48px + env(safe-area-inset-top)); }
+  .settings { top: calc(48px + env(safe-area-inset-top)); font-size: 13px; }
+}
+@media (max-width: 760px) and (orientation: portrait) {
+  .hud { right: auto; left: calc(10px + env(safe-area-inset-left)); top: calc(48px + env(safe-area-inset-top)); }
+  .hud:not(:has(.strip)) { top: calc(48px + env(safe-area-inset-top)); }
+  .gimbal { width: 150px; height: 150px; }
+}

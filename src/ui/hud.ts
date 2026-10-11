@@ -10,10 +10,17 @@ export class Hud {
   private fpsSamples = 0;
   private fpsTime = 0;
   private fps = 0;
+  private compact = false;
+  private lastHtml = '';
 
   constructor(container: HTMLElement) {
     this.el = document.createElement('div');
     this.el.className = 'hud';
+    // Phones start compact (one line); tapping the HUD toggles the full table.
+    this.compact = window.innerWidth < 760 || navigator.maxTouchPoints > 0;
+    this.el.addEventListener('click', () => {
+      this.compact = !this.compact;
+    });
     container.appendChild(this.el);
     this.sticks = document.createElement('canvas');
     this.sticks.className = 'hud-sticks';
@@ -50,7 +57,15 @@ export class Hud {
       ['Ground effect', `${((t.groundEffect - 1) * 100).toFixed(0)}%`],
       ['FPS', this.fps.toFixed(0)],
     ];
-    this.el.innerHTML = rows.map(([k, v]) => `<div><span>${k}</span><b>${v}</b></div>`).join('');
+    const html = this.compact
+      ? `<div class="strip"><b>${t.headspeedRpm.toFixed(0)}</b> rpm · <b>${t.collectiveDeg.toFixed(1)}°</b> · <b>${t.altitude.toFixed(1)}</b> m · ${ctl.throttleHold ? 'HOLD' : MODE_NAMES[ctl.flightMode]}</div>`
+      : rows.map(([k, v]) => `<div><span>${k}</span><b>${v}</b></div>`).join('');
+    if (html !== this.lastHtml) {
+      this.el.innerHTML = html;
+      this.lastHtml = html;
+    }
+    // The on-screen gimbals already show stick position; the mini display would only cover them.
+    this.sticks.style.display = sourceLabel === 'Touch sticks' ? 'none' : '';
     this.drawSticks(ctl);
     if (s.crashed) {
       this.crash.style.display = '';

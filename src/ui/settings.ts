@@ -37,7 +37,15 @@ export class SettingsPanel {
       <button id="btn-mode" title="1 / 2 / 3">Mode: Normal</button>
       <button id="btn-hold" title="H">Hold: off</button>
       <button id="btn-sound" title="M">Sound: on</button>
-      <button id="btn-settings">Settings</button>`;
+      <button id="btn-settings">Settings</button>
+      <button id="btn-full" title="F">Full</button>
+      <button id="btn-hide" title="U">Hide</button>`;
+    const showBtn = document.createElement('button');
+    showBtn.className = 'show-ui';
+    showBtn.textContent = '☰';
+    showBtn.title = 'Show controls (U)';
+    showBtn.style.display = 'none';
+    container.appendChild(showBtn);
     container.appendChild(bar);
     this.panel = document.createElement('div');
     this.panel.className = 'settings';
@@ -46,6 +54,18 @@ export class SettingsPanel {
 
     bar.querySelector('#btn-reset')!.addEventListener('click', () => cb.onReset());
     bar.querySelector('#btn-settings')!.addEventListener('click', () => this.toggle());
+    const setHidden = (hidden: boolean) => {
+      document.body.classList.toggle('ui-hidden', hidden);
+      showBtn.style.display = hidden ? '' : 'none';
+      if (hidden) this.panel.style.display = 'none';
+    };
+    bar.querySelector('#btn-hide')!.addEventListener('click', () => setHidden(true));
+    showBtn.addEventListener('click', () => setHidden(false));
+    bar.querySelector('#btn-full')!.addEventListener('click', () => void toggleFullscreen());
+    window.addEventListener('keydown', (e) => {
+      if (e.code === 'KeyU') setHidden(!document.body.classList.contains('ui-hidden'));
+      if (e.code === 'KeyF') void toggleFullscreen();
+    });
     const soundBtn = bar.querySelector('#btn-sound') as HTMLButtonElement;
     const toggleSound = () => {
       audio.setMuted(!audio.muted);
@@ -97,6 +117,7 @@ export class SettingsPanel {
 
     this.panel.innerHTML = `
       <h3>Settings <button id="close">×</button></h3>
+      <p class="hint">Build ${__BUILD__}</p>
       <section>
         <h4>Helicopter</h4>
         ${sel('model', HELI_MODELS.map((m) => [m.id, m.name]), HELI_MODELS[0].id)}
@@ -241,5 +262,20 @@ export class SettingsPanel {
         this.wizardStatus!.textContent = `${axis} → axis ${best}${am.invert ? ' (inverted)' : ''}. Assign the next one or Save.`;
       }
     }
+  }
+}
+
+async function toggleFullscreen(): Promise<void> {
+  try {
+    if (document.fullscreenElement) {
+      await document.exitFullscreen();
+      return;
+    }
+    await document.documentElement.requestFullscreen({ navigationUI: 'hide' });
+    // Landscape is the natural orientation for a sim; not every browser allows locking, so ignore failures.
+    const orient = screen.orientation as ScreenOrientation & { lock?: (o: string) => Promise<void> };
+    await orient.lock?.('landscape').catch(() => undefined);
+  } catch {
+    /* fullscreen not available (iOS Safari in-page); nothing to do */
   }
 }
