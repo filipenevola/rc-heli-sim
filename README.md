@@ -26,6 +26,7 @@ pilot-on-the-field camera are all about model helicopters.
   - **Touch screen** sticks that behave like transmitter gimbals (ratcheted throttle, modes 1–4).
   - **Keyboard** (arrows = cyclic, W/S = collective, A/D = rudder, 1/2/3 = flight mode, H = hold, R = reset).
 - **Pilot's-eye camera** standing on the field with auto-zoom, exactly like the sims you learned on.
+- **Procedural sound** (Web Audio, no samples): motor whine that follows head speed and power, main-rotor blade chop at the blade-pass frequency, tail-rotor whine, wind and airspeed rush, distance attenuation and Doppler from the pilot's position, crash thump. M mutes.
 - Expo, dual rates, wind with gusts, HUD with head speed / collective / power / ground effect.
 
 ## Running it
@@ -70,7 +71,7 @@ helicopters is the main realism lever; see the test file for the quantities that
 ## Roadmap
 
 - [ ] Scenery with photo-realistic skybox and a proper flying site; model skins.
-- [ ] Sound (head speed, blade slap, tail).
+- [ ] Sampled sound layer (real nitro / electric recordings) on top of the synth.
 - [ ] Training aids: hover box, orientation drills, nose-in trainer, replay.
 - [ ] Vortex-ring-state model and blade stall at high collective.
 - [ ] Multi-blade heads, collective-pitch coaxial trainers.

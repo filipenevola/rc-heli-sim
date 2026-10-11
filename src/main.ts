@@ -9,6 +9,7 @@ import { Wind } from './sim/wind';
 import { InputManager } from './input/manager';
 import { Hud } from './ui/hud';
 import { SettingsPanel } from './ui/settings';
+import { AudioEngine } from './audio/engine';
 
 const app = document.getElementById('app')!;
 const renderer = new THREE.WebGLRenderer({ antialias: true, powerPreference: 'high-performance' });
@@ -29,9 +30,12 @@ let heliMesh = new HeliMesh(sim.model);
 scene.add(heliMesh.root);
 
 const ui = document.getElementById('ui')!;
+const audio = new AudioEngine();
+// Browsers only allow audio after a user gesture; any key, click or touch unlocks it.
+for (const ev of ['pointerdown', 'keydown', 'touchstart']) window.addEventListener(ev, () => audio.start(), { passive: true });
 const input = new InputManager(ui);
 const hud = new Hud(ui);
-const settings = new SettingsPanel(ui, input, wind, {
+const settings = new SettingsPanel(ui, input, wind, audio, {
   onModel(model) {
     scene.remove(heliMesh.root);
     sim.reset(model);
@@ -52,7 +56,7 @@ const settings = new SettingsPanel(ui, input, wind, {
 });
 
 // Exposed for automated checks and tinkering from the devtools console.
-(window as unknown as { rcHeli: unknown }).rcHeli = { sim, input, wind };
+(window as unknown as { rcHeli: unknown }).rcHeli = { sim, input, wind, audio };
 
 function reset(): void {
   sim.reset();
@@ -93,6 +97,7 @@ function frame(now: number): void {
   sun.position.set(target.x - 40, 70, target.z - 30);
 
   hud.update(sim, ctl, input.active.label, dt);
+  audio.update(sim, pilotCam.eye, wind.speed);
   settings.tick();
   renderer.render(scene, pilotCam.camera);
   requestAnimationFrame(frame);

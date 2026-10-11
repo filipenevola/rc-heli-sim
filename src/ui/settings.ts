@@ -3,6 +3,7 @@ import type { InputManager, SourceChoice } from '../input/manager';
 import { saveMapping, type AxisMapping, type GamepadMapping } from '../input/gamepad';
 import type { StickMode } from '../input/types';
 import type { Wind } from '../sim/wind';
+import type { AudioEngine } from '../audio/engine';
 
 export interface SettingsCallbacks {
   onModel(model: HeliModel): void;
@@ -28,13 +29,14 @@ export class SettingsPanel {
   private axisBars: HTMLElement | null = null;
   private calibrating: { min: number[]; max: number[] } | null = null;
 
-  constructor(container: HTMLElement, private input: InputManager, private wind: Wind, private cb: SettingsCallbacks) {
+  constructor(container: HTMLElement, private input: InputManager, private wind: Wind, private audio: AudioEngine, private cb: SettingsCallbacks) {
     const bar = document.createElement('div');
     bar.className = 'topbar';
     bar.innerHTML = `
       <button id="btn-reset" title="R">Reset</button>
       <button id="btn-mode" title="1 / 2 / 3">Mode: Normal</button>
       <button id="btn-hold" title="H">Hold: off</button>
+      <button id="btn-sound" title="M">Sound: on</button>
       <button id="btn-settings">Settings</button>`;
     container.appendChild(bar);
     this.panel = document.createElement('div');
@@ -44,6 +46,15 @@ export class SettingsPanel {
 
     bar.querySelector('#btn-reset')!.addEventListener('click', () => cb.onReset());
     bar.querySelector('#btn-settings')!.addEventListener('click', () => this.toggle());
+    const soundBtn = bar.querySelector('#btn-sound') as HTMLButtonElement;
+    const toggleSound = () => {
+      audio.setMuted(!audio.muted);
+      soundBtn.textContent = `Sound: ${audio.muted ? 'off' : 'on'}`;
+    };
+    soundBtn.addEventListener('click', toggleSound);
+    window.addEventListener('keydown', (e) => {
+      if (e.code === 'KeyM') toggleSound();
+    });
     bar.querySelector('#btn-mode')!.addEventListener('click', () => {
       this.flightMode = ((this.flightMode + 1) % 3) as 0 | 1 | 2;
       cb.onFlightMode(this.flightMode);
@@ -111,6 +122,10 @@ export class SettingsPanel {
         <div id="wizard-status" class="hint"></div>
       </section>
       <section>
+        <h4>Sound</h4>
+        ${slider('volume', 'Volume', 0, 1, 0.05, this.audio.volume)}
+      </section>
+      <section>
         <h4>Wind</h4>
         ${slider('wind', 'Speed (m/s)', 0, 10, 0.5, this.wind.speed)}
         ${slider('winddir', 'From (°)', 0, 359, 5, this.wind.fromDeg)}
@@ -135,6 +150,7 @@ export class SettingsPanel {
     bind('expo', (v) => { im.shaping.aileron.expo = v; im.shaping.elevator.expo = v; });
     bind('rate', (v) => { im.shaping.aileron.rate = v; im.shaping.elevator.rate = v; });
     bind('rexpo', (v) => (im.shaping.rudder.expo = v));
+    bind('volume', (v) => this.audio.setVolume(v));
     bind('wind', (v) => (this.wind.speed = v));
     bind('winddir', (v) => (this.wind.fromDeg = v));
     bind('gust', (v) => (this.wind.gustiness = v));
