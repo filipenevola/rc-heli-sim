@@ -26,14 +26,27 @@ export interface RankingEntry {
 
 const KEY = 'rc-heli-sim.profile.v1';
 
+/** A friendly default callsign so a pilot shows up in rankings from the first flight; editable any time. */
+export function randomCallsign(): string {
+  const a = ['Swift', 'Steady', 'Brave', 'Quiet', 'Rapid', 'Lucky', 'Sharp', 'Calm', 'Wild', 'Noble', 'Keen', 'Bold'];
+  const b = ['Rotor', 'Hawk', 'Falcon', 'Kestrel', 'Dragonfly', 'Swallow', 'Osprey', 'Condor', 'Skid', 'Blade', 'Gyro', 'Hover'];
+  const n = Math.floor(Math.random() * 90) + 10;
+  return `${a[Math.floor(Math.random() * a.length)]}${b[Math.floor(Math.random() * b.length)]}${n}`;
+}
+
 export function loadProfile(): Profile {
   try {
     const p = JSON.parse(localStorage.getItem(KEY) ?? 'null') as Profile | null;
-    if (p && p.deviceId) return p;
+    if (p && p.deviceId) {
+      if (!p.name) p.name = randomCallsign();
+      return p;
+    }
   } catch {
     /* fresh */
   }
-  return { name: '', email: null, verified: false, token: null, deviceId: crypto.randomUUID(), completed: [], bestFlight: 0 };
+  const fresh: Profile = { name: randomCallsign(), email: null, verified: false, token: null, deviceId: crypto.randomUUID(), completed: [], bestFlight: 0 };
+  saveProfile(fresh);
+  return fresh;
 }
 
 export function saveProfile(p: Profile): void {

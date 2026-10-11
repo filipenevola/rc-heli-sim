@@ -38,6 +38,18 @@ export class ChallengesPanel {
     }
   }
 
+  /** Open directly on a tab (the Pilot button in the top bar uses this). */
+  open(tab: 'challenges' | 'rankings' | 'pilot'): void {
+    this.tab = tab;
+    this.status = '';
+    this.el.style.display = '';
+    this.render();
+    if (tab === 'rankings') void this.refreshOnline();
+  }
+
+  /** Called by the host UI to label the Pilot button. */
+  onProfileChange: (() => void) | null = null;
+
   get isOpen(): boolean {
     return this.el.style.display !== 'none';
   }
@@ -119,16 +131,30 @@ export class ChallengesPanel {
           </div>
         </div>
         ${this.client.online ? '' : '<p class="hint">Online rankings are not configured in this build; records are kept on this device.</p>'}
-        ${this.client.online && !p.name ? '<p class="hint">Set a pilot name in the Pilot tab to appear online.</p>' : ''}`;
+        <p class="callout">Flying as <b>${esc(p.name)}</b>${p.verified ? ' <i>✔ signed in</i>' : ''}. ${p.verified ? 'Your progress follows this email on every device.' : 'Change your callsign or <b>sign in with your email</b> to keep your progress on every device:'} <button data-tab="pilot" class="inline">Pilot</button></p>`;
     } else {
+      const online = this.client.online;
       body = `
-        <label>Pilot name <input id="pilot-name" maxlength="24" value="${esc(p.name)}" placeholder="How you appear in rankings"></label>
-        ${this.client.online ? `
-        <p class="hint">Optional: verify an email to keep your records on every device. ${p.verified ? `<b>Verified as ${esc(p.email ?? '')}</b>` : ''}</p>
-        <label>Email <input id="pilot-email" type="email" value="${esc(p.email ?? '')}" placeholder="you@example.com"></label>
-        <div class="row-buttons"><button id="send-code">Send code</button>
-        ${this.pendingEmail ? `<input id="pilot-code" inputmode="numeric" maxlength="6" placeholder="6-digit code"><button id="verify-code">Verify</button>` : ''}</div>` : '<p class="hint">This build has no online rankings; your name and records stay on this device.</p>'}
-        <button id="save-pilot">Save</button>`;
+        <div class="pilot-card">
+          <div class="pilot-avatar">${p.verified ? '✔' : '✈'}</div>
+          <div>
+            <div class="pilot-name">${esc(p.name)}</div>
+            <div class="hint">${p.verified ? `Signed in as ${esc(p.email ?? '')}` : 'Not signed in: progress is kept on this device only'}</div>
+          </div>
+        </div>
+        <label>Callsign <input id="pilot-name" maxlength="24" value="${esc(p.name)}" placeholder="How you appear in rankings"></label>
+        <p class="hint">A callsign was picked for you; change it to anything you like. It shows in the rankings.</p>
+        <button id="save-pilot">Save callsign</button>
+        ${online ? `
+        <h5>Sign in with your email</h5>
+        <p class="hint"><b>How it works:</b> enter your email and we send a 6-digit code. Enter it here and this device is signed in.
+        Do the same on another phone or computer with the same email and it loads your callsign, completed challenges and best flight,
+        and both keep in sync from then on. No password; the code is the sign-in.</p>
+        ${p.verified ? `<p class="hint">Signed in. To use another account, sign out first.</p><button id="sign-out">Sign out on this device</button>` : `
+        <label>Email <input id="pilot-email" type="email" autocomplete="email" value="${esc(p.email ?? '')}" placeholder="you@example.com"></label>
+        <div class="row-buttons"><button id="send-code">${this.pendingEmail ? 'Resend code' : 'Send code'}</button>
+        ${this.pendingEmail ? `<input id="pilot-code" inputmode="numeric" autocomplete="one-time-code" maxlength="6" placeholder="6-digit code"><button id="verify-code">Verify</button>` : ''}</div>`}`
+        : '<p class="hint">This build has no online rankings; your callsign and records stay on this device.</p>'}`;
     }
     this.el.innerHTML = `<h3>Challenges & rankings <button id="ch-close">×</button></h3><div class="tabs">${tabs}</div>${body}${this.status ? `<p class="hint status">${esc(this.status)}</p>` : ''}`;
     this.el.querySelector('#ch-close')!.addEventListener('click', () => this.toggle());
@@ -148,14 +174,10 @@ export class ChallengesPanel {
     }
     this.el.querySelector('#save-pilot')?.addEventListener('click', () => {
       p.name = (this.el.querySelector('#pilot-name') as HTMLInputElement).value.trim().slice(0, 24);
-      const emailEl = this.el.querySelector('#pilot-email') as HTMLInputElement | null;
-      if (emailEl && emailEl.value.trim() !== (p.email ?? '')) {
-        p.email = emailEl.value.trim() || null;
-        p.verified = false;
-        p.token = null;
-      }
+      if (!p.name) p.name = this.profile.name;
       saveProfile(p);
-      this.status = p.name ? `Saved. Flying as ${p.name}.` : 'Saved.';
+      this.status = `Saved. Flying as ${p.name}.`;
+      this.onProfileChange?.();
       void this.sync();
     });
     this.el.querySelector('#send-code')?.addEventListener('click', async () => {
@@ -173,6 +195,15 @@ export class ChallengesPanel {
       }
       this.render();
     });
+    this.el.querySelector('#sign-out')?.addEventListener('click', () => {
+      p.email = null;
+      p.verified = false;
+      p.token = null;
+      saveProfile(p);
+      this.status = 'Signed out on this device. Records stay here; sign in again to sync.';
+      this.onProfileChange?.();
+      this.render();
+    });
     this.el.querySelector('#verify-code')?.addEventListener('click', async () => {
       const code = (this.el.querySelector('#pilot-code') as HTMLInputElement).value.trim();
       try {
@@ -180,12 +211,14 @@ export class ChallengesPanel {
         p.email = this.pendingEmail;
         p.verified = true;
         p.token = r.token;
+        if (r.name) p.name = r.name; // the account's callsign wins over whatever this device had
         // Merge what the server knows for this email with what this device has.
         for (const id of r.completed) this.tracker.completed.add(id);
         p.bestFlight = Math.max(p.bestFlight, r.bestFlight);
         this.pendingEmail = null;
-        this.status = 'Email verified. Your records follow you now.';
+        this.status = `Signed in as ${p.name}. Your records follow this email now.`;
         saveProfile(p);
+        this.onProfileChange?.();
         await this.sync();
       } catch (e) {
         this.status = `Verification failed: ${(e as Error).message}`;

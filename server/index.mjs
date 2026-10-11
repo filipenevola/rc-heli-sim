@@ -161,7 +161,8 @@ createServer(async (req, res) => {
       q.delCode.run(email);
       const key = `email:${email}`;
       const existing = q.playerByKey.get(key);
-      q.upsertPlayer.run(key, row.name, 1, existing?.completed ?? '[]', existing?.best_flight ?? 0);
+      // An existing account keeps its callsign; the name typed on a new device only seeds a brand-new account.
+      q.upsertPlayer.run(key, existing?.name || row.name, 1, existing?.completed ?? '[]', existing?.best_flight ?? 0);
       const player = q.playerByKey.get(key);
       const token = randomBytes(24).toString('base64url');
       q.addToken.run(hash(token), player.id);

@@ -123,3 +123,10 @@ body.ui-hidden .topbar, body.ui-hidden .hud, body.ui-hidden .hud-sticks, body.ui
 .lesson-switches span.on { background: rgba(190, 120, 0, 0.75); }
 body:has(.lesson:not([style*="display: none"])) .touch-sticks, body:has(.lesson:not([style*="display: none"])) .hud-sticks { display: none !important; }
 .challenge-list .teach { margin-left: 8px; padding: 2px 8px; font-size: 12px; background: rgba(190, 120, 0, 0.75); border-color: #ffd34d; }
+
+.pilot-card { display: flex; align-items: center; gap: 12px; margin: 6px 0 10px; }
+.pilot-avatar { width: 48px; height: 48px; border-radius: 50%; background: rgba(190, 120, 0, 0.75); border: 2px solid #ffd34d; display: grid; place-items: center; font-size: 22px; }
+.pilot-name { font-size: 18px; font-weight: 700; }
+.callout { margin-top: 10px; padding: 8px 10px; background: rgba(190, 120, 0, 0.25); border: 1px solid rgba(255,211,77,0.5); border-radius: 8px; font-size: 13px; }
+.callout i { color: #3ddc84; font-style: normal; }
+.challenges button.inline { padding: 2px 8px; font-size: 12px; margin-left: 4px; }

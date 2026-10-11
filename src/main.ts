@@ -129,6 +129,9 @@ const settings = new SettingsPanel(ui, input, wind, audio, {
   onChallenges() {
     challenges.toggle();
   },
+  onPilot() {
+    challenges.open('pilot');
+  },
   onCamera(mode) {
     if (mode) pilotCam.mode = mode;
     else pilotCam.cycle();
@@ -138,6 +141,8 @@ const settings = new SettingsPanel(ui, input, wind, audio, {
 window.addEventListener('keydown', (e) => {
   if (e.code === 'KeyC') settings.cycleCamera();
 });
+settings.setPilotLabel(profile.name, profile.verified);
+challenges.onProfileChange = () => settings.setPilotLabel(profile.name, profile.verified);
 
 // URL options, handy for sharing a view or for screenshots: ?cam=chase&pos=0,6,-28&yaw=180
 {
@@ -156,6 +161,8 @@ window.addEventListener('keydown', (e) => {
   if (cam && (CAMERA_LABELS as Record<string, string>)[cam]) settings.setCamera(cam as keyof typeof CAMERA_LABELS);
   const lessonId = q.get('lesson');
   if (lessonId) startLesson(lessonId);
+  const panel = q.get('panel');
+  if (panel === 'pilot' || panel === 'rankings' || panel === 'challenges') challenges.open(panel);
 }
 
 // Exposed for automated checks and tinkering from the devtools console.
