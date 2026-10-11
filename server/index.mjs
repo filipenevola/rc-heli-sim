@@ -130,7 +130,12 @@ createServer(async (req, res) => {
       if (!name) return json(res, 400, { error: 'Pick a pilot name first.' });
       const code = randomInt(0, 1000000).toString().padStart(6, '0');
       q.setCode.run(email, hash(code), name, Date.now() + 15 * 60 * 1000);
-      await sendCode(email, name, code);
+      try {
+        await sendCode(email, name, code);
+      } catch (e) {
+        console.error(e);
+        return json(res, 502, { error: 'The email service rejected the request. Try again later or fly without an email; your records still count on this device.' });
+      }
       return json(res, 200, { ok: true });
     }
 
