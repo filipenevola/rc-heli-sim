@@ -29,6 +29,11 @@ pilot-on-the-field camera are all about model helicopters.
 - **Procedural sound** (Web Audio, no samples): motor whine that follows head speed and power, main-rotor blade chop at the blade-pass frequency, tail-rotor whine, wind and airspeed rush, distance attenuation and Doppler from the pilot's position, crash thump. M mutes.
 - Expo, dual rates, wind with gusts, HUD with head speed / collective / power / ground effect.
 
+## Versions
+
+Every change bumps `package.json` and adds an entry at the top of [CHANGELOG.md](CHANGELOG.md) (a test enforces
+it). The game shows the version and commit hash in Help and Settings, with a link to the release log.
+
 ## Running it
 
 ```bash

@@ -27,6 +27,7 @@ export class HelpPanel {
 
 const HELP_HTML = `
 <h3>How to fly <button id="help-close">×</button></h3>
+<p class="version-line">RC Heli Sim <b>v${__VERSION__}</b> · build <code>${__COMMIT__}</code> · <a href="https://github.com/filipenevola/rc-heli-sim/blob/main/CHANGELOG.md" target="_blank" rel="noopener">Release log</a> · <a href="https://github.com/filipenevola/rc-heli-sim" target="_blank" rel="noopener">Source</a></p>
 
 <section>
   <h4>The idea</h4>

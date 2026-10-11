@@ -155,7 +155,7 @@ export class SettingsPanel {
 
     this.panel.innerHTML = `
       <h3>Settings <button id="close">×</button></h3>
-      <p class="hint">Build ${__BUILD__}</p>
+      <p class="hint">v${__VERSION__} · build <code>${__COMMIT__}</code> (${__BUILD__.split(' ').slice(1).join(' ')}) · <a href="https://github.com/filipenevola/rc-heli-sim/blob/main/CHANGELOG.md" target="_blank" rel="noopener">Release log</a></p>
       <section>
         <h4>Helicopter</h4>
         ${sel('model', HELI_MODELS.map((m) => [m.id, m.name]), HELI_MODELS[0].id)}
