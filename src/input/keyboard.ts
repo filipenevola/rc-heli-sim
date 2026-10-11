@@ -1,4 +1,5 @@
 import { neutralFrame, type ControlFrame, type InputSource } from './types';
+import { isTypingTarget } from './typing-guard';
 
 /**
  * Keyboard emulation of a transmitter. Keys ramp the stick instead of jumping, and the
@@ -20,6 +21,7 @@ export class KeyboardInput implements InputSource {
 
   constructor(target: Window = window) {
     target.addEventListener('keydown', (e) => {
+      if (isTypingTarget(e)) return; // belt and braces; the capture guard normally stops these first
       if (e.repeat) return;
       if (this.handleToggle(e.code)) {
         e.preventDefault();
@@ -35,7 +37,14 @@ export class KeyboardInput implements InputSource {
       this.keys.delete(e.code);
     });
     target.addEventListener('blur', () => this.keys.clear());
+    // Focusing a text field releases any held stick keys so the heli does not keep rolling while you type.
+    document.addEventListener('focusin', (e) => {
+      if (isTypingTarget(e)) this.keys.clear();
+    });
   }
+
+  /** Drop all held keys (called when typing starts). */
+  release(): void { this.keys.clear(); }
 
   available(): boolean { return true; }
   lastActivity(): number { return this.last; }

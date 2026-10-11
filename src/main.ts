@@ -18,6 +18,10 @@ import { ChallengeTracker, FlightTimer, CHALLENGES } from './game/challenges';
 import { loadProfile, RankingClient, fmtTime } from './game/player';
 import { GateMeshes } from './render/gates';
 import { ChallengesPanel } from './ui/challenges-panel';
+import { installTypingGuard } from './input/typing-guard';
+
+// Must be first: keeps every game hotkey out of text fields (name, email, code...). See input/typing-guard.ts.
+installTypingGuard(() => (typeof input !== 'undefined' ? input.keyboard.release() : undefined));
 
 const app = document.getElementById('app')!;
 const renderer = new THREE.WebGLRenderer({ antialias: true, powerPreference: 'high-performance' });
@@ -49,7 +53,7 @@ const ui = document.getElementById('ui')!;
 const audio = new AudioEngine();
 // Browsers only allow audio after a user gesture; any key, click or touch unlocks it.
 for (const ev of ['pointerdown', 'keydown', 'touchstart']) window.addEventListener(ev, () => audio.start(), { passive: true });
-const input = new InputManager(ui);
+const input: InputManager = new InputManager(ui);
 const hud = new Hud(ui);
 const help = new HelpPanel(ui);
 const profile = loadProfile();
