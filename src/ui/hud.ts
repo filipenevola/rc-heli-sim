@@ -33,7 +33,7 @@ export class Hud {
     container.appendChild(this.crash);
   }
 
-  update(sim: HelicopterSim, ctl: ControlFrame, sourceLabel: string, dt: number): void {
+  update(sim: HelicopterSim, ctl: ControlFrame, sourceLabel: string, sourceId: string, dt: number): void {
     this.fpsSamples++;
     this.fpsTime += dt;
     if (this.fpsTime >= 0.5) {
@@ -65,7 +65,7 @@ export class Hud {
       this.lastHtml = html;
     }
     // The on-screen gimbals already show stick position; the mini display would only cover them.
-    this.sticks.style.display = sourceLabel === 'Touch sticks' ? 'none' : '';
+    this.sticks.style.display = sourceId === 'touch' || sourceId === 'motion' ? 'none' : '';
     this.drawSticks(ctl);
     if (s.crashed) {
       this.crash.style.display = '';

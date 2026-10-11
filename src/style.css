@@ -1,4 +1,5 @@
 * { box-sizing: border-box; }
+:root { --topbar-h: 34px; }
 html, body { margin: 0; height: 100%; overflow: hidden; background: #000; font-family: system-ui, -apple-system, Segoe UI, Roboto, sans-serif; color: #fff;
   touch-action: none; overscroll-behavior: none; -webkit-user-select: none; user-select: none; -webkit-touch-callout: none; }
 #app canvas { display: block; }
@@ -26,9 +27,9 @@ body.ui-hidden .topbar, body.ui-hidden .hud, body.ui-hidden .hud-sticks, body.ui
 .crash-banner p { margin: 0; }
 .hint { opacity: 0.7; font-size: 12px; }
 
-.settings { position: absolute; top: 56px; left: 10px; width: min(380px, calc(100vw - 20px)); max-height: calc(100vh - 70px); overflow: auto;
+.settings { position: absolute; top: calc(var(--topbar-h) + 18px + env(safe-area-inset-top)); left: 10px; width: min(380px, calc(100vw - 20px)); max-height: calc(100vh - 70px); overflow: auto;
   background: rgba(10, 10, 14, 0.92); border: 1px solid rgba(255,255,255,0.15); border-radius: 10px; padding: 12px 16px; font-size: 14px; }
-.help { position: absolute; top: calc(48px + env(safe-area-inset-top)); left: 50%; transform: translateX(-50%); width: min(640px, calc(100vw - 20px)); max-height: calc(100vh - 70px); overflow: auto;
+.help { position: absolute; top: calc(var(--topbar-h) + 18px + env(safe-area-inset-top)); left: 50%; transform: translateX(-50%); width: min(640px, calc(100vw - 20px)); max-height: calc(100vh - 70px); overflow: auto;
   background: rgba(10, 10, 14, 0.94); border: 1px solid rgba(255,255,255,0.15); border-radius: 10px; padding: 12px 18px; font-size: 14px; line-height: 1.45; }
 .help h3 { margin: 0 0 8px; display: flex; justify-content: space-between; align-items: center; }
 .help h4 { margin: 12px 0 4px; }
@@ -66,11 +67,10 @@ body.ui-hidden .topbar, body.ui-hidden .hud, body.ui-hidden .hud-sticks, body.ui
   .topbar { gap: 5px; }
   .topbar button { padding: 5px 8px; font-size: 12px; }
   .hud { padding: 5px 9px; font-size: 12px; }
-  .hud:not(:has(.strip)) { top: calc(48px + env(safe-area-inset-top)); }
-  .settings { top: calc(48px + env(safe-area-inset-top)); font-size: 13px; }
+  .hud { top: calc(var(--topbar-h) + 16px + env(safe-area-inset-top)); }
+  .settings { font-size: 13px; }
 }
 @media (max-width: 760px) and (orientation: portrait) {
-  .hud { right: auto; left: calc(10px + env(safe-area-inset-left)); top: calc(48px + env(safe-area-inset-top)); }
-  .hud:not(:has(.strip)) { top: calc(48px + env(safe-area-inset-top)); }
+  .hud { right: auto; left: calc(10px + env(safe-area-inset-left)); }
   .gimbal { width: 150px; height: 150px; }
 }

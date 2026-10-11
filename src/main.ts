@@ -2,7 +2,8 @@ import * as THREE from 'three';
 import './style.css';
 import { createScene } from './render/scene';
 import { HeliMesh } from './render/heli-mesh';
-import { PilotCamera } from './render/camera';
+import { PilotCamera, CAMERA_LABELS } from './render/camera';
+import { createClouds, driftClouds } from './render/clouds';
 import { HelicopterSim, PHYSICS_DT } from './sim/physics';
 import { HELI_MODELS } from './sim/heli-model';
 import { Wind } from './sim/wind';
@@ -23,6 +24,8 @@ renderer.toneMappingExposure = 1.0;
 app.appendChild(renderer.domElement);
 
 const { scene, sun } = createScene();
+const clouds = createClouds();
+scene.add(clouds);
 const pilotCam = new PilotCamera(window.innerWidth / window.innerHeight);
 
 const wind = new Wind();
@@ -61,10 +64,18 @@ const settings = new SettingsPanel(ui, input, wind, audio, {
   onHelp() {
     help.toggle();
   },
+  onCamera(mode) {
+    if (mode) pilotCam.mode = mode;
+    else pilotCam.cycle();
+    return CAMERA_LABELS[pilotCam.mode];
+  },
+});
+window.addEventListener('keydown', (e) => {
+  if (e.code === 'KeyC') settings.cycleCamera();
 });
 
 // Exposed for automated checks and tinkering from the devtools console.
-(window as unknown as { rcHeli: unknown }).rcHeli = { sim, input, wind, audio };
+(window as unknown as { rcHeli: unknown }).rcHeli = { sim, input, wind, audio, camera: pilotCam, clouds };
 
 function reset(): void {
   sim.reset();
@@ -83,6 +94,7 @@ window.addEventListener('resize', () => {
 let last = performance.now();
 let accumulator = 0;
 const target = new THREE.Vector3();
+const heliQuat = new THREE.Quaternion();
 const MAX_FRAME = 0.1;
 
 function frame(now: number): void {
@@ -99,12 +111,15 @@ function frame(now: number): void {
 
   heliMesh.update(sim.state, dt);
   target.set(sim.state.pos.x, sim.state.pos.y, sim.state.pos.z);
-  pilotCam.update(target, dt);
+  heliQuat.set(sim.state.ori.x, sim.state.ori.y, sim.state.ori.z, sim.state.ori.w);
+  pilotCam.update(target, heliQuat, dt);
+  const w = wind.at(sim.state.pos, sim.state.time);
+  driftClouds(clouds, dt, w.x, w.z);
   // Keep the shadow frustum centred on the model so shadows stay crisp anywhere on the field.
   sun.target.position.copy(target);
   sun.position.set(target.x - 40, 70, target.z - 30);
 
-  hud.update(sim, ctl, input.active.label, dt);
+  hud.update(sim, ctl, input.active.label, input.active.id, dt);
   audio.update(sim, pilotCam.eye, wind.speed);
   settings.tick();
   renderer.render(scene, pilotCam.camera);

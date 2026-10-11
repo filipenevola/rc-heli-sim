@@ -82,6 +82,14 @@ const HELP_HTML = `
 </section>
 
 <section>
+  <h4>Camera</h4>
+  <p>The <b>Cam</b> button (or C) cycles: <b>Pilot</b> — you stand on the field and the view zooms with distance, the
+  realistic way and the one that transfers to the real model; <b>Chase</b> — behind the tail, turning with the heading;
+  <b>Front</b> — ahead of the nose looking back, for nose-in practice; <b>Top</b> — straight above, north up, to see drift;
+  <b>Drone</b> — a camera drone circling the model. Switch any time, even mid-flight.</p>
+</section>
+
+<section>
   <h4>HUD</h4>
   <p><b>Head speed</b> rotor rpm · <b>Collective</b> blade pitch · <b>Power</b> what the motor is delivering ·
   <b>Ground effect</b> extra lift close to the ground (why it floats at knee height) · <b>Distance</b> from where you stand.

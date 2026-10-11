@@ -5,6 +5,7 @@ import type { StickMode } from '../input/types';
 import type { Wind } from '../sim/wind';
 import type { AudioEngine } from '../audio/engine';
 import type { AssistMode } from '../sim/physics';
+import { CAMERA_MODES, CAMERA_LABELS, type CameraMode } from '../render/camera';
 
 export interface SettingsCallbacks {
   onModel(model: HeliModel): void;
@@ -13,6 +14,8 @@ export interface SettingsCallbacks {
   onThrottleHold(hold: boolean): void;
   onAssist(mode: AssistMode): void;
   onHelp(): void;
+  /** Set a camera mode, or cycle when undefined. Returns the label of the active mode. */
+  onCamera(mode?: CameraMode): string;
 }
 
 type AxisName = 'aileron' | 'elevator' | 'rudder' | 'collective';
@@ -42,6 +45,7 @@ export class SettingsPanel {
       <button id="btn-sound" title="M">Sound: on</button>
       <button id="btn-settings">Settings</button>
       <button id="btn-recentre" title="Recentre phone tilt" style="display:none">Recentre</button>
+      <button id="btn-camera" title="C">Cam: Pilot</button>
       <button id="btn-help" title="?">Help</button>
       <button id="btn-full" title="F">Full</button>
       <button id="btn-hide" title="U">Hide</button>`;
@@ -66,6 +70,10 @@ export class SettingsPanel {
     };
     bar.querySelector('#btn-hide')!.addEventListener('click', () => setHidden(true));
     bar.querySelector('#btn-help')!.addEventListener('click', () => cb.onHelp());
+    bar.querySelector('#btn-camera')!.addEventListener('click', () => this.cycleCamera());
+    // The button row wraps on phones; let the HUD and panels sit below whatever height it ends up with.
+    const ro = new ResizeObserver(() => document.documentElement.style.setProperty('--topbar-h', `${bar.offsetHeight}px`));
+    ro.observe(bar);
     bar.querySelector('#btn-recentre')!.addEventListener('click', () => input.motion.recentre());
     showBtn.addEventListener('click', () => setHidden(false));
     bar.querySelector('#btn-full')!.addEventListener('click', () => void toggleFullscreen());
@@ -154,6 +162,11 @@ export class SettingsPanel {
         <div id="wizard-status" class="hint"></div>
       </section>
       <section>
+        <h4>Camera</h4>
+        ${sel('camera', CAMERA_MODES.map((m) => [m, CAMERA_LABELS[m]]), this.cameraMode)}
+        <p class="hint">Cam button or C key cycles. "Pilot" is the realistic one: you stand on the field.</p>
+      </section>
+      <section>
         <h4>Sound</h4>
         ${slider('volume', 'Volume', 0, 1, 0.05, this.audio.volume)}
       </section>
@@ -197,6 +210,10 @@ export class SettingsPanel {
     bind('rate', (v) => { im.shaping.aileron.rate = v; im.shaping.elevator.rate = v; });
     bind('rexpo', (v) => (im.shaping.rudder.expo = v));
     bind('tilt', (v) => (im.motion.maxTiltDeg = v));
+    q<HTMLSelectElement>('#camera').addEventListener('change', (e) => {
+      this.cameraMode = (e.target as HTMLSelectElement).value as CameraMode;
+      this.applyCamera();
+    });
     bind('volume', (v) => this.audio.setVolume(v));
     bind('wind', (v) => (this.wind.speed = v));
     bind('winddir', (v) => (this.wind.fromDeg = v));
@@ -248,6 +265,20 @@ export class SettingsPanel {
       btn.onclick = () => this.startCalibrate();
       this.wizardStatus!.textContent = 'Travel calibrated. Click Save to keep it.';
     };
+  }
+
+  cameraMode: CameraMode = 'pilot';
+
+  cycleCamera(): void {
+    this.cameraMode = CAMERA_MODES[(CAMERA_MODES.indexOf(this.cameraMode) + 1) % CAMERA_MODES.length];
+    this.applyCamera();
+  }
+
+  private applyCamera(): void {
+    const label = this.cb.onCamera(this.cameraMode);
+    (this.bar.querySelector('#btn-camera') as HTMLElement).textContent = `Cam: ${label.split(' ')[0]}`;
+    const sel = this.panel.querySelector('#camera') as HTMLSelectElement | null;
+    if (sel) sel.value = this.cameraMode;
   }
 
   setAssist(mode: AssistMode): void {
