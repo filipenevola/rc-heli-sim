@@ -14,6 +14,10 @@ import { Hud } from './ui/hud';
 import { SettingsPanel, MODE_HELP, HOLD_HELP } from './ui/settings';
 import { AudioEngine } from './audio/engine';
 import { HelpPanel } from './ui/help';
+import { ChallengeTracker, FlightTimer, CHALLENGES } from './game/challenges';
+import { loadProfile, RankingClient, fmtTime } from './game/player';
+import { GateMeshes } from './render/gates';
+import { ChallengesPanel } from './ui/challenges-panel';
 
 const app = document.getElementById('app')!;
 const renderer = new THREE.WebGLRenderer({ antialias: true, powerPreference: 'high-performance' });
@@ -32,6 +36,8 @@ const clouds = createClouds();
 scene.add(clouds);
 const billboards = createBillboards();
 scene.add(billboards.group);
+const gates = new GateMeshes();
+scene.add(gates.group);
 const pilotCam = new PilotCamera(window.innerWidth / window.innerHeight);
 
 const wind = new Wind();
@@ -46,6 +52,19 @@ for (const ev of ['pointerdown', 'keydown', 'touchstart']) window.addEventListen
 const input = new InputManager(ui);
 const hud = new Hud(ui);
 const help = new HelpPanel(ui);
+const profile = loadProfile();
+const tracker = new ChallengeTracker(profile.completed);
+const flightTimer = new FlightTimer();
+const rankingClient = new RankingClient();
+const challenges = new ChallengesPanel(ui, profile, tracker, flightTimer, rankingClient);
+tracker.onComplete = (c) => {
+  hud.notify(`<b>Challenge complete: ${c.title}</b><br>+${c.points} points · ${tracker.points} total`, 5000);
+  void challenges.sync();
+};
+flightTimer.onFlightEnd = (seconds, crashed) => {
+  if (seconds > 20) hud.notify(`<b>${crashed ? 'Flight ended in a crash' : 'Clean flight'}: ${fmtTime(seconds)}</b>${!crashed && seconds >= flightTimer.best ? '<br>Your longest clean flight' : ''}`, 4000);
+  if (!crashed) void challenges.sync();
+};
 const settings = new SettingsPanel(ui, input, wind, audio, {
   onModel(model) {
     scene.remove(heliMesh.root);
@@ -69,6 +88,9 @@ const settings = new SettingsPanel(ui, input, wind, audio, {
   },
   onHelp() {
     help.toggle();
+  },
+  onChallenges() {
+    challenges.toggle();
   },
   onCamera(mode) {
     if (mode) pilotCam.mode = mode;
@@ -98,10 +120,11 @@ window.addEventListener('keydown', (e) => {
 }
 
 // Exposed for automated checks and tinkering from the devtools console.
-(window as unknown as { rcHeli: unknown }).rcHeli = { sim, input, wind, audio, camera: pilotCam, clouds, world, layout };
+(window as unknown as { rcHeli: unknown }).rcHeli = { sim, input, wind, audio, camera: pilotCam, clouds, world, layout, tracker, flightTimer, profile, challengesList: CHALLENGES };
 
 function reset(): void {
   sim.reset();
+  tracker.resetTransient();
 }
 
 window.addEventListener('keydown', (e) => {
@@ -170,6 +193,10 @@ function frame(now: number): void {
   field.windsock.rotation.set(-(1 - Math.min(1, wind.speed / 6)) * 1.2, windAngle + Math.PI, 0, 'YXZ');
   field.animate(dt, sim.state.time);
 
+  flightTimer.update(sim, dt);
+  tracker.update(sim, dt, flightTimer.flying ? flightTimer.airTime : 0);
+  gates.update(tracker.nextGate, tracker.completed.has('circuit'));
+  challenges.tick();
   hud.update(sim, ctl, input.active.label, input.active.id, dt);
   audio.update(sim, pilotCam.eye, wind.speed);
   settings.tick();

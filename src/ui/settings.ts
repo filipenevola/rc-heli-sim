@@ -24,6 +24,7 @@ export interface SettingsCallbacks {
   onThrottleHold(hold: boolean): void;
   onAssist(mode: AssistMode): void;
   onHelp(): void;
+  onChallenges(): void;
   /** Set a camera mode, or cycle when undefined. Returns the label of the active mode. */
   onCamera(mode?: CameraMode): string;
 }
@@ -60,6 +61,7 @@ export class SettingsPanel {
       <button id="btn-settings">Settings</button>
       <button id="btn-recentre" title="Recentre phone tilt" style="display:none">Recentre</button>
       <button id="btn-camera" title="C">Cam: Pilot</button>
+      <button id="btn-challenges" title="Challenges and rankings">Challenges</button>
       <button id="btn-help" title="?">Help</button>
       <button id="btn-full" title="F">Full</button>
       <button id="btn-hide" title="U">Hide</button>`;
@@ -84,6 +86,7 @@ export class SettingsPanel {
     };
     bar.querySelector('#btn-hide')!.addEventListener('click', () => setHidden(true));
     bar.querySelector('#btn-help')!.addEventListener('click', () => cb.onHelp());
+    bar.querySelector('#btn-challenges')!.addEventListener('click', () => cb.onChallenges());
     bar.querySelector('#btn-camera')!.addEventListener('click', () => this.cycleCamera());
     // The button row wraps on phones; let the HUD and panels sit below whatever height it ends up with.
     const ro = new ResizeObserver(() => document.documentElement.style.setProperty('--topbar-h', `${bar.offsetHeight}px`));

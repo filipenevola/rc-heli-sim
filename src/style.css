@@ -77,3 +77,31 @@ body.ui-hidden .topbar, body.ui-hidden .hud, body.ui-hidden .hud-sticks, body.ui
   .hud { right: auto; left: calc(10px + env(safe-area-inset-left)); }
   .gimbal { width: 150px; height: 150px; }
 }
+
+/* Challenges & rankings drawer */
+.challenges { position: absolute; top: calc(var(--topbar-h) + 18px + env(safe-area-inset-top)); left: 50%; transform: translateX(-50%); width: min(620px, calc(100vw - 20px)); max-height: calc(100vh - 70px); overflow: auto;
+  background: rgba(10, 10, 14, 0.94); border: 1px solid rgba(255,255,255,0.15); border-radius: 10px; padding: 12px 16px; font-size: 14px; }
+.challenges h3 { margin: 0 0 8px; display: flex; justify-content: space-between; align-items: center; }
+.challenges h5 { margin: 8px 0 4px; font-size: 14px; }
+.challenges h6 { margin: 6px 0 2px; font-size: 12px; opacity: 0.7; text-transform: uppercase; letter-spacing: 0.04em; }
+.challenges button, .challenges .tabs button { background: rgba(0,0,0,0.55); color: #fff; border: 1px solid rgba(255,255,255,0.3); border-radius: 6px; padding: 6px 10px; font-size: 13px; cursor: pointer; }
+.challenges .tabs { display: flex; gap: 6px; margin-bottom: 8px; }
+.challenges .tabs button.active { background: rgba(190, 120, 0, 0.75); border-color: #ffd34d; }
+.challenge-list { list-style: none; padding: 0; margin: 0; }
+.challenge-list li { padding: 6px 0; border-top: 1px solid rgba(255,255,255,0.08); }
+.challenge-list li.done { opacity: 0.75; }
+.challenge-list .row { display: flex; justify-content: space-between; }
+.challenge-list .desc { font-size: 12px; opacity: 0.8; margin: 2px 0 4px; }
+.challenge-list .bar { height: 6px; background: #2a2a33; border-radius: 3px; overflow: hidden; }
+.challenge-list .bar i { display: block; height: 100%; background: #ffd34d; transition: width 0.3s; }
+.challenge-list li.done .bar i { background: #3ddc84; }
+.ranking-cols { display: grid; grid-template-columns: 1fr 1fr; gap: 12px; }
+@media (max-width: 560px) { .ranking-cols { grid-template-columns: 1fr; } }
+.ranking-cols ol { padding-left: 20px; margin: 2px 0; }
+.ranking-cols li { display: flex; justify-content: space-between; gap: 8px; }
+.ranking-cols li i { color: #3ddc84; font-style: normal; }
+.challenges label { display: block; margin: 8px 0 4px; }
+.challenges input { width: 100%; padding: 6px 8px; background: #1c1c22; color: #fff; border: 1px solid #444; border-radius: 6px; font-size: 14px; }
+.row-buttons { display: flex; gap: 6px; margin: 8px 0; align-items: center; }
+.row-buttons input { width: 120px; }
+.challenges .status { color: #ffd34d; }

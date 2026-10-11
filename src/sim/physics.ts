@@ -105,6 +105,8 @@ export type AssistMode = 'rate' | 'attitude';
 export class HelicopterSim {
   state: HeliState;
   assist: AssistMode = 'rate';
+  /** Last control frame fed to step(); challenges read switch states from it. */
+  lastControls: ControlFrame | null = null;
   /** Max bank/pitch angle at full stick in attitude mode, rad. */
   attitudeMaxAngle = (35 * Math.PI) / 180;
   /** Outer-loop gain: rate commanded per radian of attitude error, 1/s. */
@@ -127,6 +129,7 @@ export class HelicopterSim {
     const m = this.model;
     const s = this.state;
     const c = m.controller;
+    this.lastControls = ctl;
     s.time += dt;
 
     // ---------- Pilot commands -> controller -> servos ----------
