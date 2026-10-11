@@ -40,6 +40,17 @@ export class Hud {
     container.appendChild(this.crash);
   }
 
+  private pausedEl: HTMLElement | null = null;
+  setPaused(p: boolean): void {
+    if (!this.pausedEl) {
+      this.pausedEl = document.createElement('div');
+      this.pausedEl.className = 'paused-banner';
+      this.pausedEl.innerHTML = '<b>⏸ Paused</b><br><span class="hint">Tap ▶ or press P to resume</span>';
+      this.toast.parentElement!.appendChild(this.pausedEl);
+    }
+    this.pausedEl.style.display = p ? '' : 'none';
+  }
+
   /** Short on-screen note (mode changes, hints). */
   notify(html: string, ms = 3500): void {
     this.toast.innerHTML = html;

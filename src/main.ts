@@ -139,6 +139,9 @@ const settings = new SettingsPanel(ui, input, wind, audio, {
   onPilot() {
     challenges.open('pilot');
   },
+  onPause() {
+    setPaused(!paused);
+  },
   onCamera(mode) {
     if (mode) pilotCam.mode = mode;
     else pilotCam.cycle();
@@ -210,6 +213,20 @@ window.addEventListener('resize', () => {
 
 // Fixed-timestep physics driven by the render clock. Simulation time never runs ahead of wall time,
 // and a hitch (tab switch) is capped so the heli does not teleport.
+let paused = false;
+function setPaused(p: boolean): void {
+  paused = p;
+  settings.setPaused(p);
+  hud.setPaused(p);
+  if (!p) last = performance.now(); // do not integrate the time spent paused
+}
+window.addEventListener('keydown', (e) => {
+  if (e.code === 'KeyP') setPaused(!paused);
+});
+document.addEventListener('visibilitychange', () => {
+  if (document.hidden && !paused) setPaused(true);
+});
+
 let last = performance.now();
 let lastMode = -1;
 let lastHold = false;
@@ -265,13 +282,15 @@ function frame(now: number): void {
     lastHold = ctl.throttleHold;
   }
 
-  accumulator += dt;
-  while (accumulator >= PHYSICS_DT) {
-    sim.step(ctl, PHYSICS_DT);
-    accumulator -= PHYSICS_DT;
+  if (!paused) {
+    accumulator += dt;
+    while (accumulator >= PHYSICS_DT) {
+      sim.step(ctl, PHYSICS_DT);
+      accumulator -= PHYSICS_DT;
+    }
   }
 
-  heliMesh.update(sim.state, dt);
+  heliMesh.update(sim.state, paused ? 0 : dt);
   target.set(sim.state.pos.x, sim.state.pos.y, sim.state.pos.z);
   heliQuat.set(sim.state.ori.x, sim.state.ori.y, sim.state.ori.z, sim.state.ori.w);
   pilotCam.update(target, heliQuat, dt);
@@ -282,7 +301,7 @@ function frame(now: number): void {
   field.windsock.rotation.set(-(1 - Math.min(1, wind.speed / 6)) * 1.2, windAngle + Math.PI, 0, 'YXZ');
   field.animate(dt, sim.state.time);
 
-  if (!lesson || lesson.mode === 'teach') {
+  if (!paused && (!lesson || lesson.mode === 'teach')) {
     flightTimer.update(sim, dt);
     tracker.update(sim, dt, flightTimer.flying ? flightTimer.airTime : 0);
   }

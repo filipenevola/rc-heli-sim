@@ -41,7 +41,9 @@ const HELP_HTML = `
     <li><b>Right stick</b> — cyclic. Left/right = aileron (roll), forward/back = elevator (pitch).</li>
     <li><b>Left stick</b> — collective/throttle (up/down, no spring) and rudder (left/right, yaw).</li>
     <li><b>Keyboard:</b> arrows = cyclic, W/S = collective, A/D = rudder, 1/2/3 = flight mode, H = throttle hold,
-      R = reset, M = mute, U = hide/show UI, F = fullscreen, ? = this help.</li>
+      R = reset, P = pause, M = mute, U = hide/show UI, F = fullscreen, C = camera, ? = this help.</li>
+    <li><b>Top bar icons:</b> hover for a tooltip on desktop; on a touch screen, <b>long-press</b> any icon for a mini help.
+      The eye at the top-left hides or shows everything else; pause with ⏸.</li>
     <li><b>Touch:</b> two on-screen gimbals. Choose Mode 1–4 in Settings. The throttle stick stays where you leave it.</li>
     <li><b>Real transmitter:</b> plug the USB simulator dongle/cable in, move a stick, then open Settings → Transmitter mapping.
       Press <i>Assign</i> for each function and move that stick fully in the direction asked; <i>Calibrate travel</i> if the

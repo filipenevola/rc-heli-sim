@@ -6,7 +6,8 @@ html, body { margin: 0; height: 100%; overflow: hidden; background: #000; font-f
 #ui { position: fixed; inset: 0; pointer-events: none; }
 #ui > * { pointer-events: auto; }
 #ui > .hud-sticks, #ui > .crash-banner, #ui > .toast, #ui > .touch-sticks { pointer-events: none; }
-body.ui-hidden .topbar, body.ui-hidden .hud, body.ui-hidden .hud-sticks, body.ui-hidden .settings { display: none !important; }
+body.ui-hidden .hud, body.ui-hidden .hud-sticks, body.ui-hidden .settings, body.ui-hidden .challenges, body.ui-hidden .help { display: none !important; }
+body.ui-hidden .topbar button:not(#btn-hide) { display: none !important; }
 
 .topbar { position: absolute; top: calc(10px + env(safe-area-inset-top)); left: calc(10px + env(safe-area-inset-left)); display: flex; gap: 8px; flex-wrap: wrap; max-width: calc(100vw - 20px); }
 .show-ui { position: absolute; top: calc(10px + env(safe-area-inset-top)); left: calc(10px + env(safe-area-inset-left)); background: rgba(0,0,0,0.45); color: #fff; border: 1px solid rgba(255,255,255,0.3); border-radius: 6px; padding: 6px 10px; font-size: 16px; }
@@ -14,6 +15,9 @@ body.ui-hidden .topbar, body.ui-hidden .hud, body.ui-hidden .hud-sticks, body.ui
   background: rgba(0, 0, 0, 0.55); color: #fff; border: 1px solid rgba(255,255,255,0.3); border-radius: 6px;
   padding: 8px 12px; font-size: 14px; cursor: pointer; touch-action: manipulation;
 }
+.topbar button { padding: 6px 9px; font-size: 16px; line-height: 1; min-width: 38px; -webkit-user-select: none; user-select: none; -webkit-touch-callout: none; }
+.tip-bubble { position: fixed; z-index: 50; max-width: 280px; background: rgba(10,10,14,0.95); color: #fff; border: 1px solid rgba(255,211,77,0.6); border-radius: 8px; padding: 8px 10px; font-size: 13px; line-height: 1.35; pointer-events: none; }
+.paused-banner { position: absolute; top: 40%; left: 50%; transform: translate(-50%, -50%); background: rgba(0,0,0,0.75); padding: 16px 32px; border-radius: 12px; text-align: center; font-size: 22px; pointer-events: none; }
 .topbar button:hover, .settings button:hover { background: rgba(0,0,0,0.75); }
 .topbar button.active { background: rgba(190, 120, 0, 0.75); border-color: #ffd34d; }
 
@@ -68,7 +72,7 @@ body.ui-hidden .topbar, body.ui-hidden .hud, body.ui-hidden .hud-sticks, body.ui
 /* Phones: compact chrome so the field and the gimbals get the screen. */
 @media (max-width: 760px), (max-height: 500px) {
   .topbar { gap: 5px; }
-  .topbar button { padding: 5px 8px; font-size: 12px; }
+  .topbar button { padding: 5px 7px; font-size: 15px; min-width: 34px; }
   .hud { padding: 5px 9px; font-size: 12px; }
   .hud { top: calc(var(--topbar-h) + 16px + env(safe-area-inset-top)); }
   .settings { font-size: 13px; }

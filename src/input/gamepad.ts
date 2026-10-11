@@ -80,13 +80,31 @@ export class GamepadInput implements InputSource {
   throttleHold = false;
 
   available(): boolean { return this.activePad() !== null; }
+  /** Browsers only list gamepads after some input; log the events so the diagnostics show something even before that. */
+  readonly events: string[] = [];
+  constructor() {
+    if (typeof window !== 'undefined') {
+      window.addEventListener('gamepadconnected', (e) => this.events.push(`connected: ${(e as GamepadEvent).gamepad.id} (${(e as GamepadEvent).gamepad.axes.length} axes, ${(e as GamepadEvent).gamepad.buttons.length} buttons)`));
+      window.addEventListener('gamepaddisconnected', (e) => this.events.push(`disconnected: ${(e as GamepadEvent).gamepad.id}`));
+    }
+  }
   lastActivity(): number { return this.last; }
   setEnabled(enabled: boolean): void { this.enabled = enabled; }
 
   activePad(): Gamepad | null {
     if (typeof navigator === 'undefined' || !navigator.getGamepads) return null;
-    for (const p of navigator.getGamepads()) if (p && p.connected && p.axes.length >= 2) return p;
-    return null;
+    // Some dongles report connected=false after a focus change or expose odd axis counts; take the best non-null pad.
+    const pads = Array.from(navigator.getGamepads()).filter((p): p is Gamepad => !!p);
+    pads.sort((a, b) => b.axes.length - a.axes.length);
+    return pads[0] ?? null;
+  }
+
+  /** Raw view of every pad slot, for the diagnostics panel and the radio report. */
+  dump(): { index: number; id: string; connected: boolean; axes: number; buttons: number; mapping: string; axesNow: number[] }[] {
+    if (typeof navigator === 'undefined' || !navigator.getGamepads) return [];
+    return Array.from(navigator.getGamepads())
+      .filter((p): p is Gamepad => !!p)
+      .map((p) => ({ index: p.index, id: p.id, connected: p.connected, axes: p.axes.length, buttons: p.buttons.length, mapping: p.mapping, axesNow: Array.from(p.axes).map((a) => Math.round(a * 100) / 100) }));
   }
 
   poll(_dt: number): ControlFrame {

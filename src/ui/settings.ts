@@ -6,6 +6,7 @@ import type { Wind } from '../sim/wind';
 import type { AudioEngine } from '../audio/engine';
 import type { AssistMode } from '../sim/physics';
 import { CAMERA_MODES, CAMERA_LABELS, type CameraMode } from '../render/camera';
+import { attachTips } from './tips';
 
 export const MODE_HELP = [
   'Normal: training mode. Low stick = motor off; the governor spools up as you raise it. Pitch −2° to +11°.',
@@ -26,6 +27,7 @@ export interface SettingsCallbacks {
   onHelp(): void;
   onChallenges(): void;
   onPilot(): void;
+  onPause(): void;
   /** Set a camera mode, or cycle when undefined. Returns the label of the active mode. */
   onCamera(mode?: CameraMode): string;
 }
@@ -55,24 +57,19 @@ export class SettingsPanel {
     const bar = document.createElement('div');
     bar.className = 'topbar';
     bar.innerHTML = `
-      <button id="btn-reset" title="R">Reset</button>
-      <button id="btn-mode" title="1 / 2 / 3">Mode: Normal</button>
-      <button id="btn-hold" title="H">Hold: off</button>
-      <button id="btn-sound" title="M">Sound: on</button>
-      <button id="btn-settings">Settings</button>
-      <button id="btn-recentre" title="Recentre phone tilt" style="display:none">Recentre</button>
-      <button id="btn-camera" title="C">Cam: Pilot</button>
-      <button id="btn-challenges" title="Challenges and rankings">Challenges</button>
-      <button id="btn-pilot" title="Your callsign and sign-in">👤 Pilot</button>
-      <button id="btn-help" title="?">Help</button>
-      <button id="btn-full" title="F">Full</button>
-      <button id="btn-hide" title="U">Hide</button>`;
-    const showBtn = document.createElement('button');
-    showBtn.className = 'show-ui';
-    showBtn.textContent = '☰';
-    showBtn.title = 'Show controls (U)';
-    showBtn.style.display = 'none';
-    container.appendChild(showBtn);
+      <button id="btn-hide" data-tip="Show / hide the controls (U). Long-press any icon for help." title="Show / hide controls (U)">👁</button>
+      <button id="btn-pause" data-tip="Pause / resume the simulation (P)" title="Pause (P)">⏸</button>
+      <button id="btn-reset" data-tip="Reset the helicopter to the pad (R)" title="Reset (R)">↺</button>
+      <button id="btn-mode" data-tip="Flight mode (1 / 2 / 3): Normal, Idle-Up 1, Idle-Up 2. Idle-Up = fixed head speed and negative pitch for inverted flight." title="Flight mode (1/2/3)">🔀 N</button>
+      <button id="btn-hold" data-tip="Throttle hold (H): motor off, rotor freewheels. Autorotation practice or a safety." title="Throttle hold (H)">✋</button>
+      <button id="btn-sound" data-tip="Sound on / off (M)" title="Sound (M)">🔊</button>
+      <button id="btn-camera" data-tip="Camera (C): Pilot on the field, Chase, Front, Top, Drone" title="Camera (C)">🎥 Pilot</button>
+      <button id="btn-challenges" data-tip="Challenges, Show me / Teach me lessons, rankings" title="Challenges & rankings">🏁</button>
+      <button id="btn-pilot" data-tip="Your callsign and email sign-in (syncs progress across devices)" title="Pilot">👤</button>
+      <button id="btn-recentre" data-tip="Recentre the phone-tilt neutral position" title="Recentre phone tilt" style="display:none">🎯</button>
+      <button id="btn-help" data-tip="How to fly: controls, modes, challenges, learning path (?)" title="Help (?)">❓</button>
+      <button id="btn-full" data-tip="Fullscreen and landscape (F)" title="Fullscreen (F)">⛶</button>
+      <button id="btn-settings" data-tip="Settings: helicopter, input device, transmitter mapping, assist, camera, sound, wind" title="Settings">⚙</button>`;
     container.appendChild(bar);
     this.panel = document.createElement('div');
     this.panel.className = 'settings';
@@ -83,10 +80,12 @@ export class SettingsPanel {
     bar.querySelector('#btn-settings')!.addEventListener('click', () => this.toggle());
     const setHidden = (hidden: boolean) => {
       document.body.classList.toggle('ui-hidden', hidden);
-      showBtn.style.display = hidden ? '' : 'none';
+      (bar.querySelector('#btn-hide') as HTMLElement).classList.toggle('active', hidden);
       if (hidden) this.panel.style.display = 'none';
     };
-    bar.querySelector('#btn-hide')!.addEventListener('click', () => setHidden(true));
+    bar.querySelector('#btn-hide')!.addEventListener('click', () => setHidden(!document.body.classList.contains('ui-hidden')));
+    bar.querySelector('#btn-pause')!.addEventListener('click', () => cb.onPause());
+    attachTips(bar);
     bar.querySelector('#btn-help')!.addEventListener('click', () => cb.onHelp());
     bar.querySelector('#btn-challenges')!.addEventListener('click', () => cb.onChallenges());
     bar.querySelector('#btn-pilot')!.addEventListener('click', () => cb.onPilot());
@@ -95,7 +94,6 @@ export class SettingsPanel {
     const ro = new ResizeObserver(() => document.documentElement.style.setProperty('--topbar-h', `${bar.offsetHeight}px`));
     ro.observe(bar);
     bar.querySelector('#btn-recentre')!.addEventListener('click', () => input.motion.recentre());
-    showBtn.addEventListener('click', () => setHidden(false));
     bar.querySelector('#btn-full')!.addEventListener('click', () => void toggleFullscreen());
     window.addEventListener('keydown', (e) => {
       if (e.code === 'KeyU') setHidden(!document.body.classList.contains('ui-hidden'));
@@ -104,7 +102,8 @@ export class SettingsPanel {
     const soundBtn = bar.querySelector('#btn-sound') as HTMLButtonElement;
     const toggleSound = () => {
       audio.setMuted(!audio.muted);
-      soundBtn.textContent = `Sound: ${audio.muted ? 'off' : 'on'}`;
+      soundBtn.textContent = audio.muted ? '🔇' : '🔊';
+      soundBtn.classList.toggle('active', audio.muted);
     };
     soundBtn.addEventListener('click', toggleSound);
     window.addEventListener('keydown', (e) => {
@@ -129,10 +128,12 @@ export class SettingsPanel {
       this.hold = hold;
       const modeBtn = this.bar.querySelector('#btn-mode') as HTMLElement;
       const holdBtn = this.bar.querySelector('#btn-hold') as HTMLElement;
-      modeBtn.textContent = `Mode: ${['Normal', 'Idle-Up 1', 'Idle-Up 2'][mode]}`;
+      modeBtn.textContent = `🔀 ${['N', 'ID1', 'ID2'][mode]}`;
       modeBtn.title = MODE_HELP[mode];
-      holdBtn.textContent = `Hold: ${hold ? 'ON' : 'off'}`;
+      modeBtn.dataset.tip = MODE_HELP[mode] + ' Tap to cycle (keys 1/2/3).';
+      holdBtn.textContent = hold ? '✋ HOLD' : '✋';
       holdBtn.title = hold ? HOLD_HELP.on : HOLD_HELP.off;
+      holdBtn.dataset.tip = (hold ? HOLD_HELP.on : HOLD_HELP.off) + ' Tap to toggle (H).';
       holdBtn.classList.toggle('active', hold);
       modeBtn.classList.toggle('active', mode > 0);
     }
@@ -169,7 +170,7 @@ export class SettingsPanel {
         ${slider('expo', 'Cyclic expo', 0, 0.8, 0.05, im.shaping.aileron.expo)}
         ${slider('rate', 'Cyclic dual rate', 0.3, 1, 0.05, im.shaping.aileron.rate)}
         ${slider('rexpo', 'Rudder expo', 0, 0.8, 0.05, im.shaping.rudder.expo)}
-        <p class="hint">Keyboard: arrows = cyclic, W/S = collective, A/D = rudder, 1/2/3 flight mode, H throttle hold, R reset.</p>
+        <p class="hint">Keyboard: arrows = cyclic, W/S = collective, A/D = rudder, 1/2/3 flight mode, H throttle hold, R reset, P pause.</p>
       </section>
       <section>
         <h4>Transmitter mapping</h4>
@@ -283,7 +284,10 @@ export class SettingsPanel {
   private startRadioReport(): void {
     const g = this.input.gamepad;
     if (!g.available()) {
-      this.wizardStatus!.textContent = 'No transmitter detected.';
+      // Still send what the browser says, so the problem can be diagnosed remotely.
+      const payload = { id: '(none detected)', pads: g.dump(), events: g.events, ua: navigator.userAgent, secure: window.isSecureContext, hasApi: !!navigator.getGamepads };
+      this.wizardStatus!.textContent = 'No transmitter detected by the browser; sending a diagnostic report anyway…';
+      void this.onRadioReport?.(payload).then(() => (this.wizardStatus!.textContent = 'Diagnostic report sent. Tip: press a button or move a stick, then try again; browsers only list a gamepad after it is used.')).catch((e) => (this.wizardStatus!.textContent = `Could not send: ${(e as Error).message}`));
       return;
     }
     this.report = { until: performance.now() + 10000, samples: [], buttons: g.rawButtons.map(() => 0), id: g.padId };
@@ -328,14 +332,21 @@ export class SettingsPanel {
 
   private applyCamera(): void {
     const label = this.cb.onCamera(this.cameraMode);
-    (this.bar.querySelector('#btn-camera') as HTMLElement).textContent = `Cam: ${{ pilot: 'Pilot', chase: 'Chase', front: 'Front', top: 'Top', drone: 'Drone' }[this.cameraMode]}`;
+    (this.bar.querySelector('#btn-camera') as HTMLElement).textContent = `🎥 ${{ pilot: 'Pilot', chase: 'Chase', front: 'Front', top: 'Top', drone: 'Drone' }[this.cameraMode]}`;
     void label;
     const sel = this.panel.querySelector('#camera') as HTMLSelectElement | null;
     if (sel) sel.value = this.cameraMode;
   }
 
+  setPaused(paused: boolean): void {
+    const b = this.bar.querySelector('#btn-pause') as HTMLElement;
+    b.textContent = paused ? '▶' : '⏸';
+    b.classList.toggle('active', paused);
+    b.title = paused ? 'Resume (P)' : 'Pause (P)';
+  }
+
   setPilotLabel(name: string, verified: boolean): void {
-    (this.bar.querySelector('#btn-pilot') as HTMLElement).textContent = `👤 ${name}${verified ? ' ✔' : ''}`;
+    (this.bar.querySelector('#btn-pilot') as HTMLElement).textContent = `👤 ${name.length > 12 ? name.slice(0, 11) + '…' : name}${verified ? ' ✔' : ''}`;
   }
 
   setAssist(mode: AssistMode): void {
@@ -361,6 +372,12 @@ export class SettingsPanel {
         .join('');
       const status = this.panel.querySelector('#pad-status');
       if (status && g.padId) status.innerHTML = `Connected: <code>${g.padId}</code>`;
+    } else if (this.axisBars) {
+      const status = this.panel.querySelector('#pad-status');
+      const dump = g.dump();
+      if (status) status.innerHTML = dump.length
+        ? `Browser lists: ${dump.map((p) => `<code>${p.id}</code> (${p.axes} axes, ${p.buttons} buttons${p.connected ? '' : ', not connected'})`).join(', ')}`
+        : `No USB transmitter listed by the browser yet. Plug in the dongle, then <b>move a stick or press a button</b> (browsers only list a gamepad after it is used).${g.events.length ? ` Events: ${g.events.slice(-3).join('; ')}` : ''}`;
     }
     if (this.report) {
       const r = this.report;
@@ -371,7 +388,7 @@ export class SettingsPanel {
       if (performance.now() > r.until) {
         this.report = null;
         const axes = g.rawAxes.map((_, i) => ({ index: i, min: Math.min(...r.samples.map((s) => s[i] ?? 0)), max: Math.max(...r.samples.map((s) => s[i] ?? 0)), rest: r.samples[0]?.[i] ?? 0 }));
-        const payload = { id: r.id, axesCount: g.rawAxes.length, buttonsCount: g.rawButtons.length, axes, buttonPresses: r.buttons, mapping: g.mapping, samples: r.samples.filter((_, i) => i % 5 === 0).slice(0, 60), ua: navigator.userAgent };
+        const payload = { id: r.id, axesCount: g.rawAxes.length, buttonsCount: g.rawButtons.length, axes, buttonPresses: r.buttons, mapping: g.mapping, samples: r.samples.filter((_, i) => i % 5 === 0).slice(0, 60), pads: g.dump(), events: g.events, ua: navigator.userAgent };
         this.wizardStatus!.textContent = 'Sending…';
         void this.onRadioReport?.(payload).then(() => (this.wizardStatus!.textContent = `Report sent for "${r.id}". Thank you.`)).catch((e) => (this.wizardStatus!.textContent = `Could not send: ${(e as Error).message}`));
       }
