@@ -38,6 +38,13 @@ npm test           # physics regression tests (hover trim, control signs, autoro
 npm run build
 ```
 
+## Challenges and rankings
+
+Twelve challenges (hover, nose-in, four landing targets, a gate circuit, a roll, an autorotation, endurance)
+and two rankings: longest clean flight and challenge points. Records live on the device under a pilot name;
+the production build also syncs them to a small rankings server (`server/`, deployed on Quave ONE) and a
+player can verify an email with a 6-digit code to carry the profile across devices.
+
 ## Technology choice
 
 Hard requirement: run in the browser with nothing to install. The stack is:
