@@ -50,11 +50,13 @@ db.exec(`
   CREATE TABLE IF NOT EXISTS tokens (hash TEXT PRIMARY KEY, player_id INTEGER NOT NULL, created_at TEXT NOT NULL DEFAULT (datetime('now')));
   CREATE TABLE IF NOT EXISTS radio_reports (id INTEGER PRIMARY KEY, created_at TEXT NOT NULL DEFAULT (datetime('now')), report TEXT NOT NULL);
 `);
+try { db.exec('ALTER TABLE players ADD COLUMN radio TEXT'); } catch { /* column exists */ }
 
 const q = {
   playerByKey: db.prepare('SELECT * FROM players WHERE key = ?'),
   upsertPlayer: db.prepare(`INSERT INTO players (key, name, verified, completed, best_flight, updated_at) VALUES (?, ?, ?, ?, ?, datetime('now'))
     ON CONFLICT(key) DO UPDATE SET name = excluded.name, verified = MAX(players.verified, excluded.verified), completed = excluded.completed, best_flight = MAX(players.best_flight, excluded.best_flight), updated_at = datetime('now')`),
+  setRadio: db.prepare('UPDATE players SET radio = ? WHERE key = ?'),
   setCode: db.prepare('INSERT OR REPLACE INTO codes (email, code, name, expires_at, attempts) VALUES (?, ?, ?, ?, 0)'),
   getCode: db.prepare('SELECT * FROM codes WHERE email = ?'),
   bumpAttempts: db.prepare('UPDATE codes SET attempts = attempts + 1 WHERE email = ?'),
@@ -186,7 +188,7 @@ createServer(async (req, res) => {
       const player = q.playerByKey.get(key);
       const token = randomBytes(24).toString('base64url');
       q.addToken.run(hash(token), player.id);
-      return json(res, 200, { token, name: player.name, completed: JSON.parse(player.completed), bestFlight: player.best_flight });
+      return json(res, 200, { token, name: player.name, completed: JSON.parse(player.completed), bestFlight: player.best_flight, radio: player.radio ? JSON.parse(player.radio) : null });
     }
 
     if (req.method === 'POST' && url.pathname === '/api/scores') {
@@ -209,6 +211,11 @@ createServer(async (req, res) => {
       const existing = q.playerByKey.get(key);
       const merged = [...new Set([...(existing ? JSON.parse(existing.completed) : []), ...completed])];
       q.upsertPlayer.run(key, name, verified ? 1 : 0, JSON.stringify(merged), bestFlight);
+      // Transmitter calibration travels with the account (verified players only; it is per-dongle, keyed by gamepad id).
+      if (verified && body.radio && typeof body.radio === 'object') {
+        const radio = JSON.stringify(body.radio).slice(0, 20000);
+        q.setRadio.run(radio, key);
+      }
       return json(res, 200, { ok: true });
     }
 

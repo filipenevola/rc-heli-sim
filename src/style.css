@@ -135,3 +135,9 @@ body:has(.lesson:not([style*="display: none"])) .touch-sticks, body:has(.lesson:
 .callout i { color: #3ddc84; font-style: normal; }
 .challenges button.inline { padding: 2px 8px; font-size: 12px; margin-left: 4px; }
 .lesson-switches span.want { outline: 2px dashed #ffd34d; }
+table.channels { width: 100%; border-collapse: collapse; font-size: 13px; margin: 6px 0; }
+table.channels th { text-align: left; font-weight: 600; opacity: 0.7; font-size: 12px; }
+table.channels td, table.channels th { padding: 4px 6px; border-top: 1px solid rgba(255,255,255,0.08); }
+table.channels .bar { position: relative; width: 90px; height: 8px; background: #333; border-radius: 4px; }
+table.channels .bar i { position: absolute; top: -2px; width: 4px; height: 12px; margin-left: -2px; background: #3ddc84; border-radius: 2px; }
+table.channels button { padding: 2px 8px; font-size: 12px; }

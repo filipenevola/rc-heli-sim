@@ -1,6 +1,6 @@
 import { HELI_MODELS, type HeliModel } from '../sim/heli-model';
 import type { InputManager, SourceChoice } from '../input/manager';
-import { saveMapping, type AxisMapping, type GamepadMapping, type SwitchMapping } from '../input/gamepad';
+import { saveMapping, builtinName, readAxis, type AxisMapping, type GamepadMapping, type SwitchMapping } from '../input/gamepad';
 import type { StickMode } from '../input/types';
 import type { Wind } from '../sim/wind';
 import type { AudioEngine } from '../audio/engine';
@@ -175,6 +175,8 @@ export class SettingsPanel {
       <section>
         <h4>Transmitter mapping</h4>
         <div id="pad-status">${g.available() ? `Connected: <code>${g.padId || '(move a stick)'}</code>` : 'No USB transmitter detected. Plug in the dongle and move a stick.'}</div>
+        <div id="channels"></div>
+        <p class="hint">Reverse flips a channel. Centre: hold the stick at rest and press to store its neutral (sub-trim). Travel widens by itself when you push past the stored range. Everything here is saved on this device and, when signed in, to your account.</p>
         <div id="axis-bars"></div>
         <div class="wizard">
           ${AXES.map((a) => `<button data-assign="${a}">Assign ${a}</button>`).join('')}
@@ -263,7 +265,8 @@ export class SettingsPanel {
     q('#save-mapping').addEventListener('click', () => {
       if (g.mapping) {
         saveMapping(g.mapping);
-        this.wizardStatus!.textContent = 'Mapping saved for this transmitter.';
+        this.onMappingChanged?.();
+        this.wizardStatus!.textContent = 'Mapping saved for this transmitter (and to your account when signed in).';
       }
     });
   }
@@ -360,10 +363,56 @@ export class SettingsPanel {
     (this.bar.querySelector('#btn-recentre') as HTMLElement).style.display = this.input.choice === 'motion' ? '' : 'none';
   }
 
+  /** Fired after any mapping change the player asked for (reverse, centre, assign, save), so the host can sync it. */
+  onMappingChanged: (() => void) | null = null;
+  private channelsBuiltFor = '';
+
+  private buildChannels(): void {
+    const g = this.input.gamepad;
+    const m = g.mapping;
+    const host = this.panel.querySelector('#channels') as HTMLElement | null;
+    if (!host || !m) return;
+    const known = builtinName(g.padId);
+    host.innerHTML = `${known ? `<p class="hint">Built-in profile: <b>${known}</b></p>` : ''}<table class="channels">
+      <tr><th>Channel</th><th>Axis</th><th>Reverse</th><th>Centre</th><th>Now</th></tr>
+      ${AXES.map((a) => `<tr data-ch="${a}"><td>${a}</td><td>${m[a].index}</td><td><input type="checkbox" data-rev="${a}" ${m[a].invert ? 'checked' : ''}></td><td>${a === 'collective' ? '—' : `<button data-centre="${a}">Set</button>`}</td><td><div class="bar"><i data-live="${a}"></i></div></td></tr>`).join('')}
+    </table>`;
+    for (const cb of host.querySelectorAll<HTMLInputElement>('[data-rev]')) {
+      cb.addEventListener('change', () => {
+        m[cb.dataset.rev as AxisName].invert = cb.checked;
+        saveMapping(m);
+        this.onMappingChanged?.();
+        this.wizardStatus!.textContent = `${cb.dataset.rev} ${cb.checked ? 'reversed' : 'normal'}. Saved.`;
+      });
+    }
+    for (const b of host.querySelectorAll<HTMLButtonElement>('[data-centre]')) {
+      b.addEventListener('click', () => {
+        const a = b.dataset.centre as AxisName;
+        const raw = g.rawAxes[m[a].index];
+        if (raw === undefined) return;
+        m[a].center = raw;
+        if (m[a].min > raw - 0.05) m[a].min = raw - 0.05;
+        if (m[a].max < raw + 0.05) m[a].max = raw + 0.05;
+        saveMapping(m);
+        this.onMappingChanged?.();
+        this.wizardStatus!.textContent = `${a} centre stored at ${raw.toFixed(2)}. Saved.`;
+      });
+    }
+    this.channelsBuiltFor = `${g.padId}|${AXES.map((a) => m[a].index).join(',')}`;
+  }
+
   /** Called every frame while the panel is open: live axis bars plus the assign/calibrate state machines. */
   tick(): void {
     if (this.panel.style.display === 'none') return;
     const g = this.input.gamepad;
+    if (g.available() && g.mapping) {
+      const key = `${g.padId}|${AXES.map((a) => g.mapping![a].index).join(',')}`;
+      if (key !== this.channelsBuiltFor) this.buildChannels();
+      for (const a of AXES) {
+        const live = this.panel.querySelector<HTMLElement>(`[data-live="${a}"]`);
+        if (live) live.style.left = `${50 + readAxis(g.rawAxes, g.mapping[a]) * 50}%`;
+      }
+    }
     if (this.axisBars && g.available()) {
       const m = g.mapping;
       const label = (i: number) => (m ? AXES.find((a) => m[a].index === i) ?? '' : '');
@@ -429,6 +478,7 @@ export class SettingsPanel {
         const am: AxisMapping = { ...g.mapping[axis as AxisName], index: best, invert: bestDelta < 0 };
         (g.mapping as GamepadMapping)[axis as AxisName] = am;
         this.wizardState = null;
+        this.channelsBuiltFor = '';
         this.wizardStatus!.textContent = `${axis} → axis ${best}${am.invert ? ' (inverted)' : ''}. Assign the next one or Save.`;
       }
     }

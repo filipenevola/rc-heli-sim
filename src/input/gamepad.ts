@@ -11,6 +11,8 @@ export interface AxisMapping {
   /** Calibrated raw range, so dongles that only output -0.8..0.8 (common) still give full travel. */
   min: number;
   max: number;
+  /** Raw value at stick centre (sub-trim). When set, min..center..max maps to -1..0..1 piecewise. */
+  center?: number;
 }
 
 export interface GamepadMapping {
@@ -38,8 +40,33 @@ const STORAGE_KEY = 'rc-heli-sim.gamepad-mappings.v1';
 
 export const defaultAxis = (index: number, invert = false): AxisMapping => ({ index, invert, min: -1, max: 1 });
 
-/** Mode 2 guess for the usual 4-axis dongles: axes 0/1 = right stick, 2/3 = left stick. */
+/**
+ * Built-in mappings for known simulator dongles, matched by a substring of the browser's gamepad id.
+ * Values come from recorded radio reports (Settings → Send radio report).
+ */
+const BUILTIN: { match: string; name: string; make: (id: string) => GamepadMapping }[] = [
+  {
+    // E-Sky 0905A "Simulator FMS" USB transmitter (the one that shipped with FMS). Mode 2.
+    match: 'Vendor: 0402 Product: 0402',
+    name: 'E-Sky 0905A (FMS)',
+    make: (id) => ({
+      gamepadId: id,
+      aileron: { index: 0, invert: false, min: -0.76, max: 0.76, center: 0 },
+      elevator: { index: 1, invert: false, min: -0.65, max: 0.68, center: 0 },
+      collective: { index: 2, invert: false, min: -0.55, max: 0.77 },
+      rudder: { index: 4, invert: false, min: -0.74, max: 0.77, center: 0 },
+    }),
+  },
+];
+
+export function builtinName(id: string): string | null {
+  return BUILTIN.find((b) => id.includes(b.match))?.name ?? null;
+}
+
+/** Built-in mapping if the dongle is known, else a mode-2 guess: axes 0/1 = right stick, 2/3 = left stick. */
 export function guessMapping(id: string): GamepadMapping {
+  const known = BUILTIN.find((b) => id.includes(b.match));
+  if (known) return known.make(id);
   return {
     gamepadId: id,
     aileron: defaultAxis(0),
@@ -63,6 +90,13 @@ export function saveMapping(m: GamepadMapping): void {
   localStorage.setItem(STORAGE_KEY, JSON.stringify(all));
 }
 
+/** Replace the local mappings with a set from the player's account (merge, account wins). */
+export function importMappings(remote: Record<string, GamepadMapping> | null | undefined): void {
+  if (!remote) return;
+  const all = { ...loadMappings(), ...remote };
+  localStorage.setItem(STORAGE_KEY, JSON.stringify(all));
+}
+
 export class GamepadInput implements InputSource {
   readonly id = 'gamepad' as const;
   readonly label = 'Transmitter (USB)';
@@ -78,6 +112,9 @@ export class GamepadInput implements InputSource {
   /** Pilot-selected flight mode when no switch is mapped; UI/keyboard can set it. */
   flightMode: 0 | 1 | 2 = 0;
   throttleHold = false;
+  /** Set when auto-calibration widened a range; the host saves (locally and to the account) when it sees this. */
+  mappingDirty = false;
+  private lastAutoSave = 0;
 
   available(): boolean { return this.activePad() !== null; }
   /** Browsers only list gamepads after some input; log the events so the diagnostics show something even before that. */
@@ -123,6 +160,17 @@ export class GamepadInput implements InputSource {
     this.prevAxes = this.rawAxes;
     if (!this.enabled) return f;
     const m = this.mapping;
+    // Auto-calibration: a stick pushed beyond the recorded travel widens it, so full deflection is always reachable.
+    for (const a of [m.aileron, m.elevator, m.rudder, m.collective]) {
+      const raw = this.rawAxes[a.index];
+      if (raw === undefined) continue;
+      if (raw < a.min - 0.02) { a.min = raw; this.mappingDirty = true; }
+      if (raw > a.max + 0.02) { a.max = raw; this.mappingDirty = true; }
+    }
+    if (this.mappingDirty && performance.now() - this.lastAutoSave > 3000) {
+      saveMapping(m);
+      this.lastAutoSave = performance.now();
+    }
     f.aileron = readAxis(this.rawAxes, m.aileron);
     f.elevator = readAxis(this.rawAxes, m.elevator);
     f.rudder = readAxis(this.rawAxes, m.rudder);
@@ -155,11 +203,17 @@ export function hasSwitch(m: GamepadMapping | null, which: 'flightMode' | 'throt
   return which === 'flightMode' ? m.flightModeSwitch !== undefined || m.flightModeAxis !== undefined : m.throttleHoldSwitch !== undefined || m.throttleHoldButton !== undefined;
 }
 
-function readAxis(axes: number[], m: AxisMapping): number {
+export function readAxis(axes: number[], m: AxisMapping): number {
   const raw = axes[m.index];
   if (raw === undefined) return 0;
-  const span = m.max - m.min || 2;
-  let v = ((raw - m.min) / span) * 2 - 1;
+  let v: number;
+  if (m.center !== undefined) {
+    // Piecewise around the centre so a sub-trimmed stick still reaches exactly -1, 0, +1.
+    v = raw >= m.center ? (raw - m.center) / Math.max(1e-3, m.max - m.center) : (raw - m.center) / Math.max(1e-3, m.center - m.min);
+  } else {
+    const span = m.max - m.min || 2;
+    v = ((raw - m.min) / span) * 2 - 1;
+  }
   v = Math.max(-1, Math.min(1, v));
   return m.invert ? -v : v;
 }

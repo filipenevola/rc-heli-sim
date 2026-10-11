@@ -1,5 +1,6 @@
 import { CHALLENGES, TOTAL_POINTS, type ChallengeTracker, type FlightTimer } from '../game/challenges';
 import { lessonFor } from '../game/lessons';
+import { importMappings, loadMappings, type GamepadMapping } from '../input/gamepad';
 import { fmtTime, localRankings, saveLocalRanking, saveProfile, type Profile, type RankingClient } from '../game/player';
 
 /**
@@ -56,6 +57,7 @@ export class ChallengesPanel {
 
   /** Persist records locally and, when configured, online. Called after a flight ends or a challenge completes. */
   async sync(): Promise<void> {
+    this.profile.radio = loadMappings();
     this.profile.completed = [...this.tracker.completed];
     this.profile.bestFlight = Math.max(this.profile.bestFlight, this.timer.best);
     saveProfile(this.profile);
@@ -214,6 +216,7 @@ export class ChallengesPanel {
         p.verified = true;
         p.token = r.token;
         if (r.name) p.name = r.name; // the account's callsign wins over whatever this device had
+        importMappings(r.radio as Record<string, GamepadMapping> | null | undefined); // transmitter calibration follows the account too
         // Merge what the server knows for this email with what this device has.
         for (const id of r.completed) this.tracker.completed.add(id);
         p.bestFlight = Math.max(p.bestFlight, r.bestFlight);
