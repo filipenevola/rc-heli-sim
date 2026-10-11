@@ -181,6 +181,7 @@ export class SettingsPanel {
           <button id="clear-switches">Clear switches</button>
           <button id="calibrate">Calibrate travel</button>
           <button id="save-mapping">Save</button>
+          <button id="radio-report" title="Samples your radio for 10 s and sends the axis/button data so a built-in mapping can be made for it">Send radio report</button>
         </div>
         <div id="wizard-status" class="hint"></div>
       </section>
@@ -248,6 +249,7 @@ export class SettingsPanel {
       b.addEventListener('click', () => this.startAssign(b.dataset.assign as AxisName | SwitchName));
     }
     q('#calibrate').addEventListener('click', () => this.startCalibrate());
+    q('#radio-report').addEventListener('click', () => this.startRadioReport());
     q('#clear-switches').addEventListener('click', () => {
       if (g.mapping) {
         delete g.mapping.flightModeSwitch;
@@ -273,6 +275,19 @@ export class SettingsPanel {
     }
     this.wizardState = { axis, baseline: [...g.rawAxes], baselineButtons: [...g.rawButtons] };
     this.wizardStatus!.textContent = `Now ${AXIS_HINT[axis]} and hold it...`;
+  }
+
+  private report: { until: number; samples: number[][]; buttons: number[]; id: string } | null = null;
+  onRadioReport: ((report: unknown) => Promise<unknown>) | null = null;
+
+  private startRadioReport(): void {
+    const g = this.input.gamepad;
+    if (!g.available()) {
+      this.wizardStatus!.textContent = 'No transmitter detected.';
+      return;
+    }
+    this.report = { until: performance.now() + 10000, samples: [], buttons: g.rawButtons.map(() => 0), id: g.padId };
+    this.wizardStatus!.textContent = 'Recording 10 s: move every stick to all corners, then flip every switch...';
   }
 
   private startCalibrate(): void {
@@ -346,6 +361,20 @@ export class SettingsPanel {
         .join('');
       const status = this.panel.querySelector('#pad-status');
       if (status && g.padId) status.innerHTML = `Connected: <code>${g.padId}</code>`;
+    }
+    if (this.report) {
+      const r = this.report;
+      if (performance.now() % 100 < 20) r.samples.push([...g.rawAxes]); // ~10 Hz, enough to see ranges and which axis moved
+      g.rawButtons.forEach((b, i) => { if (b) r.buttons[i] = (r.buttons[i] ?? 0) + 1; });
+      const left = Math.ceil((r.until - performance.now()) / 1000);
+      this.wizardStatus!.textContent = `Recording… ${left}s. Move every stick to all corners, flip every switch.`;
+      if (performance.now() > r.until) {
+        this.report = null;
+        const axes = g.rawAxes.map((_, i) => ({ index: i, min: Math.min(...r.samples.map((s) => s[i] ?? 0)), max: Math.max(...r.samples.map((s) => s[i] ?? 0)), rest: r.samples[0]?.[i] ?? 0 }));
+        const payload = { id: r.id, axesCount: g.rawAxes.length, buttonsCount: g.rawButtons.length, axes, buttonPresses: r.buttons, mapping: g.mapping, samples: r.samples.filter((_, i) => i % 5 === 0).slice(0, 60), ua: navigator.userAgent };
+        this.wizardStatus!.textContent = 'Sending…';
+        void this.onRadioReport?.(payload).then(() => (this.wizardStatus!.textContent = `Report sent for "${r.id}". Thank you.`)).catch((e) => (this.wizardStatus!.textContent = `Could not send: ${(e as Error).message}`));
+      }
     }
     if (this.calibrating) {
       for (let i = 0; i < g.rawAxes.length; i++) {

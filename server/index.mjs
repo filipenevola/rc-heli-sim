@@ -48,6 +48,7 @@ db.exec(`
   );
   CREATE TABLE IF NOT EXISTS codes (email TEXT PRIMARY KEY, code TEXT NOT NULL, name TEXT NOT NULL, expires_at INTEGER NOT NULL, attempts INTEGER NOT NULL DEFAULT 0);
   CREATE TABLE IF NOT EXISTS tokens (hash TEXT PRIMARY KEY, player_id INTEGER NOT NULL, created_at TEXT NOT NULL DEFAULT (datetime('now')));
+  CREATE TABLE IF NOT EXISTS radio_reports (id INTEGER PRIMARY KEY, created_at TEXT NOT NULL DEFAULT (datetime('now')), report TEXT NOT NULL);
 `);
 
 const q = {
@@ -61,6 +62,8 @@ const q = {
   addToken: db.prepare('INSERT INTO tokens (hash, player_id) VALUES (?, ?)'),
   playerByToken: db.prepare('SELECT p.* FROM tokens t JOIN players p ON p.id = t.player_id WHERE t.hash = ?'),
   deletePlayer: db.prepare('DELETE FROM players WHERE key = ?'),
+  addReport: db.prepare('INSERT INTO radio_reports (report) VALUES (?)'),
+  lastReports: db.prepare('SELECT id, created_at, report FROM radio_reports ORDER BY id DESC LIMIT 20'),
   topFlight: db.prepare(`SELECT name, best_flight AS value, verified, updated_at AS at FROM players WHERE best_flight > 0 AND name <> '' ORDER BY best_flight DESC, updated_at ASC LIMIT 100`),
   all: db.prepare(`SELECT name, completed, verified, updated_at AS at FROM players WHERE name <> ''`),
 };
@@ -207,6 +210,19 @@ createServer(async (req, res) => {
       const merged = [...new Set([...(existing ? JSON.parse(existing.completed) : []), ...completed])];
       q.upsertPlayer.run(key, name, verified ? 1 : 0, JSON.stringify(merged), bestFlight);
       return json(res, 200, { ok: true });
+    }
+
+    // Transmitter diagnostics: the game samples a USB radio's axes/buttons and posts them here so a
+    // default mapping can be written for that dongle. No personal data beyond the pilot name.
+    if (req.method === 'POST' && url.pathname === '/api/radio-report') {
+      if (limited(ip, 10)) return json(res, 429, { error: 'Too many reports.' });
+      const body = await readJson(req);
+      const report = JSON.stringify(body).slice(0, 20000);
+      q.addReport.run(report);
+      return json(res, 200, { ok: true });
+    }
+    if (req.method === 'GET' && url.pathname === '/api/radio-reports') {
+      return json(res, 200, q.lastReports.all().map((r) => ({ id: r.id, at: r.created_at, report: JSON.parse(r.report) })));
     }
 
     if (req.method === 'GET' && url.pathname === '/api/rankings') {

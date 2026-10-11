@@ -149,7 +149,9 @@ window.addEventListener('keydown', (e) => {
   if (e.code === 'KeyC') settings.cycleCamera();
 });
 settings.setPilotLabel(profile.name, profile.verified);
+settings.onRadioReport = (r) => rankingClient.sendRadioReport(r);
 challenges.onProfileChange = () => settings.setPilotLabel(profile.name, profile.verified);
+settings.onRadioReport = (r) => rankingClient.sendRadioReport(r);
 
 // URL options, handy for sharing a view or for screenshots: ?cam=chase&pos=0,6,-28&yaw=180
 {

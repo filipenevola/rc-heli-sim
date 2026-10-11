@@ -87,6 +87,10 @@ export class RankingClient {
     return this.call('/api/scores', { name: p.name, deviceId: p.deviceId, completed: p.completed, bestFlight: Math.round(p.bestFlight) }, p.token);
   }
 
+  sendRadioReport(report: unknown): Promise<{ ok: true }> {
+    return this.call('/api/radio-report', report);
+  }
+
   rankings(kind: 'flight' | 'challenge'): Promise<RankingEntry[]> {
     return this.call(`/api/rankings?kind=${kind}`);
   }
