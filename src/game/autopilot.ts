@@ -16,6 +16,11 @@ export class Autopilot {
   /** Horizontal speed limit, m/s. */
   vmax = 3;
   private hoverStick = 0;
+  /** Last wanted tilt angles (rad), for turning attitude-style advice into rate-mode stick hints. */
+  wantedTiltFwd = 0;
+  wantedTiltRight = 0;
+  /** Set by goTo(); lets teach mode know the cyclic came from an attitude target rather than an explicit stick command. */
+  usedGoTo = false;
   /** Integrators: a hovering heli needs a constant bank against the tail rotor and a collective offset, so P alone leaves an offset. */
   private ix = 0;
   private iz = 0;
@@ -83,6 +88,9 @@ export class Autopilot {
     const maxTilt = this.sim.attitudeMaxAngle;
     const tiltFwd = Math.max(-0.5, Math.min(0.5, aFwd / g));
     const tiltRight = Math.max(-0.5, Math.min(0.5, aRight / g));
+    this.wantedTiltFwd = tiltFwd;
+    this.wantedTiltRight = tiltRight;
+    this.usedGoTo = true;
     this.ctl.elevator = clamp1(tiltFwd / maxTilt);
     this.ctl.aileron = clamp1(tiltRight / maxTilt);
 

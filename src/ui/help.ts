@@ -147,11 +147,13 @@ const HELP_HTML = `
 </section>
 
 <section>
-  <h4>Teach me</h4>
-  <p>Every challenge has a <b>Teach me</b> button (Challenges panel). A demo pilot flies it on the real physics while two big
-  gimbals show exactly where the sticks are, a caption explains each step, and the Mode / Throttle-hold switches are shown.
-  Nothing the demo does counts for your score. Press <i>Stop lesson</i> (or Reset) to take the sticks back and try it yourself.
-  Tip: watch the demo twice, the second time looking only at the sticks.</p>
+  <h4>Show me / Teach me</h4>
+  <p>Every challenge has two buttons in the Challenges panel. <b>Show me</b>: a demo pilot performs the whole challenge on the
+  real physics while two big gimbals show exactly where its sticks are, with a caption per step and the switch states. Nothing
+  the demo does counts for your score. <b>Teach me</b>: you fly it. The same steps and captions, but now a dashed ring on each
+  gimbal shows where your stick should be at this instant (computed from what the helicopter is doing right now), the switches
+  tell you when to flip Idle-Up or Hold, and a step only advances when you make it. A crash resets to the pad and restarts the
+  lesson. What you fly in Teach me counts for the challenges and rankings.</p>
 </section>
 
 <section>

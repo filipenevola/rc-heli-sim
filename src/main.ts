@@ -70,30 +70,37 @@ const lessonOverlay = new LessonOverlay(ui);
 const challenges = new ChallengesPanel(ui, profile, tracker, flightTimer, rankingClient, startLesson);
 
 /** "Teach me": a demo pilot flies the challenge on the real physics while the overlay shows the sticks. */
-function startLesson(challengeId: string): void {
+function startLesson(challengeId: string, mode: 'show' | 'teach' = 'show'): void {
   const l = lessonFor(challengeId);
   if (!l) return;
   stopLesson();
   sim.reset();
   tracker.resetTransient();
   assistBeforeLesson = sim.assist;
-  sim.assist = 'attitude'; // the demo pilot flies with the self-levelling assist; the roll step switches to rate itself
-  lesson = new LessonRunner(l, sim);
+  if (mode === 'show') sim.assist = 'attitude'; // the demo pilot flies with the self-levelling assist; the roll step switches to rate itself
+  lesson = new LessonRunner(l, sim, mode);
   lessonOverlay.show(lesson);
-  hud.notify(`<b>Teach me: ${l.title}</b><br>Watch the sticks. Press Stop lesson to take over at any time.`, 5000);
+  hud.notify(
+    mode === 'show'
+      ? `<b>Show me: ${l.title}</b><br>Watch the sticks. Press Stop lesson to take over at any time.`
+      : `<b>Teach me: ${l.title}</b><br>You fly. Match the dashed ring with your sticks; each step advances when you make it.`,
+    5000,
+  );
 }
 
-function stopLesson(): void {
+function stopLesson(resetHeli = true): void {
   if (!lesson) return;
   if (lessonEndTimer !== null) clearTimeout(lessonEndTimer);
   lessonEndTimer = null;
   lesson = null;
   lessonOverlay.hide();
   sim.assist = assistBeforeLesson;
-  sim.reset();
-  tracker.resetTransient();
+  if (resetHeli) {
+    sim.reset();
+    tracker.resetTransient();
+  }
 }
-lessonOverlay.onStop = stopLesson;
+lessonOverlay.onStop = () => stopLesson();
 tracker.onComplete = (c) => {
   hud.notify(`<b>Challenge complete: ${c.title}</b><br>+${c.points} points · ${tracker.points} total`, 5000);
   void challenges.sync();
@@ -160,7 +167,7 @@ challenges.onProfileChange = () => settings.setPilotLabel(profile.name, profile.
   }
   if (cam && (CAMERA_LABELS as Record<string, string>)[cam]) settings.setCamera(cam as keyof typeof CAMERA_LABELS);
   const lessonId = q.get('lesson');
-  if (lessonId) startLesson(lessonId);
+  if (lessonId) startLesson(lessonId, q.get('mode') === 'teach' ? 'teach' : 'show');
   const panel = q.get('panel');
   if (panel === 'pilot' || panel === 'rankings' || panel === 'challenges') challenges.open(panel);
 }
@@ -213,7 +220,28 @@ function frame(now: number): void {
   const dt = Math.min((now - last) / 1000, MAX_FRAME);
   last = now;
   let ctl = input.poll(dt);
-  if (lesson) {
+  if (lesson && lesson.mode === 'teach') {
+    // The player flies; the runner judges the step and computes the ghost-stick hint.
+    lesson.coach(dt, ctl);
+    lessonOverlay.update(lesson, ctl, lesson.hint);
+    if (lesson.crashed && lessonEndTimer === null) {
+      const l = lesson;
+      lessonEndTimer = window.setTimeout(() => {
+        lessonEndTimer = null;
+        if (lesson === l) {
+          sim.reset();
+          tracker.resetTransient();
+          l.restart();
+        }
+      }, 2500);
+    }
+    if (lesson.finished && lessonEndTimer === null) {
+      const done = lesson;
+      lessonEndTimer = window.setTimeout(() => {
+        if (lesson === done) stopLesson(false);
+      }, 6000);
+    }
+  } else if (lesson) {
     // The demo pilot has the sticks; the player's input is ignored until Stop (or Reset).
     ctl = lesson.update(dt);
     lessonOverlay.update(lesson, ctl);
@@ -252,7 +280,7 @@ function frame(now: number): void {
   field.windsock.rotation.set(-(1 - Math.min(1, wind.speed / 6)) * 1.2, windAngle + Math.PI, 0, 'YXZ');
   field.animate(dt, sim.state.time);
 
-  if (!lesson) {
+  if (!lesson || lesson.mode === 'teach') {
     flightTimer.update(sim, dt);
     tracker.update(sim, dt, flightTimer.flying ? flightTimer.airTime : 0);
   }

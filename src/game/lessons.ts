@@ -309,6 +309,14 @@ export function lessonFor(challengeId: string): Lesson | undefined {
 }
 
 /** Runs a lesson against the sim: call update(dt) every frame and feed the returned controls to the sim. */
+/**
+ * 'show': the demo pilot flies and you watch the sticks.
+ * 'teach': YOU fly. The same steps and captions, but the pilot only computes a hint (the stick position it
+ * would use right now, from the real state) that the overlay draws as a ghost knob; a step advances when
+ * your flying satisfies it. No timeouts, and a crash restarts the lesson.
+ */
+export type LessonMode = 'show' | 'teach';
+
 export class LessonRunner {
   stepIndex = 0;
   private t = 0;
@@ -317,8 +325,12 @@ export class LessonRunner {
   finished = false;
   failed: string | null = null;
   private frame: ControlFrame = neutralFrame();
+  /** Teach mode: what the demo pilot would do right now, translated for the player's assist mode. */
+  hint: ControlFrame = neutralFrame();
+  /** Teach mode: set when the player crashed; the host resets and restarts. */
+  crashed = false;
 
-  constructor(public lesson: Lesson, private sim: HelicopterSim) {
+  constructor(public lesson: Lesson, private sim: HelicopterSim, public mode: LessonMode = 'show') {
     this.ap = new Autopilot(sim);
     this.ap.setMode(0);
   }
@@ -327,6 +339,16 @@ export class LessonRunner {
     return this.lesson.steps[this.stepIndex];
   }
 
+  restart(): void {
+    this.stepIndex = 0;
+    this.t = 0;
+    this.mem = {};
+    this.finished = false;
+    this.failed = null;
+    this.crashed = false;
+  }
+
+  /** Show mode: returns the demo pilot's controls for this frame. */
   update(dt: number): ControlFrame {
     const step = this.step;
     if (!step || this.finished) return this.frame;
@@ -346,5 +368,41 @@ export class LessonRunner {
       if (this.stepIndex >= this.lesson.steps.length) this.finished = true;
     }
     return this.frame;
+  }
+
+  /** Teach mode: evaluate the step against the player's flying and compute the hint. */
+  coach(dt: number, player: ControlFrame): void {
+    const step = this.step;
+    if (!step || this.finished) return;
+    if (this.sim.state.crashed) {
+      this.crashed = true;
+      return;
+    }
+    const assistBefore = this.sim.assist;
+    const ctx: StepContext = { sim: this.sim, ap: this.ap, t: this.t, dt, mem: this.mem };
+    // Let the step compute what the pilot would do (it may switch assist for the roll; keep that, it is advice for the player too).
+    this.ap.usedGoTo = false;
+    const h = step.run(ctx);
+    const hint = { ...h };
+    // Explicit stick commands (the roll's full aileron) pass through; only attitude-style advice is translated.
+    if (this.ap.usedGoTo && this.sim.assist === 'rate' && assistBefore === 'rate') {
+      // The pilot thinks in bank angles; in rate mode the stick commands a rate, so hint the rate that closes the angle gap.
+      const e = eulerFromQ(this.sim.state.ori);
+      const c = this.sim.model.controller;
+      const pitchTarget = -this.ap.wantedTiltFwd;
+      const rollTarget = this.ap.wantedTiltRight;
+      hint.elevator = Math.max(-1, Math.min(1, (-(pitchTarget - e.pitch) * 6) / c.cyclicRate));
+      hint.aileron = Math.max(-1, Math.min(1, ((rollTarget - e.roll) * 6) / c.cyclicRate));
+    }
+    // The flight mode and hold switches are advice too; the player must set them (hint shows the wanted state).
+    this.hint = hint;
+    this.t += dt;
+    if (step.done(ctx)) {
+      this.stepIndex++;
+      this.t = 0;
+      this.mem = {};
+      if (this.stepIndex >= this.lesson.steps.length) this.finished = true;
+    }
+    void player;
   }
 }

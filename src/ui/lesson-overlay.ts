@@ -40,28 +40,39 @@ export class LessonOverlay {
 
   show(runner: LessonRunner): void {
     this.el.style.display = '';
+    (this.el.querySelector('.lesson-title span') as HTMLElement).textContent = runner.mode === 'teach' ? 'Teach me' : 'Show me';
     (this.el.querySelector('#lesson-name') as HTMLElement).textContent = runner.lesson.title;
-    this.intro.textContent = runner.lesson.intro;
+    this.intro.textContent = runner.mode === 'teach'
+      ? `${runner.lesson.intro} You fly: the hollow ring shows where the stick should be right now; match it.`
+      : runner.lesson.intro;
   }
 
   hide(): void {
     this.el.style.display = 'none';
   }
 
-  update(runner: LessonRunner, ctl: ControlFrame): void {
+  update(runner: LessonRunner, ctl: ControlFrame, hint: ControlFrame | null = null): void {
     const step = runner.step;
-    this.caption.textContent = runner.finished ? (runner.failed ?? 'Lesson complete. Your turn: press Reset and try it.') : step?.caption ?? '';
+    const teach = runner.mode === 'teach';
+    let caption = step?.caption ?? '';
+    if (runner.finished) caption = runner.failed ?? (teach ? 'You did it. Lesson complete!' : 'Lesson complete. Your turn: press Reset and try it.');
+    else if (teach && runner.crashed) caption = 'Crashed. Resetting to the pad; the lesson starts again.';
+    this.caption.textContent = caption;
     this.progress.textContent = `Step ${Math.min(runner.stepIndex + 1, runner.lesson.steps.length)} of ${runner.lesson.steps.length}`;
-    this.switches.innerHTML = `<span class="${ctl.flightMode > 0 ? 'on' : ''}">Mode: ${['Normal', 'Idle-Up 1', 'Idle-Up 2'][ctl.flightMode]}</span><span class="${ctl.throttleHold ? 'on' : ''}">Throttle hold: ${ctl.throttleHold ? 'ON' : 'off'}</span>`;
-    this.draw(ctl);
+    const modeWanted = hint ? hint.flightMode : ctl.flightMode;
+    const holdWanted = hint ? hint.throttleHold : ctl.throttleHold;
+    const modeMismatch = hint && hint.flightMode !== ctl.flightMode;
+    const holdMismatch = hint && hint.throttleHold !== ctl.throttleHold;
+    this.switches.innerHTML = `<span class="${modeWanted > 0 ? 'on' : ''} ${modeMismatch ? 'want' : ''}">Mode: ${['Normal', 'Idle-Up 1', 'Idle-Up 2'][modeWanted]}${modeMismatch ? ' ← set this' : ''}</span><span class="${holdWanted ? 'on' : ''} ${holdMismatch ? 'want' : ''}">Throttle hold: ${holdWanted ? 'ON' : 'off'}${holdMismatch ? ' ← set this' : ''}</span>`;
+    this.draw(ctl, hint);
   }
 
-  private draw(ctl: ControlFrame): void {
+  private draw(ctl: ControlFrame, hint: ControlFrame | null): void {
     const g = this.sticks.getContext('2d')!;
     const W = this.sticks.width;
     const H = this.sticks.height;
     g.clearRect(0, 0, W, H);
-    const gimbal = (cx: number, x: number, y: number, labels: [string, string, string, string]) => {
+    const gimbal = (cx: number, x: number, y: number, labels: [string, string, string, string], ghost: [number, number] | null) => {
       const r = 85;
       const cy = H / 2;
       g.fillStyle = 'rgba(0,0,0,0.45)';
@@ -84,6 +95,16 @@ export class LessonOverlay {
       g.fillText(labels[2], cx - r - 4, cy + 4);
       g.textAlign = 'left';
       g.fillText(labels[3], cx + r + 4, cy + 4);
+      // Ghost: where the stick should be (teach mode).
+      if (ghost) {
+        g.strokeStyle = '#ffd34d';
+        g.lineWidth = 3;
+        g.setLineDash([6, 4]);
+        g.beginPath();
+        g.arc(cx + ghost[0] * r, cy - ghost[1] * r, 18, 0, Math.PI * 2);
+        g.stroke();
+        g.setLineDash([]);
+      }
       // Stick shaft and knob.
       const kx = cx + x * r;
       const ky = cy - y * r;
@@ -93,12 +114,18 @@ export class LessonOverlay {
       g.moveTo(cx, cy);
       g.lineTo(kx, ky);
       g.stroke();
-      g.fillStyle = '#ffd34d';
+      g.fillStyle = ghost ? '#ffffff' : '#ffd34d';
       g.beginPath();
       g.arc(kx, ky, 14, 0, Math.PI * 2);
       g.fill();
     };
-    gimbal(W * 0.24, ctl.rudder, ctl.collective, ['more collective', 'less collective', 'nose left', 'nose right']);
-    gimbal(W * 0.76, ctl.aileron, ctl.elevator, ['nose down (forward)', 'nose up (back)', 'roll left', 'roll right']);
+    gimbal(W * 0.24, ctl.rudder, ctl.collective, ['more collective', 'less collective', 'nose left', 'nose right'], hint ? [hint.rudder, hint.collective] : null);
+    gimbal(W * 0.76, ctl.aileron, ctl.elevator, ['nose down (forward)', 'nose up (back)', 'roll left', 'roll right'], hint ? [hint.aileron, hint.elevator] : null);
+    if (hint) {
+      g.fillStyle = 'rgba(255,255,255,0.8)';
+      g.font = '12px system-ui, sans-serif';
+      g.textAlign = 'center';
+      g.fillText('white = your sticks · dashed ring = where they should be', W / 2, H - 4);
+    }
   }
 }

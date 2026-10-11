@@ -20,7 +20,7 @@ export class ChallengesPanel {
     private tracker: ChallengeTracker,
     private timer: FlightTimer,
     private client: RankingClient,
-    private onTeach: (challengeId: string) => void,
+    private onTeach: (challengeId: string, mode: 'show' | 'teach') => void,
   ) {
     this.el = document.createElement('div');
     this.el.className = 'challenges';
@@ -108,7 +108,9 @@ export class ChallengesPanel {
           ${CHALLENGES.map((c) => {
             const done = this.tracker.completed.has(c.id);
             const pr = done ? 1 : this.tracker.progress[c.id] ?? 0;
-            const teach = lessonFor(c.id) ? `<button class="teach" data-teach="${c.id}" title="Watch a demo pilot do it, with the sticks shown">Teach me</button>` : '';
+            const teach = lessonFor(c.id)
+              ? `<button class="teach" data-teach="${c.id}" data-mode="show" title="Watch a demo pilot do the whole challenge; the sticks are shown">Show me</button><button class="teach" data-teach="${c.id}" data-mode="teach" title="You fly it step by step with a ghost stick guiding you">Teach me</button>`
+              : '';
             return `<li class="${done ? 'done' : ''}"><div class="row"><b>${done ? '✓ ' : ''}${c.title}</b><span>${c.points} pts ${teach}</span></div><div class="desc">${c.description}</div><div class="bar"><i data-bar="${c.id}" style="width:${Math.round(pr * 100)}%"></i></div></li>`;
           }).join('')}
         </ul>`;
@@ -161,7 +163,7 @@ export class ChallengesPanel {
     for (const b of this.el.querySelectorAll<HTMLButtonElement>('[data-teach]')) {
       b.addEventListener('click', () => {
         this.toggle();
-        this.onTeach(b.dataset.teach!);
+        this.onTeach(b.dataset.teach!, (b.dataset.mode as 'show' | 'teach') ?? 'show');
       });
     }
     for (const b of this.el.querySelectorAll<HTMLButtonElement>('[data-tab]')) {
