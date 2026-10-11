@@ -24,7 +24,8 @@ const PORT = Number(process.env.PORT ?? 8787);
 const DB_PATH = process.env.DB_PATH ?? './data/rankings.sqlite';
 const RESEND_API_KEY = process.env.RESEND_API_KEY ?? '';
 const MAIL_FROM = process.env.MAIL_FROM ?? 'RC Heli Sim <onboarding@resend.dev>';
-const CORS_ORIGIN = process.env.CORS_ORIGIN ?? '*';
+// Comma-separated list of allowed origins; the matching one is echoed back.
+const CORS_ORIGINS = (process.env.CORS_ORIGIN ?? '*').split(',').map((o) => o.trim()).filter(Boolean);
 
 // Challenge points must match src/game/challenges.ts; the server owns the totals so clients cannot invent them.
 const POINTS = {
@@ -100,8 +101,14 @@ async function sendCode(email, name, code) {
   if (!res.ok) throw new Error(`Resend ${res.status}: ${await res.text()}`);
 }
 
+let currentOrigin = '';
+function corsOrigin(req) {
+  const o = req.headers.origin ?? '';
+  if (CORS_ORIGINS.includes('*')) return '*';
+  return CORS_ORIGINS.includes(o) ? o : CORS_ORIGINS[0];
+}
 function json(res, status, body) {
-  res.writeHead(status, { 'content-type': 'application/json', 'access-control-allow-origin': CORS_ORIGIN, 'access-control-allow-headers': 'content-type, authorization', 'access-control-allow-methods': 'GET, POST, OPTIONS' });
+  res.writeHead(status, { 'content-type': 'application/json', 'access-control-allow-origin': currentOrigin, vary: 'Origin', 'access-control-allow-headers': 'content-type, authorization', 'access-control-allow-methods': 'GET, POST, OPTIONS' });
   res.end(JSON.stringify(body));
 }
 
@@ -117,6 +124,7 @@ async function readJson(req) {
 createServer(async (req, res) => {
   try {
     const url = new URL(req.url, 'http://x');
+    currentOrigin = corsOrigin(req);
     const ip = req.headers['x-forwarded-for']?.split(',')[0]?.trim() || req.socket.remoteAddress || '?';
     if (req.method === 'OPTIONS') return json(res, 204, {});
     if (url.pathname === '/api/health') return json(res, 200, { ok: true });
