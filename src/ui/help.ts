@@ -181,8 +181,8 @@ const HELP_HTML = `
       spot landings, five minutes up. Normal mode, 450 trainer, no wind.</li>
     <li><b>Intermediate</b>: nose-in hover (the big one: cyclic feels reversed), pirouette, figure eight, the ring circuit,
       truck and pontoon landings, fifteen minutes up. Add wind in Settings once these are easy.</li>
-    <li><b>Advanced</b>: tower landing out of ground effect, nose-in circuit, autorotation.</li>
-    <li><b>3D</b>: roll, loop, inverted hover. Idle-Up, high up, and lots of Show me first.</li>
+    <li><b>Advanced</b>: tower landing out of ground effect, nose-in circuit, stall turn, autorotation.</li>
+    <li><b>3D</b>: roll, loop, inverted hover, funnel, tic-toc, piro flip. Idle-Up, high up, and lots of Show me first.</li>
   </ol>
   <p>Rule of thumb from the field: do not move to the next item until the current one is boring.</p>
   <p>Crashes: a blade strike or a hard hit ends the flight; press R or Reset.</p>

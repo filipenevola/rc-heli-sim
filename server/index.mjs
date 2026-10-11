@@ -33,6 +33,7 @@ const POINTS = {
   circuit: 50, roll: 70, autorotation: 80, 'endurance-5': 40, 'endurance-15': 100,
   'side-in-left': 20, 'side-in-right': 20, elevator: 25, 'spot-landing': 20, pirouette: 30, 'figure-eight': 50,
   loop: 70, 'inverted-hover': 90, 'nose-in-circuit': 80,
+  'landing-streak': 30, 'stall-turn': 60, funnel: 80, 'tic-toc': 90, 'piro-flip': 120,
 };
 const MAX_FLIGHT_SECONDS = 6 * 3600;
 

@@ -49,6 +49,22 @@ export function pilotSide(sim: HelicopterSim): number {
   return (fwd.z * dx - fwd.x * dz) / len / (Math.hypot(fwd.x, fwd.z) || 1);
 }
 
+/** Heading-like angle that stays meaningful when the nose points up or down: azimuth of the body-up vector then. */
+export function azimuth(sim: HelicopterSim): number {
+  const fwd = rotate(sim.state.ori, v3(0, 0, -1));
+  const up = rotate(sim.state.ori, v3(0, 1, 0));
+  const v = Math.abs(fwd.y) > 0.6 ? up : fwd;
+  return Math.atan2(-v.x, -v.z);
+}
+
+/** Signed small-angle difference a - b in (-pi, pi]. */
+export function angleDiff(a: number, b: number): number {
+  let d = a - b;
+  while (d > Math.PI) d -= 2 * Math.PI;
+  while (d < -Math.PI) d += 2 * Math.PI;
+  return d;
+}
+
 function gateSequence(gates: GateSpec[], ctx: ChallengeContext): number {
   const s = ctx.sim.state;
   if (s.crashed) ctx.mem.next = 0;
@@ -312,6 +328,134 @@ export const CHALLENGES: Challenge[] = [
       const ok = noseToPilot(ctx.sim) < (45 * Math.PI) / 180;
       if (!ok && ctx.sim.state.pos.y > 1.5) { ctx.mem.next = 0; return 0; }
       return gateSequence(GATES, ctx);
+    },
+  },
+  // ---- The hard stuff ----
+  {
+    id: 'landing-streak',
+    level: 'Beginner',
+    title: 'Three clean landings',
+    description: 'Three flights in a row, each at least 10 s in the air, each ending with a landing on the helipad. No crash, no Reset in between.',
+    points: 30,
+    check: (ctx) => {
+      const s = ctx.sim.state;
+      if (s.crashed) { ctx.mem.count = 0; ctx.mem.flew = 0; return 0; }
+      if (ctx.airTime > 10) ctx.mem.flew = 1;
+      if (ctx.mem.flew && s.landed?.target.id === 'pad' && !ctx.mem.counted) {
+        ctx.mem.count = (ctx.mem.count ?? 0) + 1;
+        ctx.mem.counted = 1;
+        ctx.mem.flew = 0;
+      }
+      if (!s.landed) ctx.mem.counted = 0;
+      return Math.min(1, (ctx.mem.count ?? 0) / 3);
+    },
+  },
+  {
+    id: 'stall-turn',
+    level: 'Advanced',
+    title: 'Stall turn',
+    description: 'From fast forward flight (over 7 m/s) pull vertical, let the speed bleed off, pivot the nose 180° with rudder at the top, dive out and recover level.',
+    points: 60,
+    check: (ctx) => {
+      const s = ctx.sim.state;
+      const fwd = rotate(s.ori, v3(0, 0, -1));
+      const up = rotate(s.ori, v3(0, 1, 0));
+      const e = eulerFromQ(s.ori);
+      const speed = Math.hypot(s.vel.x, s.vel.z);
+      if (s.crashed || s.pos.y < 2) { ctx.mem.phase = 0; return 0; }
+      const phase = ctx.mem.phase ?? 0;
+      if (phase === 0 && speed > 7 && up.y > 0.7) { ctx.mem.phase = 1; ctx.mem.head = e.yaw; }
+      else if (phase === 1) {
+        ctx.mem.head = e.yaw; // keep the entry heading fresh until the pull
+        if (fwd.y > 0.8) ctx.mem.phase = 2;
+      } else if (phase === 2) {
+        // Over the top by yaw (stall turn): nose goes from up to down while the body-up vector stays roughly
+        // horizontal/upright and the heading reverses. A loop-over would put the up vector inverted instead.
+        if (fwd.y < -0.6) {
+          // The up-vector test above is what separates a stall turn from a loop; the heading test only rejects
+          // a tail-slide that falls back the way it came (heading unchanged).
+          const reversed = Math.abs(angleDiff(e.yaw, ctx.mem.head ?? e.yaw)) > (60 * Math.PI) / 180;
+          ctx.mem.phase = reversed && up.y > -0.3 ? 4 : 0;
+        } else if (up.y < -0.5) ctx.mem.phase = 0; // flopped onto its back
+      } else if (phase === 4 && up.y > 0.85 && Math.abs(fwd.y) < 0.35) return 1;
+      return (ctx.mem.phase ?? 0) / 5;
+    },
+  },
+  {
+    id: 'funnel',
+    level: '3D',
+    title: 'Funnel',
+    description: 'A full banked circle: 360° of heading with more than 45° of bank the whole way, above 5 m, moving faster than 3 m/s. Keep the nose pointed into the centre.',
+    points: 80,
+    check: (ctx) => {
+      const s = ctx.sim.state;
+      const up = rotate(s.ori, v3(0, 1, 0));
+      const e = eulerFromQ(s.ori);
+      const bank = Math.acos(Math.max(-1, Math.min(1, up.y)));
+      const speed = Math.hypot(s.vel.x, s.vel.z);
+      const ok = !s.crashed && s.pos.y > 5 && bank > (45 * Math.PI) / 180 && bank < (135 * Math.PI) / 180 && speed > 3;
+      if (!ok) { ctx.mem.acc = 0; ctx.mem.has = 0; return 0; }
+      if (!ctx.mem.has) { ctx.mem.has = 1; ctx.mem.prev = e.yaw; ctx.mem.acc = 0; }
+      let d = e.yaw - ctx.mem.prev;
+      while (d > Math.PI) d -= 2 * Math.PI;
+      while (d < -Math.PI) d += 2 * Math.PI;
+      ctx.mem.prev = e.yaw;
+      ctx.mem.acc = (ctx.mem.acc ?? 0) + d;
+      return Math.min(1, Math.abs(ctx.mem.acc) / (2 * Math.PI));
+    },
+  },
+  {
+    id: 'tic-toc',
+    level: '3D',
+    title: 'Tic-toc',
+    description: 'Above 6 m and nearly stationary, swing the nose past 30° up and 30° down four times in a row (two full tic-tocs) within 8 s, pumping collective to hold height.',
+    points: 90,
+    check: (ctx) => {
+      const s = ctx.sim.state;
+      const fwd = rotate(s.ori, v3(0, 0, -1));
+      const upv = rotate(s.ori, v3(0, 1, 0));
+      const speed = Math.hypot(s.vel.x, s.vel.z);
+      // A tic-toc swings tail-low about a point; a tumble or a loop (disc past 75 deg) does not count.
+      if (s.crashed || s.pos.y < 4 || speed > 5 || upv.y < 0.25) { ctx.mem.n = 0; ctx.mem.t = 0; return 0; }
+      ctx.mem.t = (ctx.mem.t ?? 0) + ctx.dt;
+      const want = (ctx.mem.n ?? 0) % 2 === 0 ? fwd.y > 0.5 : fwd.y < -0.5;
+      if (want && s.pos.y > 6) {
+        if ((ctx.mem.n ?? 0) === 0) ctx.mem.t = 0;
+        ctx.mem.n = (ctx.mem.n ?? 0) + 1;
+      }
+      if ((ctx.mem.t ?? 0) > 8) { ctx.mem.n = 0; ctx.mem.t = 0; }
+      if ((ctx.mem.n ?? 0) >= 4) return 1;
+      return (ctx.mem.n ?? 0) / 4;
+    },
+  },
+  {
+    id: 'piro-flip',
+    level: '3D',
+    title: 'Piro flip',
+    description: 'Flip through inverted and back to level while pirouetting (at least 270° of heading during the flip), above 8 m. The signature 3D move.',
+    points: 120,
+    check: (ctx) => {
+      const s = ctx.sim.state;
+      const up = rotate(s.ori, v3(0, 1, 0));
+      const e = eulerFromQ(s.ori);
+      if (s.crashed || s.pos.y < 3) { ctx.mem.phase = 0; return 0; }
+      const phase = ctx.mem.phase ?? 0;
+      if (phase === 0 && s.pos.y > 8 && up.y > 0.9) { ctx.mem.phase = 1; ctx.mem.acc = 0; ctx.mem.prev = e.yaw; ctx.mem.t = 0; }
+      else if (phase >= 1) {
+        // Pirouette rate: heading change, ignoring the jumps the heading angle makes through vertical.
+        const d = angleDiff(e.yaw, ctx.mem.prev ?? e.yaw);
+        ctx.mem.prev = e.yaw;
+        if (Math.abs(d) < 1.5) ctx.mem.acc = (ctx.mem.acc ?? 0) + Math.abs(d);
+        ctx.mem.t = (ctx.mem.t ?? 0) + ctx.dt;
+        if (phase === 1 && up.y < 0.3) { ctx.mem.phase = 2; ctx.mem.t = 0; ctx.mem.acc = 0; }
+        else if (phase === 2 && up.y < -0.6) ctx.mem.phase = 3;
+        else if (phase === 3 && up.y > 0.85) {
+          if ((ctx.mem.acc ?? 0) >= 1.5 * Math.PI && (ctx.mem.t ?? 0) < 5) return 1;
+          ctx.mem.phase = 1; ctx.mem.acc = 0; ctx.mem.t = 0; // a plain flip or loop: try again
+        }
+        if (phase >= 2 && (ctx.mem.t ?? 0) > 5) { ctx.mem.phase = 1; ctx.mem.acc = 0; ctx.mem.t = 0; }
+      }
+      return Math.min(0.95, (ctx.mem.phase ?? 0) / 4 + Math.min(0.2, ((ctx.mem.acc ?? 0) / Math.PI) * 0.2));
     },
   },
 ];

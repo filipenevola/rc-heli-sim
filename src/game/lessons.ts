@@ -549,6 +549,219 @@ export const LESSONS: Lesson[] = [
       goTo({ x: 0, y: 3, z: -6 }, 'Back to the pad, still nose-in.', { vmax: 2.5, heading: 'toPilot' }),
     ],
   },
+
+  // ---------------- The hard stuff ----------------
+  {
+    challengeId: 'landing-streak',
+    title: 'Three clean landings',
+    intro: 'Consistency is the real skill: three take-offs, three short flights, three landings on the H without a scare.',
+    steps: [
+      spoolUp(0, 'Spool up.'),
+      ...[1, 2, 3].flatMap((i) => [
+        liftTo(3, `Flight ${i}: lift to 3 m and hold.`, 11),
+        ...landOn({ x: 0, y: 0, z: -6 }, `Flight ${i}: back over the H and settle.`),
+      ]),
+    ],
+  },
+  {
+    challengeId: 'stall-turn',
+    title: 'Stall turn',
+    intro: 'Energy management: speed becomes height, the nose pivots on the rudder at the top, height becomes speed again. Idle-Up, lots of room.',
+    steps: [
+      spoolUp(1, 'Idle-Up 1. Spool up.'),
+      liftTo(12, 'Climb to 12 m.'),
+      {
+        caption: 'Accelerate hard forward: nose down with forward cyclic, collective up to hold height. Over 8 m/s.',
+        run: ({ ap, sim }) => ap.goTo({ x: sim.state.pos.x, y: 12, z: sim.state.pos.z - 60 }, ap.heading, { vmax: 12 }),
+        done: ({ sim }) => Math.hypot(sim.state.vel.x, sim.state.vel.z) > 8.5,
+        timeout: 20,
+      },
+      {
+        caption: 'Pull: back elevator until the nose points straight up. Collective positive through the pull.',
+        run: ({ ap, sim }) => {
+          sim.assist = 'rate';
+          const fwd = rotate(sim.state.ori, v3(0, 0, -1));
+          const up = rotate(sim.state.ori, v3(0, 1, 0));
+          const pitch = Math.atan2(fwd.y, up.y); // 0 level, pi/2 straight up, beyond = over the top
+          ap.ctl.elevator = Math.max(-1, Math.min(1, (pitch - Math.PI / 2) * 1.6));
+          ap.ctl.aileron = 0; ap.ctl.rudder = 0; ap.ctl.collective = 0.45;
+          return ap.ctl;
+        },
+        done: ({ sim }) => { const fwd = rotate(sim.state.ori, v3(0, 0, -1)); const up = rotate(sim.state.ori, v3(0, 1, 0)); return Math.atan2(fwd.y, up.y) > 1.45; },
+        timeout: 4,
+      },
+      {
+        caption: 'Vertical: full rudder now, while it is still going up. Elevator centred; collective near zero. The nose swings over the top to point straight down.',
+        run: ({ ap, sim }) => {
+          sim.assist = 'rate';
+          ap.ctl.rudder = 1; ap.ctl.aileron = 0; ap.ctl.collective = 0.05; ap.ctl.elevator = 0;
+          return ap.ctl;
+        },
+        done: ({ sim }) => rotate(sim.state.ori, v3(0, 0, -1)).y < -0.55,
+        timeout: 3,
+      },
+      {
+        caption: 'Dive: rudder centred, a touch of forward elevator to point straight down, collective near zero.',
+        run: ({ ap, sim }) => {
+          sim.assist = 'rate';
+          ap.ctl.rudder = 0; ap.ctl.aileron = 0; ap.ctl.collective = 0.0;
+          const fwd = rotate(sim.state.ori, v3(0, 0, -1));
+          ap.ctl.elevator = fwd.y > -0.7 ? 0.8 : 0;
+          return ap.ctl;
+        },
+        done: ({ sim, t }) => t > 0.3 && rotate(sim.state.ori, v3(0, 0, -1)).y < -0.5 && sim.state.vel.y < -2,
+        timeout: 4,
+      },
+      {
+        caption: 'Pull out: back elevator to level, easing off as the nose comes up; collective up to catch it. Height is your margin.',
+        run: ({ ap, sim }) => {
+          sim.assist = 'rate';
+          const fwd = rotate(sim.state.ori, v3(0, 0, -1));
+          const up = rotate(sim.state.ori, v3(0, 1, 0));
+          const right = rotate(sim.state.ori, v3(1, 0, 0));
+          const c = sim.model.controller;
+          const pitch = Math.atan2(fwd.y, up.y); // negative = nose down
+          ap.ctl.elevator = Math.max(-1, Math.min(1, pitch * 1.6));
+          ap.ctl.aileron = Math.max(-1, Math.min(1, (right.y * 8) / c.cyclicRate)); // wings level too
+          ap.ctl.rudder = 0;
+          ap.ctl.collective = 0.3 + 0.5 * Math.max(0, up.y);
+          return ap.ctl;
+        },
+        done: ({ sim }) => { const up = rotate(sim.state.ori, v3(0, 1, 0)); const fwd = rotate(sim.state.ori, v3(0, 0, -1)); return up.y > 0.85 && Math.abs(fwd.y) < 0.3; },
+        timeout: 4,
+      },
+      {
+        caption: 'Level. Settle the hover.',
+        run: (ctx) => { ctx.sim.assist = 'attitude'; return hoverFor(5, '').run(ctx); },
+        done: ({ t }) => t >= 5,
+      },
+    ],
+  },
+  {
+    challengeId: 'funnel',
+    title: 'Funnel',
+    intro: 'A steep banked circle with the tail low and the nose pointing at the centre. Bank with aileron, pull with elevator to turn, collective holds the height. Idle-Up, high.',
+    steps: [
+      spoolUp(1, 'Idle-Up 1. Spool up.'),
+      liftTo(12, 'Climb to 12 m.'),
+      goTo({ x: 0, y: 12, z: -14 }, 'A little forward speed to start the circle.', { vmax: 6, tol: 3 }),
+      {
+        caption: 'Roll to about 60° of bank and hold it with aileron; back elevator keeps the circle turning; collective up to hold the height.',
+        run: ({ ap, sim, mem }) => {
+          sim.assist = 'rate';
+          const s = sim.state;
+          const right = rotate(s.ori, v3(1, 0, 0));
+          const c = sim.model.controller;
+          mem.y ??= s.pos.y;
+          mem.prev ??= eulerFromQ(s.ori).yaw;
+          let d = eulerFromQ(s.ori).yaw - mem.prev;
+          while (d > Math.PI) d -= 2 * Math.PI;
+          while (d < -Math.PI) d += 2 * Math.PI;
+          mem.prev = eulerFromQ(s.ori).yaw;
+          mem.acc = (mem.acc ?? 0) + d;
+          // Bank right 55°: right.y = -sin(55°).
+          const target = -Math.sin((55 * Math.PI) / 180);
+          ap.ctl.aileron = Math.max(-1, Math.min(1, ((target - right.y) * -6) / c.cyclicRate * 4));
+          ap.ctl.elevator = -0.35;
+          ap.ctl.rudder = 0.1;
+          const vy = s.vel.y;
+          ap.ctl.collective = Math.max(-0.2, Math.min(1, 0.6 + 0.3 * ((mem.y - s.pos.y) * 0.8 - vy)));
+          return ap.ctl;
+        },
+        done: ({ mem }) => Math.abs(mem.acc ?? 0) > 2 * Math.PI + 2.5,
+        timeout: 25,
+      },
+      {
+        caption: 'Roll level, settle.',
+        run: (ctx) => { ctx.sim.assist = 'attitude'; return hoverFor(5, '').run(ctx); },
+        done: ({ t }) => t >= 5,
+      },
+    ],
+  },
+  {
+    challengeId: 'tic-toc',
+    title: 'Tic-toc',
+    intro: 'Nose swings up past 30°, then down past 30°, tail-low, on the spot; collective pumps up each time the disc faces upward. Rhythm, not force. Idle-Up, high.',
+    steps: [
+      spoolUp(1, 'Idle-Up 1. Spool up.'),
+      liftTo(12, 'Climb to 12 m.'),
+      hoverFor(2, 'Settle.'),
+      {
+        caption: 'Back elevator to 40° nose up, then forward to 40° nose down, again and again. Collective up when the disc points up, off when it points sideways.',
+        run: ({ ap, sim, mem }) => {
+          sim.assist = 'rate';
+          const s = sim.state;
+          const fwd = rotate(s.ori, v3(0, 0, -1));
+          const up = rotate(s.ori, v3(0, 1, 0));
+          mem.dir ??= -1; // start nose up
+          if (mem.dir === -1 && fwd.y > 0.68) { mem.dir = 1; mem.n = (mem.n ?? 0) + 1; }
+          if (mem.dir === 1 && fwd.y < -0.68) { mem.dir = -1; mem.n = (mem.n ?? 0) + 1; }
+          ap.ctl.elevator = mem.dir;
+          ap.ctl.aileron = 0;
+          ap.ctl.rudder = 0;
+          ap.ctl.collective = 0.15 + 0.6 * Math.max(0, up.y) * Math.max(0, up.y);
+          return ap.ctl;
+        },
+        done: ({ mem }) => (mem.n ?? 0) >= 5,
+        timeout: 14,
+      },
+      {
+        caption: 'Elevator centred, back to a hover.',
+        run: (ctx) => { ctx.sim.assist = 'attitude'; return hoverFor(5, '').run(ctx); },
+        done: ({ t }) => t >= 5,
+      },
+    ],
+  },
+  {
+    challengeId: 'piro-flip',
+    title: 'Piro flip',
+    intro: 'A flip and a pirouette at the same time: full elevator and full rudder together, collective following the disc. Everything is changing at once; feel it rather than think it. Idle-Up, very high.',
+    steps: [
+      spoolUp(1, 'Idle-Up 1. Spool up.'),
+      liftTo(30, 'Climb to 30 m. A piro flip eats height while you learn it.'),
+      hoverFor(2, 'Settle.'),
+      {
+        caption: 'Full rudder for the piro. The cyclic points in ONE direction in the world (not on the heli): as the heli turns under it, the stick moves round the gimbal: back, left, forward, right...',
+        run: ({ ap, sim, mem, t }) => {
+          sim.assist = 'rate';
+          const s = sim.state;
+          const up = rotate(s.ori, v3(0, 1, 0));
+          const fwd = rotate(s.ori, v3(0, 0, -1));
+          const right = rotate(s.ori, v3(1, 0, 0));
+          const c = sim.model.controller;
+          // Flip axis fixed in the world: the heli's right axis at the start. The body-up vector must follow a
+          // target that rotates about that axis (attitude tracking, with feed-forward), so the pirouette underneath
+          // does not matter: whatever the heading, the cyclic is whatever brings 'up' toward its target.
+          if (mem.ax === undefined) { mem.ax = right.x; mem.az = right.z; }
+          const a = v3(mem.ax, 0, mem.az); // unit, horizontal
+          const T = (2 * Math.PI) / (0.6 * c.cyclicRate); // one flip at 60% of the max rate
+          const phi = Math.min(2 * Math.PI, (t / T) * 2 * Math.PI);
+          // Rotate world-up about axis a by phi (Rodrigues; a is perpendicular to up).
+          const upT = v3(-a.z * Math.sin(phi), Math.cos(phi), a.x * Math.sin(phi));
+          // Angular velocity (world) that drives up toward upT, plus the nominal feed-forward about the axis.
+          const err = v3(up.y * upT.z - up.z * upT.y, up.z * upT.x - up.x * upT.z, up.x * upT.y - up.y * upT.x);
+          const ff = phi < 2 * Math.PI ? (2 * Math.PI) / T : 0;
+          const w = v3(a.x * ff + err.x * 6, err.y * 6, a.z * ff + err.z * 6);
+          const pitchRate = w.x * right.x + w.y * right.y + w.z * right.z; // about body x (nose up positive)
+          const rollRight = w.x * fwd.x + w.y * fwd.y + w.z * fwd.z; // about body forward (-z), right positive
+          ap.ctl.elevator = Math.max(-1, Math.min(1, -pitchRate / c.cyclicRate));
+          ap.ctl.aileron = Math.max(-1, Math.min(1, rollRight / c.cyclicRate));
+          ap.ctl.rudder = 1;
+          ap.ctl.collective = 0.65 * up.y + 0.15;
+          if (up.y < -0.6) mem.inv = 1;
+          mem.phi = phi;
+          return ap.ctl;
+        },
+        done: ({ sim, mem }) => !!mem.inv && (mem.phi ?? 0) >= 2 * Math.PI && rotate(sim.state.ori, v3(0, 1, 0)).y > 0.85,
+        timeout: 8,
+      },
+      {
+        caption: 'Centre everything, catch the descent.',
+        run: (ctx) => { ctx.sim.assist = 'attitude'; return hoverFor(5, '').run(ctx); },
+        done: ({ t }) => t >= 5,
+      },
+    ],
+  },
 ];
 
 export function lessonFor(challengeId: string): Lesson | undefined {

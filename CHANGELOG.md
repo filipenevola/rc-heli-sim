@@ -3,6 +3,19 @@
 All notable changes to RC Heli Sim. The version shown in the game (Help and Settings) matches the latest
 entry here; the commit hash next to it identifies the exact build.
 
+## 0.9.0 — 2026-10-11
+
+- Five more challenges, the hard ones: Three clean landings (streak), Stall turn, Funnel, Tic-toc, Piro flip.
+  26 challenges, 1,400 points. Each has Show me and Teach me; every lesson is verified on all three
+  helicopters and with a hint-following player.
+- Manoeuvre detection built on attitude geometry rather than Euler angles where those break down: the stall
+  turn is recognised by the nose going from up to down by yaw with the body-up vector staying put and the
+  heading reversed (a loop-over inverts the up vector instead); the piro flip by inversion and recovery with
+  more than 270° of heading change during the flip; the tic-toc only counts tail-low swings (never past 75°
+  of bank, nearly stationary).
+- The demo pilot flies the piro flip with an attitude-tracking controller (target up-vector rotating about a
+  fixed world axis with feed-forward), so the pirouette underneath does not disturb the flip.
+
 ## 0.8.0 — 2026-10-11
 
 - Physics: blade stall (lift plateaus at ~13° blade angle of attack and decays beyond, with a steep drag rise, so

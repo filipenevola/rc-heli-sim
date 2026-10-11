@@ -45,7 +45,7 @@ npm run build
 
 ## Challenges and rankings
 
-Twenty-one challenges following the classic progression (hover in every orientation, elevator, pirouette, figure eight, circuits, five landing targets, autorotation, roll, loop, inverted hover, endurance), grouped by level,
+Twenty-six challenges following the classic progression (hover in every orientation, elevator, pirouette, figure eight, circuits, five landing targets, landing streak, stall turn, autorotation, roll, loop, inverted hover, funnel, tic-toc, piro flip, endurance), grouped by level,
 and two rankings: longest clean flight and challenge points. Records live on the device under a pilot name;
 the production build also syncs them to a small rankings server (`server/`, deployed on Quave ONE) and a
 player can verify an email with a 6-digit code to carry the profile across devices.
