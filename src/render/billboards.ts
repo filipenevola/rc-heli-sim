@@ -89,7 +89,7 @@ function paint(b: Billboard, logo: HTMLImageElement | null): THREE.CanvasTexture
 }
 
 function drawText(g: CanvasRenderingContext2D, b: Billboard, x: number, y: number, w: number, h: number, compact: boolean): void {
-  const nameSize = compact ? Math.round(h * 0.45) : Math.round(h * 0.3);
+  const nameSize = compact ? Math.round(h * 0.38) : Math.round(h * 0.3);
   g.fillStyle = b.fg;
   g.textBaseline = 'top';
   g.font = `bold ${nameSize}px system-ui, -apple-system, Segoe UI, Roboto, sans-serif`;
@@ -98,7 +98,7 @@ function drawText(g: CanvasRenderingContext2D, b: Billboard, x: number, y: numbe
   g.font = `${tagSize}px system-ui, -apple-system, Segoe UI, Roboto, sans-serif`;
   const lines = wrap(g, b.tagline, w);
   let ty = y + nameSize * 1.15;
-  for (const line of lines.slice(0, compact ? 1 : 3)) {
+  for (const line of lines.slice(0, compact ? 2 : 3)) {
     g.fillText(line, x, ty);
     ty += tagSize * 1.25;
   }

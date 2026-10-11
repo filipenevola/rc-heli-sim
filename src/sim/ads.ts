@@ -28,7 +28,7 @@ const std = { width: 6, height: 3, elevation: 2.2 };
 
 export const BILLBOARDS: Billboard[] = [
   // The flagship, centre back of the field behind the fence.
-  { id: 'quave-one', name: 'Quave ONE', tagline: 'Any Cloud. One Platform. Deploy, scale and manage infrastructure like Vercel, on your cloud or ours.', url: 'https://quave.one', logo: 'quave-logo.svg', bg: '#ffffff', fg: '#1f2330', accent: '#CE5993', ...big, x: 0, z: -40, rot: 0 },
+  { id: 'quave-one', name: 'Any Cloud. One Platform.', tagline: 'Deploy, scale and manage infrastructure like Vercel, on YOUR cloud account or ours.', url: 'https://quave.one', logo: 'quave-one-logo.svg', bg: '#1b1b1b', fg: '#ffffff', accent: '#B3FE71', ...big, x: 0, z: -40, rot: 0 },
   // The holding company itself, right next to it.
   { id: 'quave-holdings', name: 'Quave Holdings', tagline: 'Investing in well-run businesses. quaveholdings.com', url: 'https://quaveholdings.com/portfolio', logo: 'quave-holdings-logo.svg', bg: '#0b0f1a', fg: '#f3e9c9', accent: '#EABF34', width: 9, height: 4, elevation: 2.4, x: -16, z: -38, rot: 0.15 },
   { id: 'quave-services', name: 'Quave', tagline: 'We transform ideas into digital products, then keep them running at peak performance.', url: 'https://quave.dev', logo: 'quave-logo.svg', bg: '#ffffff', fg: '#1f2330', accent: '#CE5993', width: 9, height: 4, elevation: 2.4, x: 16, z: -38, rot: -0.15 },
