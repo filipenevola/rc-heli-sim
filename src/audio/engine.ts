@@ -32,12 +32,19 @@ export class AudioEngine {
   private crashedBefore = false;
   private started = false;
   muted = false;
+  paused = false;
   volume = 0.8;
 
   /** Must be called from a user gesture (browsers block audio before one). Safe to call repeatedly. */
+  /** Resume the context if the browser suspended or interrupted it (background tab, phone call, iOS lock). */
+  resume(): void {
+    const st = this.ctx?.state as string | undefined;
+    if (this.ctx && st && st !== 'running' && st !== 'closed') void this.ctx.resume();
+  }
+
   start(): void {
     if (this.started) {
-      if (this.ctx && this.ctx.state === 'suspended') void this.ctx.resume();
+      this.resume();
       return;
     }
     const Ctx = window.AudioContext ?? (window as unknown as { webkitAudioContext: typeof AudioContext }).webkitAudioContext;
@@ -46,7 +53,10 @@ export class AudioEngine {
     this.started = true;
 
     this.master = ctx.createGain();
-    this.master.gain.value = this.muted ? 0 : this.volume;
+    this.master.gain.value = this.effectiveGain();
+    document.addEventListener('visibilitychange', () => {
+      if (!document.hidden) this.resume();
+    });
     this.master.connect(ctx.destination);
 
     this.noiseBuffer = makeNoise(ctx, 2);
@@ -125,18 +135,33 @@ export class AudioEngine {
     this.tailOsc.start();
   }
 
+  private effectiveGain(): number {
+    return this.muted || this.paused ? 0 : this.volume;
+  }
+
+  private applyGain(): void {
+    if (this.master && this.ctx) this.master.gain.setTargetAtTime(this.effectiveGain(), this.ctx.currentTime, 0.05);
+  }
+
   setMuted(muted: boolean): void {
     this.muted = muted;
-    if (this.master && this.ctx) this.master.gain.setTargetAtTime(muted ? 0 : this.volume, this.ctx.currentTime, 0.05);
+    this.applyGain();
+  }
+
+  /** Pause silences everything (rotor, wind) without touching the mute setting; resume restores it. */
+  setPaused(paused: boolean): void {
+    this.paused = paused;
+    this.applyGain();
+    if (!paused) this.resume();
   }
 
   setVolume(v: number): void {
     this.volume = v;
-    if (!this.muted && this.master && this.ctx) this.master.gain.setTargetAtTime(v, this.ctx.currentTime, 0.05);
+    this.applyGain();
   }
 
   update(sim: HelicopterSim, pilotEye: V3, windSpeed: number): void {
-    if (!this.ctx || !this.started) return;
+    if (!this.ctx || !this.started || this.paused) return;
     const ctx = this.ctx;
     const t = ctx.currentTime;
     const s = sim.state;

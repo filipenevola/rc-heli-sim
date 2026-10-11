@@ -56,6 +56,7 @@ const ui = document.getElementById('ui')!;
 const audio = new AudioEngine();
 // Browsers only allow audio after a user gesture; any key, click or touch unlocks it.
 for (const ev of ['pointerdown', 'keydown', 'touchstart']) window.addEventListener(ev, () => audio.start(), { passive: true });
+window.addEventListener('focus', () => audio.resume());
 const input: InputManager = new InputManager(ui);
 const hud = new Hud(ui);
 const help = new HelpPanel(ui);
@@ -234,6 +235,7 @@ function setPaused(p: boolean): void {
   paused = p;
   settings.setPaused(p);
   hud.setPaused(p);
+  audio.setPaused(p);
   if (!p) last = performance.now(); // do not integrate the time spent paused
 }
 window.addEventListener('keydown', (e) => {
