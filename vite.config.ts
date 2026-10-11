@@ -1,11 +1,17 @@
 import { defineConfig } from 'vite';
 import { execSync } from 'node:child_process';
+import { readFileSync } from 'node:fs';
 
+// Build stamp: git when available, else public/version.txt (written by CI before a Docker build), else 'dev'.
 const sha = (() => {
   try {
-    return execSync('git rev-parse --short HEAD').toString().trim();
+    return execSync('git rev-parse --short HEAD', { stdio: ['ignore', 'pipe', 'ignore'] }).toString().trim();
   } catch {
-    return 'dev';
+    try {
+      return readFileSync('public/version.txt', 'utf8').trim();
+    } catch {
+      return 'dev';
+    }
   }
 })();
 const build = `${sha} ${new Date().toISOString().slice(0, 16).replace('T', ' ')}`;
