@@ -7,6 +7,16 @@ import type { AudioEngine } from '../audio/engine';
 import type { AssistMode } from '../sim/physics';
 import { CAMERA_MODES, CAMERA_LABELS, type CameraMode } from '../render/camera';
 
+export const MODE_HELP = [
+  'Normal: training mode. Low stick = motor off; the governor spools up as you raise it. Pitch −2° to +11°.',
+  'Idle-Up 1: constant head speed, pitch −11° to +11° (centre stick = 0°). Needed for inverted flight and flips.',
+  'Idle-Up 2: as Idle-Up 1 with more pitch and a higher head speed, for aggressive 3D.',
+];
+export const HOLD_HELP = {
+  on: 'Throttle hold ON: motor off, the rotor freewheels. For autorotation practice or as a safety.',
+  off: 'Throttle hold off: the motor is live.',
+};
+
 export interface SettingsCallbacks {
   onModel(model: HeliModel): void;
   onReset(): void;
@@ -94,20 +104,15 @@ export class SettingsPanel {
     window.addEventListener('keydown', (e) => {
       if (e.code === 'KeyM') toggleSound();
     });
-    bar.querySelector('#btn-mode')!.addEventListener('click', () => {
-      this.flightMode = ((this.flightMode + 1) % 3) as 0 | 1 | 2;
-      cb.onFlightMode(this.flightMode);
-    });
-    bar.querySelector('#btn-hold')!.addEventListener('click', () => {
-      this.hold = !this.hold;
-      cb.onThrottleHold(this.hold);
-    });
+    // Only ask for the change; reflect() repaints the labels from the real control frame next tick.
+    bar.querySelector('#btn-mode')!.addEventListener('click', () => cb.onFlightMode(((this.flightMode + 1) % 3) as 0 | 1 | 2));
+    bar.querySelector('#btn-hold')!.addEventListener('click', () => cb.onThrottleHold(!this.hold));
     this.bar = bar;
     this.render();
   }
 
   private bar: HTMLElement;
-  flightMode: 0 | 1 | 2 = 0;
+  flightMode: 0 | 1 | 2 = -1 as unknown as 0 | 1 | 2; // forces the first reflect() to paint
   hold = false;
   assist: AssistMode = 'rate';
 
@@ -116,8 +121,14 @@ export class SettingsPanel {
     if (mode !== this.flightMode || hold !== this.hold) {
       this.flightMode = mode;
       this.hold = hold;
-      (this.bar.querySelector('#btn-mode') as HTMLElement).textContent = `Mode: ${['Normal', 'Idle-Up 1', 'Idle-Up 2'][mode]}`;
-      (this.bar.querySelector('#btn-hold') as HTMLElement).textContent = `Hold: ${hold ? 'ON' : 'off'}`;
+      const modeBtn = this.bar.querySelector('#btn-mode') as HTMLElement;
+      const holdBtn = this.bar.querySelector('#btn-hold') as HTMLElement;
+      modeBtn.textContent = `Mode: ${['Normal', 'Idle-Up 1', 'Idle-Up 2'][mode]}`;
+      modeBtn.title = MODE_HELP[mode];
+      holdBtn.textContent = `Hold: ${hold ? 'ON' : 'off'}`;
+      holdBtn.title = hold ? HOLD_HELP.on : HOLD_HELP.off;
+      holdBtn.classList.toggle('active', hold);
+      modeBtn.classList.toggle('active', mode > 0);
     }
   }
 

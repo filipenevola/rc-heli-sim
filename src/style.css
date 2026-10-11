@@ -15,6 +15,7 @@ body.ui-hidden .topbar, body.ui-hidden .hud, body.ui-hidden .hud-sticks, body.ui
   padding: 8px 12px; font-size: 14px; cursor: pointer; touch-action: manipulation;
 }
 .topbar button:hover, .settings button:hover { background: rgba(0,0,0,0.75); }
+.topbar button.active { background: rgba(190, 120, 0, 0.75); border-color: #ffd34d; }
 
 .hud { position: absolute; top: calc(10px + env(safe-area-inset-top)); right: calc(10px + env(safe-area-inset-right)); background: rgba(0,0,0,0.5); border-radius: 8px; padding: 8px 12px; font-size: 13px; min-width: 0; cursor: pointer; }
 .hud .strip { white-space: nowrap; font-size: 13px; }

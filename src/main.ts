@@ -11,7 +11,7 @@ import { Wind } from './sim/wind';
 import { buildField } from './sim/world';
 import { InputManager } from './input/manager';
 import { Hud } from './ui/hud';
-import { SettingsPanel } from './ui/settings';
+import { SettingsPanel, MODE_HELP, HOLD_HELP } from './ui/settings';
 import { AudioEngine } from './audio/engine';
 import { HelpPanel } from './ui/help';
 
@@ -132,6 +132,8 @@ window.addEventListener('resize', () => {
 // Fixed-timestep physics driven by the render clock. Simulation time never runs ahead of wall time,
 // and a hitch (tab switch) is capped so the heli does not teleport.
 let last = performance.now();
+let lastMode = -1;
+let lastHold = false;
 let accumulator = 0;
 const target = new THREE.Vector3();
 const heliQuat = new THREE.Quaternion();
@@ -142,6 +144,14 @@ function frame(now: number): void {
   last = now;
   const ctl = input.poll(dt);
   settings.reflect(ctl.flightMode, ctl.throttleHold);
+  if (ctl.flightMode !== lastMode) {
+    if (lastMode !== -1) hud.notify(`<b>${['Normal', 'Idle-Up 1', 'Idle-Up 2'][ctl.flightMode]}</b><br>${MODE_HELP[ctl.flightMode].replace(/^[^:]+: /, '')}`);
+    lastMode = ctl.flightMode;
+  }
+  if (ctl.throttleHold !== lastHold) {
+    hud.notify(`<b>Throttle hold ${ctl.throttleHold ? 'ON' : 'off'}</b><br>${(ctl.throttleHold ? HOLD_HELP.on : HOLD_HELP.off).replace(/^[^:]+: /, '')}`);
+    lastHold = ctl.throttleHold;
+  }
 
   accumulator += dt;
   while (accumulator >= PHYSICS_DT) {

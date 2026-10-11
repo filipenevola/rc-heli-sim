@@ -40,6 +40,13 @@ export class Hud {
     container.appendChild(this.crash);
   }
 
+  /** Short on-screen note (mode changes, hints). */
+  notify(html: string, ms = 3500): void {
+    this.toast.innerHTML = html;
+    this.toast.style.display = '';
+    this.toastUntil = performance.now() + ms;
+  }
+
   update(sim: HelicopterSim, ctl: ControlFrame, sourceLabel: string, sourceId: string, dt: number): void {
     this.fpsSamples++;
     this.fpsTime += dt;
