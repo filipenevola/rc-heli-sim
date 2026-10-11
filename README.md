@@ -4,7 +4,7 @@ A browser-based **RC helicopter (modelism) flight simulator**, built to practice
 model. Not a full-scale aircraft sim: the physics, sizes, head speeds, pitch curves, gyro behaviour and the
 pilot-on-the-field camera are all about model helicopters.
 
-**Play:** https://heli.filipenevola.com (Quave ONE) · mirror: https://filipenevola.github.io/rc-heli-sim/ (GitHub Pages)
+**Play:** https://heli.filipenevola.com (the old filipenevola.github.io/rc-heli-sim link redirects there)
 
 ## What it does today
 

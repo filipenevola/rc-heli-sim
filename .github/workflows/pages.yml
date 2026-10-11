@@ -1,4 +1,4 @@
-name: Deploy to GitHub Pages
+name: Deploy redirect to GitHub Pages
 on:
   push:
     branches: [main]
@@ -15,18 +15,11 @@ jobs:
     runs-on: ubuntu-latest
     steps:
       - uses: actions/checkout@v4
-      - uses: actions/setup-node@v4
-        with:
-          node-version: 22
-          cache: npm
-      - run: npm ci
-      - run: npm run build
-        env:
-          GITHUB_PAGES: 'true'
-          VITE_API_URL: ${{ vars.VITE_API_URL }}
+      # The game moved to https://heli.filipenevola.com (Quave ONE). GitHub Pages now only serves a
+      # redirect page so links shared before the move keep working.
       - uses: actions/upload-pages-artifact@v3
         with:
-          path: dist
+          path: redirect
   deploy:
     needs: build
     runs-on: ubuntu-latest
