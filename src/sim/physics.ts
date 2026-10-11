@@ -35,6 +35,8 @@ export interface HeliState {
   iYaw: number;
   governorTarget: number;
   governorI: number;
+  /** Energy left in the pack, Wh. */
+  batteryWh: number;
   crashed: boolean;
   crashReason: string;
   /** Landing-target bookkeeping: which target every skid rests on, for how long, and the last confirmed landing. */
@@ -58,6 +60,13 @@ export interface Telemetry {
   verticalSpeed: number;
   groundEffect: number;
   lambda: number;
+  /** 0..1 battery left. */
+  battery: number;
+  /** Vortex ring state depth 0..1 and blade stall 0..1 (warnings on the HUD). */
+  vrs: number;
+  stall: number;
+  /** Seconds the motor has been drawing power this flight. */
+  flightSeconds: number;
 }
 
 export function initialState(model: HeliModel, yaw = 0): HeliState {
@@ -81,6 +90,7 @@ export function initialState(model: HeliModel, yaw = 0): HeliState {
     iYaw: 0,
     governorTarget: 0,
     governorI: 0,
+    batteryWh: model.batteryWh,
     crashed: false,
     crashReason: '',
     restingOn: null,
@@ -105,6 +115,8 @@ export type AssistMode = 'rate' | 'attitude';
 export class HelicopterSim {
   state: HeliState;
   assist: AssistMode = 'rate';
+  private vrsNoise = 0;
+  private vrsNoise2 = 0;
   /** Last control frame fed to step(); challenges read switch states from it. */
   lastControls: ControlFrame | null = null;
   /** Max bank/pitch angle at full stick in attitude mode, rad. */
@@ -113,7 +125,7 @@ export class HelicopterSim {
   attitudeGain = 7;
   telemetry: Telemetry = {
     thrust: 0, torque: 0, tailThrust: 0, collectiveDeg: 0, headspeedRpm: 0, motorPower: 0,
-    altitude: 0, groundSpeed: 0, verticalSpeed: 0, groundEffect: 1, lambda: 0,
+    altitude: 0, groundSpeed: 0, verticalSpeed: 0, groundEffect: 1, lambda: 0, battery: 1, vrs: 0, stall: 0, flightSeconds: 0,
   };
 
   constructor(public model: HeliModel, public wind: Wind, public world: World = new World()) {
@@ -123,6 +135,7 @@ export class HelicopterSim {
   reset(model = this.model): void {
     this.model = model;
     this.state = initialState(model);
+    this.telemetry.flightSeconds = 0;
   }
 
   step(ctl: ControlFrame, dt = PHYSICS_DT): void {
@@ -210,15 +223,23 @@ export class HelicopterSim {
     const ramp = m.spoolRate * dt;
     s.governorTarget += clamp(targetOmega - s.governorTarget, -ramp * 3, ramp);
     let motorTorque = 0;
-    if (s.governorTarget > 1) {
+    // Battery: voltage sags as the pack empties, so the motor's torque ceiling (and the governor's headroom)
+    // shrinks. Under 10% a hard-worked rotor bogs; at 0% the motor quits and you are in an autorotation.
+    const soc = clamp(s.batteryWh / m.batteryWh, 0, 1);
+    const voltageFactor = soc <= 0 ? 0 : 0.85 + 0.15 * Math.min(1, soc / 0.3) - (soc < 0.1 ? (0.1 - soc) * 3 : 0);
+    const torqueCeiling = m.maxMotorTorque * Math.max(0, voltageFactor);
+    if (s.governorTarget > 1 && torqueCeiling > 0) {
       const kGov = m.maxMotorTorque / 30; // N m per rad/s of error
       const err = s.governorTarget - s.rotorOmega;
       // Integral term removes droop once the rotor is near target (ESC governors do the same).
       if (Math.abs(err) < 0.1 * s.governorTarget) s.governorI = clamp(s.governorI + err * kGov * 2 * dt, 0, m.maxMotorTorque * 0.6);
-      motorTorque = clamp(err * kGov + s.governorI + main.torque * 0.9, 0, m.maxMotorTorque);
+      motorTorque = clamp(err * kGov + s.governorI + main.torque * 0.9, 0, torqueCeiling);
     } else {
       s.governorI = 0;
     }
+    // Energy drawn (motor + ESC losses ~ 85% efficient).
+    const electricalW = (motorTorque * s.rotorOmega) / 0.85;
+    s.batteryWh = Math.max(0, s.batteryWh - (electricalW * dt) / 3600);
 
     // ---------- Airflow ----------
     const windW = this.wind.at(s.pos, s.time);
@@ -239,7 +260,9 @@ export class HelicopterSim {
     const hubW = add(s.pos, rotate(s.ori, m.hubOffset));
     const zh = Math.max(hubW.y, 0.25 * m.rotor.radius);
     const ratio = m.rotor.radius / (4 * zh);
-    const ge = clamp(1 / (1 - ratio * ratio), 1, 1.25);
+    // Ground effect fades with forward speed (the cushion is blown behind the rotor above ~mu 0.1).
+    const geSpeed = clamp(1 - main.mu / 0.12, 0, 1);
+    const ge = 1 + (clamp(1 / (1 - ratio * ratio), 1, 1.25) - 1) * geSpeed;
     const thrust = main.thrust * ge;
 
     const spin = m.clockwise ? 1 : -1;
@@ -251,14 +274,22 @@ export class HelicopterSim {
     moment = add(moment, v3(m.hubStiffness * a1, 0, -m.hubStiffness * b1));
     // Torque reaction on the fuselage (clockwise rotor pushes the nose left = +y).
     moment = add(moment, v3(0, spin * main.torque, 0));
+    // Vortex ring state is rough: the disc sheds asymmetric lift, felt as random pitch/roll kicks.
+    if (main.vrs > 0.05) {
+      const kick = main.vrs * m.hubStiffness * 0.15;
+      this.vrsNoise = this.vrsNoise * 0.98 + (Math.random() - 0.5) * 0.4;
+      this.vrsNoise2 = this.vrsNoise2 * 0.98 + (Math.random() - 0.5) * 0.4;
+      moment = add(moment, v3(kick * this.vrsNoise, 0, kick * this.vrsNoise2));
+    }
 
     // Flapping dynamics: first-order TPP response plus flap-back with airspeed.
     const tip = Math.max(s.rotorOmega * m.rotor.radius, 1);
     const muFwd = -vPlaneVec.z / tip; // forward airspeed is -z
     const muRight = vPlaneVec.x / tip;
-    const flapGain = (4 / 3) * s.servoCollective - main.lambda;
-    const a1Speed = 2 * muFwd * flapGain; // disc flaps back when flying forward
-    const b1Speed = -2 * muRight * flapGain;
+    const flapGain = (4 / 3) * s.servoCollective - clamp(main.lambda, -0.5, 0.5);
+    // Flap-back with airspeed only exists with a turning rotor.
+    const a1Speed = rotorAlive ? 2 * muFwd * flapGain : 0; // disc flaps back when flying forward
+    const b1Speed = rotorAlive ? -2 * muRight * flapGain : 0;
     const tauF = rotorAlive ? 16 / (m.lockNumber * s.rotorOmega) : 0.5;
     const kf = clamp(dt / tauF, 0, 1);
     s.a1 += (s.servoCycPitch + a1Speed - s.a1) * kf - pitchUpRate * dt;
@@ -420,6 +451,10 @@ export class HelicopterSim {
     t.verticalSpeed = s.vel.y;
     t.groundEffect = ge;
     t.lambda = main.lambda;
+    t.battery = soc;
+    t.vrs = main.vrs;
+    t.stall = main.stall;
+    if (motorTorque > 0.05) t.flightSeconds += dt;
   }
 
   private crash(reason: string): void {

@@ -34,6 +34,8 @@ export interface HeliModel {
 
   /** Motor / engine. */
   maxMotorTorque: number;
+  /** Usable pack energy, Wh (e.g. 3S 2200 mAh ≈ 24 Wh at 80% depth of discharge ≈ 19 Wh). */
+  batteryWh: number;
   /** Governor headspeeds (rad/s) for Normal / Idle-Up 1 / Idle-Up 2. */
   headspeeds: [number, number, number];
   /** Governor spool-up rate, rad/s per second (soft start). */
@@ -111,6 +113,7 @@ export const HELI_450: HeliModel = {
   tailGearRatio: 4.7,
   maxTailPitch: (32 * Math.PI) / 180,
   maxMotorTorque: 2.4,
+  batteryWh: 19,
   headspeeds: [rpm(2500), rpm(2750), rpm(3000)],
   spoolRate: 45,
   pitchCurves: [
@@ -174,6 +177,7 @@ export const HELI_700: HeliModel = {
   tailGearRatio: 4.5,
   maxTailPitch: (30 * Math.PI) / 180,
   maxMotorTorque: 24,
+  batteryWh: 190, // 12S 5000 mAh at 80%
   headspeeds: [rpm(1500), rpm(1700), rpm(1900)],
   spoolRate: 25,
   pitchCurves: [

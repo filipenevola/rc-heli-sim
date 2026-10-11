@@ -96,6 +96,20 @@ const HELP_HTML = `
 </section>
 
 <section>
+  <h4>Things the physics will do to you</h4>
+  <ul>
+    <li><b>Vortex ring state</b> (settling with power): descend nearly vertically at about the rotor's downwash speed and the
+      disc re-ingests its own wake: thrust drops, it gets rough, and pulling collective makes it worse. The HUD warns.
+      Escape with forward cyclic (fly out of it) or less collective; prevent it by descending with some forward speed.</li>
+    <li><b>Blade stall</b>: too much collective for the head speed. The rotor bogs (rpm droops, torque spikes) and lift does
+      not come. Ease the collective off and let the head speed recover.</li>
+    <li><b>Battery</b>: the pack sags under 30% and the motor quits at 0%. Land before the warning, or practise the
+      autorotation that follows.</li>
+    <li><b>Ground effect</b> only exists in a hover; it fades with forward speed, which is why a fast low pass sinks.</li>
+  </ul>
+</section>
+
+<section>
   <h4>Helicopters</h4>
   <ul>
     <li><b>450 flybar trainer</b> — softest and most damped. The mechanical flybar adds stability but less authority.</li>

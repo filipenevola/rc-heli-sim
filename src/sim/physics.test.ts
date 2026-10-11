@@ -204,3 +204,54 @@ describe('world collisions and landing targets', () => {
     expect(sim.state.crashReason).toContain('tree');
   });
 });
+
+describe('realism: stall, vortex ring state, battery', () => {
+  it('blade stall: beyond ~13 deg the thrust stops growing with collective and torque keeps climbing', async () => {
+    const { solveRotor, emptyRotorResult } = await import('./rotor');
+    const r = HELI_450.rotor;
+    const omega = HELI_450.headspeeds[1];
+    const out = emptyRotorResult();
+    const t8 = solveRotor(r, (8 * Math.PI) / 180, 0, 0, omega, out).thrust;
+    const q8 = out.torque;
+    const t12 = solveRotor(r, (12 * Math.PI) / 180, 0, 0, omega, out).thrust;
+    const t16 = solveRotor(r, (16 * Math.PI) / 180, 0, 0, omega, out).thrust; // about where the blade reaches 13 deg AoA
+    const t22 = solveRotor(r, (22 * Math.PI) / 180, 0, 0, omega, out).thrust;
+    const q22 = out.torque;
+    expect(t12).toBeGreaterThan(t8);
+    expect(t16).toBeGreaterThan(t12);
+    expect(t22).toBeLessThan(t16); // past stall: more collective, less thrust
+    expect(out.stall).toBeGreaterThan(0.3);
+    expect(q22).toBeGreaterThan(q8 * 2.5); // and it costs a lot of torque
+  });
+
+  it('vortex ring state: a vertical descent near the induced velocity loses thrust; forward speed clears it', async () => {
+    const { solveRotor, emptyRotorResult } = await import('./rotor');
+    const r = HELI_450.rotor;
+    const omega = HELI_450.headspeeds[1];
+    const theta = (6 * Math.PI) / 180;
+    const out = emptyRotorResult();
+    const hover = solveRotor(r, theta, 0, 0, omega, out).thrust;
+    const vi = out.vi;
+    const descent = solveRotor(r, theta, -1.1 * vi, 0, omega, out).thrust;
+    expect(out.vrs).toBeGreaterThan(0.6);
+    expect(descent).toBeLessThan(hover * 0.95);
+    solveRotor(r, theta, -1.1 * vi, 12, omega, out);
+    expect(out.vrs).toBeLessThan(0.05);
+  });
+
+  it('battery: a hover drains the pack and the motor quits at 0%', () => {
+    const sim = new HelicopterSim(HELI_450, new Wind());
+    const ctl = neutralFrame();
+    ctl.flightMode = 1;
+    ctl.collective = -0.05;
+    run(sim, ctl, 20);
+    sim.state.batteryWh = 0.02; // nearly flat
+    sim.state.pos.y = 20;
+    sim.state.onGround = false;
+    ctl.collective = 0.5;
+    run(sim, ctl, 6);
+    expect(sim.telemetry.battery).toBe(0);
+    expect(sim.telemetry.motorPower).toBe(0);
+    expect(sim.telemetry.headspeedRpm).toBeLessThan(2500); // spooling down, no power
+  });
+});

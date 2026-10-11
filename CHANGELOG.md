@@ -3,6 +3,17 @@
 All notable changes to RC Heli Sim. The version shown in the game (Help and Settings) matches the latest
 entry here; the commit hash next to it identifies the exact build.
 
+## 0.8.0 — 2026-10-11
+
+- Physics: blade stall (lift plateaus at ~13° blade angle of attack and decays beyond, with a steep drag rise, so
+  pulling too much collective at low head speed bogs the rotor instead of lifting more), vortex ring state
+  (a near-vertical descent at about the induced velocity loses up to 35% thrust and gets rough; forward speed
+  clears it), ground effect that fades with forward speed, and a battery model (pack energy per model, voltage
+  sag below 30%, motor quits at 0%: autorotate). HUD shows battery and warnings for stall, vortex ring and
+  low battery.
+- Fixed a latent bug: with the rotor stopped the inflow ratio was computed against a near-zero tip speed and
+  could flip a parked helicopter through the flap-back term.
+
 ## 0.7.0 — 2026-10-11
 
 - Nine new challenges following the classic RC heli progression (hover in every orientation, pirouettes,

@@ -51,6 +51,17 @@ export class Hud {
     this.pausedEl.style.display = p ? '' : 'none';
   }
 
+  private warnEl: HTMLElement | null = null;
+  private warn(text: string): void {
+    if (!this.warnEl) {
+      this.warnEl = document.createElement('div');
+      this.warnEl.className = 'warn-banner';
+      this.toast.parentElement!.appendChild(this.warnEl);
+    }
+    if (this.warnEl.textContent !== text) this.warnEl.textContent = text;
+    this.warnEl.style.display = text ? '' : 'none';
+  }
+
   /** Short on-screen note (mode changes, hints). */
   notify(html: string, ms = 3500): void {
     this.toast.innerHTML = html;
@@ -80,10 +91,11 @@ export class Hud {
       ['Distance', `${Math.hypot(s.pos.x, s.pos.z).toFixed(0)} m`],
       ['Power', `${t.motorPower.toFixed(0)} W`],
       ['Ground effect', `${((t.groundEffect - 1) * 100).toFixed(0)}%`],
+      ['Battery', `${(t.battery * 100).toFixed(0)}%${t.battery < 0.1 ? ' ⚠' : ''}`],
       ['FPS', this.fps.toFixed(0)],
     ];
     const html = this.compact
-      ? `<div class="strip"><b>${t.headspeedRpm.toFixed(0)}</b> rpm · <b>${t.collectiveDeg.toFixed(1)}°</b> · <b>${t.altitude.toFixed(1)}</b> m · ${ctl.throttleHold ? 'HOLD' : MODE_NAMES[ctl.flightMode]}</div>`
+      ? `<div class="strip"><b>${t.headspeedRpm.toFixed(0)}</b> rpm · <b>${t.collectiveDeg.toFixed(1)}°</b> · <b>${t.altitude.toFixed(1)}</b> m · 🔋${(t.battery * 100).toFixed(0)}% · ${ctl.throttleHold ? 'HOLD' : MODE_NAMES[ctl.flightMode]}</div>`
       : rows.map(([k, v]) => `<div><span>${k}</span><b>${v}</b></div>`).join('');
     if (html !== this.lastHtml) {
       this.el.innerHTML = html;
@@ -92,6 +104,7 @@ export class Hud {
     // The on-screen gimbals already show stick position; the mini display would only cover them.
     this.sticks.style.display = sourceId === 'touch' || sourceId === 'motion' ? 'none' : '';
     this.drawSticks(ctl);
+    this.warn(t.vrs > 0.3 ? 'VORTEX RING: descending into your own downwash. Forward cyclic or less collective.' : t.stall > 0.2 ? 'BLADE STALL: too much collective for this head speed. Ease it off.' : t.battery <= 0 ? 'BATTERY FLAT: motor off. Autorotate!' : t.battery < 0.1 ? 'Battery low: land soon.' : '');
     if (s.landed && s.landed !== this.lastLanding) {
       this.lastLanding = s.landed;
       const cm = Math.round(s.landed.offset * 100);
