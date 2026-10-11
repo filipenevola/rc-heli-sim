@@ -35,7 +35,8 @@ export interface Lesson {
   steps: LessonStep[];
 }
 
-const SKID_Y = 0.117; // CG height when a 450 sits on its skids
+/** CG height above the surface when the current model sits on its skids. */
+const skidHeight = (sim: HelicopterSim): number => -Math.min(...sim.model.contacts.filter((c) => c.kind === 'skid').map((c) => c.p.y));
 const PAD = { x: 0, z: -6 };
 
 const spoolUp = (mode: 0 | 1 | 2, caption: string): LessonStep => ({
@@ -91,8 +92,17 @@ const landOn = (target: { x: number; y: number; z: number }, caption: string): L
   {
     caption: 'Lower the collective a touch: sink slowly, keep the cyclic making tiny corrections to stay over the centre.',
     run: ({ ap, sim, mem, t }) => {
-      const surface = target.y + SKID_Y;
+      const surface = target.y + skidHeight(sim);
       const h = sim.state.pos.y - surface;
+      const s = sim.state;
+      const offCentre = Math.hypot(s.pos.x - target.x, s.pos.z - target.z);
+      const moving = Math.hypot(s.vel.x, s.vel.z);
+      // Only commit to the final descent when centred and still; otherwise hold 30 cm up and keep correcting.
+      const centred = offCentre < 0.15 && moving < 0.2;
+      if (!centred && h < 0.4 && !mem.rampStart) {
+        ap.goTo({ x: target.x, y: surface + 0.3, z: target.z }, ap.heading, { vzMax: 0.35, vmax: 1 });
+        return ap.ctl;
+      }
       ap.goTo({ x: target.x, y: surface - 0.15, z: target.z }, ap.heading, { vzMax: 0.35, vmax: 1 });
       // Ground effect makes the last 30 cm float; a steady, slow collective ramp is how you get through it.
       if (h < 0.35) {
@@ -105,8 +115,16 @@ const landOn = (target: { x: number; y: number; z: number }, caption: string): L
     timeout: 40,
   },
   {
-    caption: 'On the surface: collective all the way down, then let the head speed drop. Hold the cyclic still.',
-    run: ({ ap, t }) => ap.hold(Math.max(-1, ap.hover - t * 0.6)),
+    caption: 'On the surface: collective smoothly all the way down, cyclic still correcting until the skids are planted, then let the head speed drop.',
+    run: ({ ap, sim, mem, t }) => {
+      // Start the ramp from where the descent left the collective (not a generic hover value: in ground effect
+      // that lifts a big heli straight back off) and keep the position hold alive until it is firmly down.
+      mem.start ??= ap.ctl.collective;
+      ap.goTo({ x: target.x, y: target.y + skidHeight(sim) - 0.3, z: target.z }, ap.heading, { vzMax: 0.3, vmax: 0.5 });
+      ap.ctl.collective = Math.max(-1, mem.start - t * 0.5);
+      if (t > 2.5) { ap.ctl.aileron = 0; ap.ctl.elevator = 0; ap.ctl.rudder = 0; }
+      return ap.ctl;
+    },
     done: ({ t, sim }) => t > 3 && !!sim.state.landed,
     timeout: 12,
   },
@@ -123,8 +141,8 @@ export const LESSONS: Lesson[] = [
       {
         caption: 'Challenge done. Now lower the collective gently and let it settle back on the pad.',
         run: ({ ap, sim, mem, t }) => {
-          ap.goTo({ x: PAD.x, y: SKID_Y - 0.15, z: PAD.z }, ap.heading, { vzMax: 0.4 });
-          if (sim.state.pos.y - SKID_Y < 0.35) {
+          ap.goTo({ x: PAD.x, y: skidHeight(sim) - 0.15, z: PAD.z }, ap.heading, { vzMax: 0.4 });
+          if (sim.state.pos.y - skidHeight(sim) < 0.35) {
             mem.rampStart ??= t;
             ap.ctl.collective = Math.min(ap.ctl.collective, ap.hover - 0.12 - (t - mem.rampStart) * 0.12);
           }
@@ -273,7 +291,7 @@ export const LESSONS: Lesson[] = [
         caption: 'Now pull the collective up smoothly: the blades turn their stored energy into one cushion. Level skids, touch down.',
         run: ({ ap, sim, t }) => {
           ap.ctl.throttleHold = true;
-          ap.goTo({ x: sim.state.pos.x, y: SKID_Y, z: sim.state.pos.z }, ap.heading);
+          ap.goTo({ x: sim.state.pos.x, y: skidHeight(sim), z: sim.state.pos.z }, ap.heading);
           ap.ctl.collective = Math.min(0.9, 0.2 + t * 0.5);
           return ap.ctl;
         },

@@ -3,6 +3,15 @@
 All notable changes to RC Heli Sim. The version shown in the game (Help and Settings) matches the latest
 entry here; the commit hash next to it identifies the exact build.
 
+## 0.6.2 — 2026-10-11
+
+- Show me reviewed on all three helicopters (36 lesson/model combinations now run in the test suite). Fixed the
+  700's table and pontoon landings: the final collective ramp started from a generic hover value, which in ground
+  effect lifted the big heli off again and slid it sideways; it now ramps from where the descent left the
+  collective, keeps position hold until the skids are planted, and only commits to the descent when centred.
+- Landing lessons use each model's real skid height.
+- Removed a duplicated account-sync block that ran twice.
+
 ## 0.6.1 — 2026-10-11
 
 - Fixed the pond (and pad/road) flickering against the grass when seen from far away (depth z-fighting): ground

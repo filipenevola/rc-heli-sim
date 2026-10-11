@@ -163,15 +163,6 @@ setInterval(() => {
   }
 }, 15000);
 challenges.onProfileChange = () => settings.setPilotLabel(profile.name, profile.verified);
-settings.onRadioReport = (r) => rankingClient.sendRadioReport(r);
-settings.onMappingChanged = () => void challenges.sync();
-// Auto-calibration widened a range while flying: persist it to the account too (throttled).
-setInterval(() => {
-  if (input.gamepad.mappingDirty) {
-    input.gamepad.mappingDirty = false;
-    void challenges.sync();
-  }
-}, 15000);
 
 // URL options, handy for sharing a view or for screenshots: ?cam=chase&pos=0,6,-28&yaw=180
 {
