@@ -10,6 +10,7 @@ import { InputManager } from './input/manager';
 import { Hud } from './ui/hud';
 import { SettingsPanel } from './ui/settings';
 import { AudioEngine } from './audio/engine';
+import { HelpPanel } from './ui/help';
 
 const app = document.getElementById('app')!;
 const renderer = new THREE.WebGLRenderer({ antialias: true, powerPreference: 'high-performance' });
@@ -35,6 +36,7 @@ const audio = new AudioEngine();
 for (const ev of ['pointerdown', 'keydown', 'touchstart']) window.addEventListener(ev, () => audio.start(), { passive: true });
 const input = new InputManager(ui);
 const hud = new Hud(ui);
+const help = new HelpPanel(ui);
 const settings = new SettingsPanel(ui, input, wind, audio, {
   onModel(model) {
     scene.remove(heliMesh.root);
@@ -52,6 +54,12 @@ const settings = new SettingsPanel(ui, input, wind, audio, {
     input.keyboard.poll(0).throttleHold = hold;
     input.gamepad.throttleHold = hold;
     input.touch.setThrottleHold(hold);
+  },
+  onAssist(mode) {
+    sim.assist = mode;
+  },
+  onHelp() {
+    help.toggle();
   },
 });
 

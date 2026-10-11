@@ -2,8 +2,9 @@ import { applyShaping, neutralFrame, type ControlFrame, type InputSource, type S
 import { KeyboardInput } from './keyboard';
 import { GamepadInput } from './gamepad';
 import { TouchInput } from './touch';
+import { MotionInput } from './motion';
 
-export type SourceChoice = 'auto' | 'keyboard' | 'gamepad' | 'touch';
+export type SourceChoice = 'auto' | 'keyboard' | 'gamepad' | 'touch' | 'motion';
 
 /**
  * Picks the active input source and applies transmitter-style shaping (expo, dual rates, deadband).
@@ -13,6 +14,7 @@ export class InputManager {
   readonly keyboard: KeyboardInput;
   readonly gamepad: GamepadInput;
   readonly touch: TouchInput;
+  readonly motion: MotionInput;
   choice: SourceChoice = 'auto';
   active: InputSource;
   shaping: Record<'aileron' | 'elevator' | 'rudder', StickShaping> = {
@@ -26,7 +28,21 @@ export class InputManager {
     this.keyboard = new KeyboardInput();
     this.gamepad = new GamepadInput();
     this.touch = new TouchInput(touchContainer);
+    this.motion = new MotionInput(this.touch);
     this.active = this.touch.available() ? this.touch : this.keyboard;
+  }
+
+  /** Switch source. Phone tilt needs a permission prompt on iOS, which is why this is async and must run from a tap. */
+  async select(choice: SourceChoice): Promise<boolean> {
+    if (choice === 'motion') {
+      const ok = await this.motion.enable();
+      if (!ok) {
+        this.choice = 'touch';
+        return false;
+      }
+    }
+    this.choice = choice;
+    return true;
   }
 
   private pick(): InputSource {
@@ -45,11 +61,13 @@ export class InputManager {
       keyboard: this.keyboard.poll(dt),
       gamepad: this.gamepad.poll(dt),
       touch: this.touch.poll(dt),
+      motion: this.motion.poll(dt),
     };
     const next = this.pick();
     if (next !== this.active) {
       this.active = next;
-      this.touch.setEnabled(next === this.touch);
+      this.touch.setEnabled(next === this.touch || next === this.motion);
+      this.motion.setEnabled(next === this.motion);
     }
     const raw = frames[this.active.id];
     const o = this.out;

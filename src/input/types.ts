@@ -25,7 +25,7 @@ export const neutralFrame = (): ControlFrame => ({
 });
 
 export interface InputSource {
-  readonly id: 'keyboard' | 'gamepad' | 'touch';
+  readonly id: 'keyboard' | 'gamepad' | 'touch' | 'motion';
   readonly label: string;
   /** True when the device is physically available (gamepad connected, touch screen present...). */
   available(): boolean;

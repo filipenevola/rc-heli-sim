@@ -4,12 +4,15 @@ import { saveMapping, type AxisMapping, type GamepadMapping } from '../input/gam
 import type { StickMode } from '../input/types';
 import type { Wind } from '../sim/wind';
 import type { AudioEngine } from '../audio/engine';
+import type { AssistMode } from '../sim/physics';
 
 export interface SettingsCallbacks {
   onModel(model: HeliModel): void;
   onReset(): void;
   onFlightMode(mode: 0 | 1 | 2): void;
   onThrottleHold(hold: boolean): void;
+  onAssist(mode: AssistMode): void;
+  onHelp(): void;
 }
 
 type AxisName = 'aileron' | 'elevator' | 'rudder' | 'collective';
@@ -38,6 +41,8 @@ export class SettingsPanel {
       <button id="btn-hold" title="H">Hold: off</button>
       <button id="btn-sound" title="M">Sound: on</button>
       <button id="btn-settings">Settings</button>
+      <button id="btn-recentre" title="Recentre phone tilt" style="display:none">Recentre</button>
+      <button id="btn-help" title="?">Help</button>
       <button id="btn-full" title="F">Full</button>
       <button id="btn-hide" title="U">Hide</button>`;
     const showBtn = document.createElement('button');
@@ -60,6 +65,8 @@ export class SettingsPanel {
       if (hidden) this.panel.style.display = 'none';
     };
     bar.querySelector('#btn-hide')!.addEventListener('click', () => setHidden(true));
+    bar.querySelector('#btn-help')!.addEventListener('click', () => cb.onHelp());
+    bar.querySelector('#btn-recentre')!.addEventListener('click', () => input.motion.recentre());
     showBtn.addEventListener('click', () => setHidden(false));
     bar.querySelector('#btn-full')!.addEventListener('click', () => void toggleFullscreen());
     window.addEventListener('keydown', (e) => {
@@ -90,6 +97,7 @@ export class SettingsPanel {
   private bar: HTMLElement;
   flightMode: 0 | 1 | 2 = 0;
   hold = false;
+  assist: AssistMode = 'rate';
 
   /** Keep the top bar in sync with whatever the active source says. */
   reflect(mode: 0 | 1 | 2, hold: boolean): void {
@@ -124,7 +132,10 @@ export class SettingsPanel {
       </section>
       <section>
         <h4>Input</h4>
-        ${sel('source', [['auto', 'Auto (last used)'], ['gamepad', 'Transmitter (USB dongle)'], ['touch', 'Touch sticks'], ['keyboard', 'Keyboard']], im.choice)}
+        ${sel('source', [['auto', 'Auto (last used)'], ['gamepad', 'Transmitter (USB dongle)'], ['touch', 'Touch sticks'], ['motion', 'Phone tilt + touch throttle'], ['keyboard', 'Keyboard']], im.choice)}
+        <div id="source-status" class="hint"></div>
+        <label>Assist ${sel('assist', [['rate', 'Rate — real helicopter behaviour'], ['attitude', 'Attitude — stick sets bank angle, self-levels']], this.assist)}</label>
+        ${slider('tilt', 'Phone tilt for full stick (°)', 10, 45, 1, im.motion.maxTiltDeg)}
         <label>Touch stick mode ${sel('stickmode', [['1', 'Mode 1'], ['2', 'Mode 2'], ['3', 'Mode 3'], ['4', 'Mode 4']], String(im.touch.mode))}</label>
         ${slider('expo', 'Cyclic expo', 0, 0.8, 0.05, im.shaping.aileron.expo)}
         ${slider('rate', 'Cyclic dual rate', 0.3, 1, 0.05, im.shaping.aileron.rate)}
@@ -159,7 +170,21 @@ export class SettingsPanel {
       const m = HELI_MODELS.find((x) => x.id === (e.target as HTMLSelectElement).value)!;
       this.cb.onModel(m);
     });
-    q<HTMLSelectElement>('#source').addEventListener('change', (e) => (im.choice = (e.target as HTMLSelectElement).value as SourceChoice));
+    q<HTMLSelectElement>('#source').addEventListener('change', (e) => {
+      const choice = (e.target as HTMLSelectElement).value as SourceChoice;
+      const status = q('#source-status');
+      void im.select(choice).then((ok) => {
+        if (choice === 'motion' && ok) {
+          this.setAssist('attitude');
+          status.textContent = 'Phone tilt on. Hold the phone the way you want to fly and tap Recentre; tilt = bank. Attitude assist enabled.';
+        } else if (choice === 'motion') {
+          status.textContent = 'The browser refused orientation access (needs HTTPS and permission). Back to touch sticks.';
+          (e.target as HTMLSelectElement).value = 'touch';
+        } else status.textContent = '';
+        this.updateRecentre();
+      });
+    });
+    q<HTMLSelectElement>('#assist').addEventListener('change', (e) => this.setAssist((e.target as HTMLSelectElement).value as AssistMode));
     q<HTMLSelectElement>('#stickmode').addEventListener('change', (e) => im.touch.setMode(Number((e.target as HTMLSelectElement).value) as StickMode));
     const bind = (id: string, f: (v: number) => void) => {
       const el = q<HTMLInputElement>(`#${id}`);
@@ -171,6 +196,7 @@ export class SettingsPanel {
     bind('expo', (v) => { im.shaping.aileron.expo = v; im.shaping.elevator.expo = v; });
     bind('rate', (v) => { im.shaping.aileron.rate = v; im.shaping.elevator.rate = v; });
     bind('rexpo', (v) => (im.shaping.rudder.expo = v));
+    bind('tilt', (v) => (im.motion.maxTiltDeg = v));
     bind('volume', (v) => this.audio.setVolume(v));
     bind('wind', (v) => (this.wind.speed = v));
     bind('winddir', (v) => (this.wind.fromDeg = v));
@@ -222,6 +248,17 @@ export class SettingsPanel {
       btn.onclick = () => this.startCalibrate();
       this.wizardStatus!.textContent = 'Travel calibrated. Click Save to keep it.';
     };
+  }
+
+  setAssist(mode: AssistMode): void {
+    this.assist = mode;
+    const sel = this.panel.querySelector('#assist') as HTMLSelectElement | null;
+    if (sel) sel.value = mode;
+    this.cb.onAssist(mode);
+  }
+
+  private updateRecentre(): void {
+    (this.bar.querySelector('#btn-recentre') as HTMLElement).style.display = this.input.choice === 'motion' ? '' : 'none';
   }
 
   /** Called every frame while the panel is open: live axis bars plus the assign/calibrate state machines. */

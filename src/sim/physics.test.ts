@@ -120,3 +120,26 @@ describe.each([HELI_450, HELI_450_FLYBAR, HELI_700])('$name', (model) => {
     expect(sim.state.crashed).toBe(true);
   });
 });
+
+describe('attitude assist', () => {
+  it('self-levels from a 25 degree bank with centred sticks and holds a commanded bank', () => {
+    const sim = new HelicopterSim(HELI_450, new Wind());
+    sim.assist = 'attitude';
+    const ctl = neutralFrame();
+    ctl.flightMode = 1;
+    ctl.collective = -0.05;
+    run(sim, ctl, 25);
+    sim.state.pos.y = 10;
+    sim.state.onGround = false;
+    ctl.collective = 0.5;
+    const bank = (25 * Math.PI) / 180;
+    sim.state.ori = { x: 0, y: 0, z: Math.sin(-bank / 2), w: Math.cos(-bank / 2) }; // rolled right
+    run(sim, ctl, 1.5);
+    expect(Math.abs(eulerFromQ(sim.state.ori).roll)).toBeLessThan(0.06);
+    ctl.aileron = 0.5; // half stick = half of the max angle
+    run(sim, ctl, 1.5);
+    expect(eulerFromQ(sim.state.ori).roll).toBeGreaterThan(0.5 * sim.attitudeMaxAngle - 0.08);
+    expect(eulerFromQ(sim.state.ori).roll).toBeLessThan(0.5 * sim.attitudeMaxAngle + 0.08);
+    expect(sim.state.crashed).toBe(false);
+  });
+});

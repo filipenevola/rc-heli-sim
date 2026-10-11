@@ -1,4 +1,4 @@
-import { add, clamp, cross, dot, len, norm, qIntegrate, rotate, rotateInv, scale, sub, v3, type Q, type V3, q as mkq } from './math';
+import { add, clamp, cross, dot, eulerFromQ, len, norm, qIntegrate, rotate, rotateInv, scale, sub, v3, type Q, type V3, q as mkq } from './math';
 import { pitchFromCurve, type HeliModel } from './heli-model';
 import { emptyRotorResult, solveRotor, RHO } from './rotor';
 import type { ControlFrame } from '../input/types';
@@ -86,8 +86,21 @@ export function initialState(model: HeliModel, yaw = 0): HeliState {
 const main = emptyRotorResult();
 const tail = emptyRotorResult();
 
+/**
+ * 'rate' is how real helicopters fly: the stick commands a roll/pitch rate and the model keeps whatever
+ * attitude you leave it in. 'attitude' is a training/arcade assist: the stick commands a bank angle and the
+ * model self-levels when you let go, like a GPS drone. Not realistic, but a gentle way in (and the natural
+ * pairing for phone-tilt control).
+ */
+export type AssistMode = 'rate' | 'attitude';
+
 export class HelicopterSim {
   state: HeliState;
+  assist: AssistMode = 'rate';
+  /** Max bank/pitch angle at full stick in attitude mode, rad. */
+  attitudeMaxAngle = (35 * Math.PI) / 180;
+  /** Outer-loop gain: rate commanded per radian of attitude error, 1/s. */
+  attitudeGain = 7;
   telemetry: Telemetry = {
     thrust: 0, torque: 0, tailThrust: 0, collectiveDeg: 0, headspeedRpm: 0, motorPower: 0,
     altitude: 0, groundSpeed: 0, verticalSpeed: 0, groundEffect: 1, lambda: 0,
@@ -120,10 +133,18 @@ export class HelicopterSim {
     const rotorAlive = s.rotorOmega > 0.3 * m.headspeeds[1];
     let cycPitchCmd: number;
     let cycRollCmd: number;
-    if (c.type === 'fbl') {
+    if (c.type === 'fbl' || this.assist === 'attitude') {
       // Electronic 3-axis stabiliser, rate mode: stick commands a rate, PI + feed-forward tracks it.
-      const pitchDes = -ctl.elevator * c.cyclicRate; // stick forward = nose down
-      const rollDes = ctl.aileron * c.cyclicRate;
+      let pitchDes = -ctl.elevator * c.cyclicRate; // stick forward = nose down
+      let rollDes = ctl.aileron * c.cyclicRate;
+      if (this.assist === 'attitude') {
+        // Outer loop: stick -> target attitude, attitude error -> rate command for the inner loop.
+        const e = eulerFromQ(s.ori);
+        const pitchTarget = -ctl.elevator * this.attitudeMaxAngle;
+        const rollTarget = ctl.aileron * this.attitudeMaxAngle;
+        pitchDes = clamp((pitchTarget - e.pitch) * this.attitudeGain, -c.cyclicRate, c.cyclicRate);
+        rollDes = clamp((rollTarget - e.roll) * this.attitudeGain, -c.cyclicRate, c.cyclicRate);
+      }
       // Steady-state cyclic needed for a given rate on a teetering/flapping rotor: rate * 16/(gamma*Omega).
       const ff = rotorAlive ? 16 / (m.lockNumber * Math.max(s.rotorOmega, 50)) : 0;
       const ePitch = pitchDes - pitchUpRate;

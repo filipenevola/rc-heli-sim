@@ -1,0 +1,102 @@
+/** In-game manual. Plain HTML so it works on every device and can be read while paused. */
+export class HelpPanel {
+  private el: HTMLElement;
+
+  constructor(container: HTMLElement) {
+    this.el = document.createElement('div');
+    this.el.className = 'help';
+    this.el.style.display = 'none';
+    this.el.innerHTML = HELP_HTML;
+    container.appendChild(this.el);
+    this.el.querySelector('#help-close')!.addEventListener('click', () => this.toggle());
+    window.addEventListener('keydown', (e) => {
+      if (e.key === '?' || e.code === 'F1') {
+        e.preventDefault();
+        this.toggle();
+      }
+      if (e.code === 'Escape' && this.el.style.display !== 'none') this.toggle();
+    });
+  }
+
+  toggle(): void {
+    this.el.style.display = this.el.style.display === 'none' ? '' : 'none';
+  }
+}
+
+const HELP_HTML = `
+<h3>How to fly <button id="help-close">×</button></h3>
+
+<section>
+  <h4>The idea</h4>
+  <p>This is an <b>RC model helicopter</b> simulator: the physics, sizes, head speeds and pitch curves are those of
+  450 and 700 class models, and you watch from where the pilot stands on the field. Learn here, then fly the real
+  one. Realism is the priority, so the helicopter does not help you unless you turn on an assist.</p>
+</section>
+
+<section>
+  <h4>Controls (Mode 2)</h4>
+  <ul>
+    <li><b>Right stick</b> — cyclic. Left/right = aileron (roll), forward/back = elevator (pitch).</li>
+    <li><b>Left stick</b> — collective/throttle (up/down, no spring) and rudder (left/right, yaw).</li>
+    <li><b>Keyboard:</b> arrows = cyclic, W/S = collective, A/D = rudder, 1/2/3 = flight mode, H = throttle hold,
+      R = reset, M = mute, U = hide/show UI, F = fullscreen, ? = this help.</li>
+    <li><b>Touch:</b> two on-screen gimbals. Choose Mode 1–4 in Settings. The throttle stick stays where you leave it.</li>
+    <li><b>Real transmitter:</b> plug the USB simulator dongle/cable in, move a stick, then open Settings → Transmitter mapping.
+      Press <i>Assign</i> for each function and move that stick fully in the direction asked; <i>Calibrate travel</i> if the
+      sticks don't reach full deflection; <i>Save</i>. The mapping is remembered for that dongle.</li>
+    <li><b>Phone tilt:</b> Settings → Input → <i>Phone tilt</i>. Tilting the phone forward/sideways is the cyclic; the left
+      gimbal is still collective and rudder. The pose you hold when enabling it is neutral; use <i>Recentre</i> in the top bar
+      any time. This mode turns on the <i>Attitude</i> assist (see below) so the helicopter copies the phone's tilt.</li>
+  </ul>
+</section>
+
+<section>
+  <h4>Flight modes and switches</h4>
+  <ul>
+    <li><b>Normal</b> — training mode. Bottom stick = motor off and a little negative pitch; the governor spools up as you raise
+      the stick and the pitch curve goes −2° to +11°. Start here: raise the stick slowly, let the head speed come up, then lift.</li>
+    <li><b>Idle-Up 1 / 2</b> — the governor holds a fixed head speed and the pitch curve is symmetric (−11° … +11°), so centre
+      stick is zero pitch. Needed for inverted flight and 3D. Switch to it only after take-off.</li>
+    <li><b>Throttle hold</b> — motor off, rotor freewheels. Use it for autorotation practice or as a safety when you lose it.
+      From altitude: hold on, lower collective to keep the head speed up, then flare and pull pitch just before touching down.</li>
+  </ul>
+</section>
+
+<section>
+  <h4>Helicopters</h4>
+  <ul>
+    <li><b>450 flybar trainer</b> — softest and most damped. The mechanical flybar adds stability but less authority.</li>
+    <li><b>450 flybarless</b> — modern electronics in rate mode: crisp and quick, holds whatever attitude you leave it in.</li>
+    <li><b>700 3D</b> — big, powerful and fast. Lots of inertia, lots of thrust.</li>
+  </ul>
+</section>
+
+<section>
+  <h4>Assist</h4>
+  <ul>
+    <li><b>Rate (real)</b> — the stick commands a roll/pitch rate. Let go and the heli keeps its bank. This is how model
+      helicopters work and what you must learn for the real thing.</li>
+    <li><b>Attitude</b> — the stick commands a bank angle and the heli levels itself when you centre the stick, like a camera drone.
+      Easier, not realistic. Good for a first hover or for the phone-tilt input.</li>
+  </ul>
+</section>
+
+<section>
+  <h4>HUD</h4>
+  <p><b>Head speed</b> rotor rpm · <b>Collective</b> blade pitch · <b>Power</b> what the motor is delivering ·
+  <b>Ground effect</b> extra lift close to the ground (why it floats at knee height) · <b>Distance</b> from where you stand.
+  Tap the HUD on a phone to expand or collapse it.</p>
+</section>
+
+<section>
+  <h4>Learning path</h4>
+  <ol>
+    <li>Normal mode, 450 trainer, no wind. Spool up, lift to 1 m, hold a hover tail-in (tail toward you). Land. Repeat.</li>
+    <li>Hover and move a box: forward, right, back, left. Then the same with the nose 45° and 90° to you.</li>
+    <li>Nose-in hover (nose toward you): aileron and elevator feel reversed. This is the big one.</li>
+    <li>Slow circuits, figure eights, then add wind in Settings.</li>
+    <li>Idle-Up, flips and rolls high up; throttle hold and autorotations.</li>
+  </ol>
+  <p>Crashes: a blade strike or a hard hit ends the flight; press R or Reset.</p>
+</section>
+`;

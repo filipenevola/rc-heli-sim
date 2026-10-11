@@ -30,6 +30,14 @@ export class TouchInput implements InputSource {
     this.enabled = enabled;
     this.root.style.display = enabled ? '' : 'none';
   }
+  /** Gyro mode replaces the cyclic stick with phone tilt; hide that gimbal so it does not catch thumbs. */
+  setCyclicGimbalVisible(visible: boolean): void {
+    const cyclicOnRight = this.mode === 2 || this.mode === 1;
+    const idx = cyclicOnRight ? 1 : 0;
+    this.sticks[idx].setVisible(visible);
+    this.sticks[1 - idx].setVisible(true);
+  }
+
   setMode(mode: StickMode): void {
     this.mode = mode;
     this.applyMode();
@@ -100,6 +108,10 @@ class Gimbal {
     this.el.addEventListener('pointerup', release);
     this.el.addEventListener('pointercancel', release);
     this.reset();
+  }
+
+  setVisible(v: boolean): void {
+    this.el.style.display = v ? '' : 'none';
   }
 
   reset(): void {
