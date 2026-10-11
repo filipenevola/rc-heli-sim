@@ -19,6 +19,9 @@ import { loadProfile, RankingClient, fmtTime } from './game/player';
 import { GateMeshes } from './render/gates';
 import { ChallengesPanel } from './ui/challenges-panel';
 import { installTypingGuard } from './input/typing-guard';
+import { lessonFor, LessonRunner } from './game/lessons';
+import { LessonOverlay } from './ui/lesson-overlay';
+import type { AssistMode } from './sim/physics';
 
 // Must be first: keeps every game hotkey out of text fields (name, email, code...). See input/typing-guard.ts.
 installTypingGuard(() => (typeof input !== 'undefined' ? input.keyboard.release() : undefined));
@@ -60,7 +63,37 @@ const profile = loadProfile();
 const tracker = new ChallengeTracker(profile.completed);
 const flightTimer = new FlightTimer();
 const rankingClient = new RankingClient();
-const challenges = new ChallengesPanel(ui, profile, tracker, flightTimer, rankingClient);
+let lesson: LessonRunner | null = null;
+let assistBeforeLesson: AssistMode = 'rate';
+let lessonEndTimer: number | null = null;
+const lessonOverlay = new LessonOverlay(ui);
+const challenges = new ChallengesPanel(ui, profile, tracker, flightTimer, rankingClient, startLesson);
+
+/** "Teach me": a demo pilot flies the challenge on the real physics while the overlay shows the sticks. */
+function startLesson(challengeId: string): void {
+  const l = lessonFor(challengeId);
+  if (!l) return;
+  stopLesson();
+  sim.reset();
+  tracker.resetTransient();
+  assistBeforeLesson = sim.assist;
+  sim.assist = 'attitude'; // the demo pilot flies with the self-levelling assist; the roll step switches to rate itself
+  lesson = new LessonRunner(l, sim);
+  lessonOverlay.show(lesson);
+  hud.notify(`<b>Teach me: ${l.title}</b><br>Watch the sticks. Press Stop lesson to take over at any time.`, 5000);
+}
+
+function stopLesson(): void {
+  if (!lesson) return;
+  if (lessonEndTimer !== null) clearTimeout(lessonEndTimer);
+  lessonEndTimer = null;
+  lesson = null;
+  lessonOverlay.hide();
+  sim.assist = assistBeforeLesson;
+  sim.reset();
+  tracker.resetTransient();
+}
+lessonOverlay.onStop = stopLesson;
 tracker.onComplete = (c) => {
   hud.notify(`<b>Challenge complete: ${c.title}</b><br>+${c.points} points · ${tracker.points} total`, 5000);
   void challenges.sync();
@@ -121,12 +154,15 @@ window.addEventListener('keydown', (e) => {
     sim.state.ori = { x: 0, y: Math.sin(r / 2), z: 0, w: Math.cos(r / 2) };
   }
   if (cam && (CAMERA_LABELS as Record<string, string>)[cam]) settings.setCamera(cam as keyof typeof CAMERA_LABELS);
+  const lessonId = q.get('lesson');
+  if (lessonId) startLesson(lessonId);
 }
 
 // Exposed for automated checks and tinkering from the devtools console.
 (window as unknown as { rcHeli: unknown }).rcHeli = { sim, input, wind, audio, camera: pilotCam, clouds, world, layout, tracker, flightTimer, profile, challengesList: CHALLENGES };
 
 function reset(): void {
+  if (lesson) stopLesson();
   sim.reset();
   tracker.resetTransient();
 }
@@ -169,7 +205,19 @@ const MAX_FRAME = 0.1;
 function frame(now: number): void {
   const dt = Math.min((now - last) / 1000, MAX_FRAME);
   last = now;
-  const ctl = input.poll(dt);
+  let ctl = input.poll(dt);
+  if (lesson) {
+    // The demo pilot has the sticks; the player's input is ignored until Stop (or Reset).
+    ctl = lesson.update(dt);
+    lessonOverlay.update(lesson, ctl);
+    if (lesson.finished && lessonEndTimer === null) {
+      // Leave the overlay with the final caption for a few seconds, then hand the sticks back.
+      const done = lesson;
+      lessonEndTimer = window.setTimeout(() => {
+        if (lesson === done) stopLesson();
+      }, 6000);
+    }
+  }
   settings.reflect(ctl.flightMode, ctl.throttleHold);
   if (ctl.flightMode !== lastMode) {
     if (lastMode !== -1) hud.notify(`<b>${['Normal', 'Idle-Up 1', 'Idle-Up 2'][ctl.flightMode]}</b><br>${MODE_HELP[ctl.flightMode].replace(/^[^:]+: /, '')}`);
@@ -197,8 +245,10 @@ function frame(now: number): void {
   field.windsock.rotation.set(-(1 - Math.min(1, wind.speed / 6)) * 1.2, windAngle + Math.PI, 0, 'YXZ');
   field.animate(dt, sim.state.time);
 
-  flightTimer.update(sim, dt);
-  tracker.update(sim, dt, flightTimer.flying ? flightTimer.airTime : 0);
+  if (!lesson) {
+    flightTimer.update(sim, dt);
+    tracker.update(sim, dt, flightTimer.flying ? flightTimer.airTime : 0);
+  }
   gates.update(tracker.nextGate, tracker.completed.has('circuit'));
   challenges.tick();
   hud.update(sim, ctl, input.active.label, input.active.id, dt);

@@ -147,6 +147,14 @@ const HELP_HTML = `
 </section>
 
 <section>
+  <h4>Teach me</h4>
+  <p>Every challenge has a <b>Teach me</b> button (Challenges panel). A demo pilot flies it on the real physics while two big
+  gimbals show exactly where the sticks are, a caption explains each step, and the Mode / Throttle-hold switches are shown.
+  Nothing the demo does counts for your score. Press <i>Stop lesson</i> (or Reset) to take the sticks back and try it yourself.
+  Tip: watch the demo twice, the second time looking only at the sticks.</p>
+</section>
+
+<section>
   <h4>Learning path</h4>
   <ol>
     <li>Normal mode, 450 trainer, no wind. Spool up, lift to 1 m, hold a hover tail-in (tail toward you). Land. Repeat.</li>

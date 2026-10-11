@@ -1,4 +1,5 @@
 import { CHALLENGES, TOTAL_POINTS, type ChallengeTracker, type FlightTimer } from '../game/challenges';
+import { lessonFor } from '../game/lessons';
 import { fmtTime, localRankings, saveLocalRanking, saveProfile, type Profile, type RankingClient } from '../game/player';
 
 /**
@@ -19,6 +20,7 @@ export class ChallengesPanel {
     private tracker: ChallengeTracker,
     private timer: FlightTimer,
     private client: RankingClient,
+    private onTeach: (challengeId: string) => void,
   ) {
     this.el = document.createElement('div');
     this.el.className = 'challenges';
@@ -94,7 +96,8 @@ export class ChallengesPanel {
           ${CHALLENGES.map((c) => {
             const done = this.tracker.completed.has(c.id);
             const pr = done ? 1 : this.tracker.progress[c.id] ?? 0;
-            return `<li class="${done ? 'done' : ''}"><div class="row"><b>${done ? '✓ ' : ''}${c.title}</b><span>${c.points} pts</span></div><div class="desc">${c.description}</div><div class="bar"><i data-bar="${c.id}" style="width:${Math.round(pr * 100)}%"></i></div></li>`;
+            const teach = lessonFor(c.id) ? `<button class="teach" data-teach="${c.id}" title="Watch a demo pilot do it, with the sticks shown">Teach me</button>` : '';
+            return `<li class="${done ? 'done' : ''}"><div class="row"><b>${done ? '✓ ' : ''}${c.title}</b><span>${c.points} pts ${teach}</span></div><div class="desc">${c.description}</div><div class="bar"><i data-bar="${c.id}" style="width:${Math.round(pr * 100)}%"></i></div></li>`;
           }).join('')}
         </ul>`;
     } else if (this.tab === 'rankings') {
@@ -129,6 +132,12 @@ export class ChallengesPanel {
     }
     this.el.innerHTML = `<h3>Challenges & rankings <button id="ch-close">×</button></h3><div class="tabs">${tabs}</div>${body}${this.status ? `<p class="hint status">${esc(this.status)}</p>` : ''}`;
     this.el.querySelector('#ch-close')!.addEventListener('click', () => this.toggle());
+    for (const b of this.el.querySelectorAll<HTMLButtonElement>('[data-teach]')) {
+      b.addEventListener('click', () => {
+        this.toggle();
+        this.onTeach(b.dataset.teach!);
+      });
+    }
     for (const b of this.el.querySelectorAll<HTMLButtonElement>('[data-tab]')) {
       b.addEventListener('click', () => {
         this.tab = b.dataset.tab as typeof this.tab;

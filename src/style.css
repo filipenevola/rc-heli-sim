@@ -105,3 +105,21 @@ body.ui-hidden .topbar, body.ui-hidden .hud, body.ui-hidden .hud-sticks, body.ui
 .row-buttons { display: flex; gap: 6px; margin: 8px 0; align-items: center; }
 .row-buttons input { width: 120px; }
 .challenges .status { color: #ffd34d; }
+
+/* Teach-me lesson overlay */
+.lesson { position: absolute; inset: 0; pointer-events: none; }
+.lesson-top { position: absolute; top: calc(var(--topbar-h) + 16px + env(safe-area-inset-top)); left: 50%; transform: translateX(-50%); width: min(720px, calc(100vw - 20px));
+  background: rgba(10, 10, 14, 0.85); border: 1px solid rgba(255,211,77,0.5); border-radius: 10px; padding: 10px 14px; pointer-events: auto; }
+.lesson-title { display: flex; align-items: center; gap: 8px; font-size: 14px; }
+.lesson-title span { opacity: 0.7; }
+.lesson-title button { margin-left: auto; background: rgba(190, 60, 0, 0.8); color: #fff; border: 1px solid rgba(255,255,255,0.3); border-radius: 6px; padding: 5px 10px; cursor: pointer; }
+.lesson-intro { font-size: 12px; opacity: 0.75; margin: 4px 0; }
+.lesson-caption { font-size: 16px; font-weight: 600; color: #ffd34d; margin: 6px 0 2px; line-height: 1.35; }
+.lesson-progress { font-size: 12px; opacity: 0.6; }
+.lesson-sticks { position: absolute; bottom: calc(14px + env(safe-area-inset-bottom)); left: 50%; transform: translateX(-50%); text-align: center; }
+.lesson-sticks canvas { max-width: calc(100vw - 20px); height: auto; }
+.lesson-switches { display: flex; gap: 10px; justify-content: center; margin-top: 4px; font-size: 13px; }
+.lesson-switches span { background: rgba(0,0,0,0.5); padding: 3px 8px; border-radius: 6px; }
+.lesson-switches span.on { background: rgba(190, 120, 0, 0.75); }
+body:has(.lesson:not([style*="display: none"])) .touch-sticks, body:has(.lesson:not([style*="display: none"])) .hud-sticks { display: none !important; }
+.challenge-list .teach { margin-left: 8px; padding: 2px 8px; font-size: 12px; background: rgba(190, 120, 0, 0.75); border-color: #ffd34d; }
