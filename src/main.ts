@@ -15,6 +15,7 @@ import { SettingsPanel, MODE_HELP, HOLD_HELP } from './ui/settings';
 import { AudioEngine } from './audio/engine';
 import { HelpPanel } from './ui/help';
 import { ChallengeTracker, FlightTimer, CHALLENGES } from './game/challenges';
+import { HELI_450, type HeliModel } from './sim/heli-model';
 import { loadProfile, RankingClient, fmtTime } from './game/player';
 import { GateMeshes } from './render/gates';
 import { ChallengesPanel } from './ui/challenges-panel';
@@ -52,6 +53,13 @@ const sim = new HelicopterSim(HELI_MODELS[0], wind, world);
 let heliMesh = new HeliMesh(sim.model);
 scene.add(heliMesh.root);
 
+function setModel(model: HeliModel): void {
+  scene.remove(heliMesh.root);
+  sim.reset(model);
+  heliMesh = new HeliMesh(model);
+  scene.add(heliMesh.root);
+}
+
 const ui = document.getElementById('ui')!;
 const audio = new AudioEngine();
 // Browsers only allow audio after a user gesture; any key, click or touch unlocks it.
@@ -67,6 +75,7 @@ const rankingClient = new RankingClient();
 let lesson: LessonRunner | null = null;
 let assistBeforeLesson: AssistMode = 'rate';
 let lessonEndTimer: number | null = null;
+let modelBeforeLesson: HeliModel | null = null;
 const lessonOverlay = new LessonOverlay(ui);
 const challenges = new ChallengesPanel(ui, profile, tracker, flightTimer, rankingClient, startLesson);
 
@@ -75,6 +84,13 @@ function startLesson(challengeId: string, mode: 'show' | 'teach' = 'show'): void
   const l = lessonFor(challengeId);
   if (!l) return;
   stopLesson();
+  // 3D needs a flybarless head: a flybar trainer boom-strikes under full cyclic at negative G.
+  const level = CHALLENGES.find((c) => c.id === challengeId)?.level;
+  if (level === '3D' && sim.model.controller.type === 'flybar') {
+    modelBeforeLesson = sim.model;
+    setModel(HELI_450);
+    hud.notify('<b>3D lesson: switched to the flybarless 450</b><br>The flybar trainer cannot take full cyclic at negative G. Your model comes back after the lesson.', 6000);
+  }
   sim.reset();
   tracker.resetTransient();
   assistBeforeLesson = sim.assist;
@@ -96,7 +112,10 @@ function stopLesson(resetHeli = true): void {
   lesson = null;
   lessonOverlay.hide();
   sim.assist = assistBeforeLesson;
-  if (resetHeli) {
+  if (modelBeforeLesson) {
+    setModel(modelBeforeLesson);
+    modelBeforeLesson = null;
+  } else if (resetHeli) {
     sim.reset();
     tracker.resetTransient();
   }
@@ -112,10 +131,7 @@ flightTimer.onFlightEnd = (seconds, crashed) => {
 };
 const settings = new SettingsPanel(ui, input, wind, audio, {
   onModel(model) {
-    scene.remove(heliMesh.root);
-    sim.reset(model);
-    heliMesh = new HeliMesh(model);
-    scene.add(heliMesh.root);
+    setModel(model);
   },
   onReset: reset,
   onFlightMode(mode) {

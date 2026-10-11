@@ -67,6 +67,8 @@ export interface Telemetry {
   stall: number;
   /** Seconds the motor has been drawing power this flight. */
   flightSeconds: number;
+  /** Load factor along the rotor axis (1 = hover, 0 = free fall, negative = inverted pulling). */
+  gLoad: number;
 }
 
 export function initialState(model: HeliModel, yaw = 0): HeliState {
@@ -117,6 +119,7 @@ export class HelicopterSim {
   assist: AssistMode = 'rate';
   private vrsNoise = 0;
   private vrsNoise2 = 0;
+  private boomTimer = 0;
   /** Last control frame fed to step(); challenges read switch states from it. */
   lastControls: ControlFrame | null = null;
   /** Max bank/pitch angle at full stick in attitude mode, rad. */
@@ -125,7 +128,7 @@ export class HelicopterSim {
   attitudeGain = 7;
   telemetry: Telemetry = {
     thrust: 0, torque: 0, tailThrust: 0, collectiveDeg: 0, headspeedRpm: 0, motorPower: 0,
-    altitude: 0, groundSpeed: 0, verticalSpeed: 0, groundEffect: 1, lambda: 0, battery: 1, vrs: 0, stall: 0, flightSeconds: 0,
+    altitude: 0, groundSpeed: 0, verticalSpeed: 0, groundEffect: 1, lambda: 0, battery: 1, vrs: 0, stall: 0, flightSeconds: 0, gLoad: 1,
   };
 
   constructor(public model: HeliModel, public wind: Wind, public world: World = new World()) {
@@ -296,6 +299,17 @@ export class HelicopterSim {
     s.b1 += (s.servoCycRoll + b1Speed - s.b1) * kf - rollRightRate * dt;
     s.a1 = clamp(s.a1, -0.4, 0.4);
     s.b1 = clamp(s.b1, -0.4, 0.4);
+    // Boom strike: the blades flap far enough to hit the tail boom. Happens when big cyclic is demanded while the
+    // disc is unloaded (negative G / low head speed): the hub cannot hold the disc and it over-flaps.
+    // Boom strike. A flybar head has little hub stiffness: pushed to negative G with a big cyclic demand the
+    // blades flap past the boom. Rigid flybarless heads do not do this. (The flapping model itself is bounded by
+    // the cyclic range, so this is a rule on the real-world trigger rather than an emergent effect.)
+    if (rotorAlive && !s.crashed && c.type === 'flybar') {
+      const negativeG = thrust < -0.2 * m.mass * G;
+      const bigCyclic = Math.hypot(ctl.aileron, ctl.elevator) > 0.7;
+      this.boomTimer = negativeG && bigCyclic ? this.boomTimer + dt : 0;
+      if (this.boomTimer > 0.15) this.crash('Boom strike: big cyclic at negative G on a flybar head');
+    } else this.boomTimer = 0;
 
     // ---------- Tail rotor ----------
     const tailVelB = add(vAirB, cross(s.omega, m.tailOffset));
@@ -452,6 +466,7 @@ export class HelicopterSim {
     t.groundEffect = ge;
     t.lambda = main.lambda;
     t.battery = soc;
+    t.gLoad = thrust / (m.mass * G);
     t.vrs = main.vrs;
     t.stall = main.stall;
     if (motorTorque > 0.05) t.flightSeconds += dt;

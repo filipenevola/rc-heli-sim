@@ -3,6 +3,15 @@
 All notable changes to RC Heli Sim. The version shown in the game (Help and Settings) matches the latest
 entry here; the commit hash next to it identifies the exact build.
 
+## 0.10.0 — 2026-10-11
+
+- Boom strike on the flybar trainer: big cyclic while pushing negative G folds the blades into the boom (the
+  real reason 3D is flown on flybarless heads). 3D lessons therefore run on the flybarless 450 automatically
+  and your model comes back afterwards.
+- Teach me now coaches in words: one instruction at a time from the biggest gap between your sticks and the
+  ghost ring ("a bit more collective", "nose left (rudder)", "Switch to Idle-Up 1", "Good, hold it there").
+- HUD shows the rotor G load.
+
 ## 0.9.0 — 2026-10-11
 
 - Five more challenges, the hard ones: Three clean landings (streak), Stall turn, Funnel, Tic-toc, Piro flip.

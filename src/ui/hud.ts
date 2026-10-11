@@ -90,6 +90,7 @@ export class Hud {
       ['Speed', `${(t.groundSpeed * 3.6).toFixed(0)} km/h`],
       ['Distance', `${Math.hypot(s.pos.x, s.pos.z).toFixed(0)} m`],
       ['Power', `${t.motorPower.toFixed(0)} W`],
+      ['G load', `${t.gLoad.toFixed(1)} g`],
       ['Ground effect', `${((t.groundEffect - 1) * 100).toFixed(0)}%`],
       ['Battery', `${(t.battery * 100).toFixed(0)}%${t.battery < 0.1 ? ' ⚠' : ''}`],
       ['FPS', this.fps.toFixed(0)],

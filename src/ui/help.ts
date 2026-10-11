@@ -106,6 +106,8 @@ const HELP_HTML = `
     <li><b>Battery</b>: the pack sags under 30% and the motor quits at 0%. Land before the warning, or practise the
       autorotation that follows.</li>
     <li><b>Ground effect</b> only exists in a hover; it fades with forward speed, which is why a fast low pass sinks.</li>
+    <li><b>Boom strike</b>: on the flybar trainer, big cyclic while pushing negative G folds the blades into the tail boom.
+      That is why 3D is flown on flybarless heads; on the trainer, keep the collective positive when you use a lot of cyclic.</li>
   </ul>
 </section>
 

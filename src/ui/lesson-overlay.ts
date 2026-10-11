@@ -65,6 +65,55 @@ export class LessonOverlay {
     const holdMismatch = hint && hint.throttleHold !== ctl.throttleHold;
     this.switches.innerHTML = `<span class="${modeWanted > 0 ? 'on' : ''} ${modeMismatch ? 'want' : ''}">Mode: ${['Normal', 'Idle-Up 1', 'Idle-Up 2'][modeWanted]}${modeMismatch ? ' ← set this' : ''}</span><span class="${holdWanted ? 'on' : ''} ${holdMismatch ? 'want' : ''}">Throttle hold: ${holdWanted ? 'ON' : 'off'}${holdMismatch ? ' ← set this' : ''}</span>`;
     this.draw(ctl, hint);
+    this.coachLine(ctl, hint, teach && !runner.finished);
+  }
+
+  private coach: HTMLElement | null = null;
+  private coachSince = 0;
+  private coachText = '';
+  /** One short instruction at a time, from the biggest gap between the player's sticks and the hint. */
+  private coachLine(ctl: ControlFrame, hint: ControlFrame | null, on: boolean): void {
+    if (!this.coach) {
+      this.coach = document.createElement('div');
+      this.coach.className = 'lesson-coach';
+      this.el.querySelector('.lesson-top')!.appendChild(this.coach);
+    }
+    if (!on || !hint) {
+      this.coach.style.display = 'none';
+      return;
+    }
+    const gaps: [number, string][] = [
+      [hint.collective - ctl.collective, 'collective'],
+      [hint.elevator - ctl.elevator, 'elevator'],
+      [hint.aileron - ctl.aileron, 'aileron'],
+      [hint.rudder - ctl.rudder, 'rudder'],
+    ];
+    let text = '';
+    if (hint.flightMode !== ctl.flightMode) text = `Switch to ${['Normal', 'Idle-Up 1', 'Idle-Up 2'][hint.flightMode]}`;
+    else if (hint.throttleHold !== ctl.throttleHold) text = hint.throttleHold ? 'Throttle hold ON' : 'Throttle hold off';
+    else {
+      let best: [number, string] = [0, ''];
+      for (const g of gaps) if (Math.abs(g[0]) > Math.abs(best[0])) best = g;
+      const d = best[0];
+      const big = Math.abs(d) > 0.45 ? 'a lot ' : Math.abs(d) > 0.2 ? 'a bit ' : '';
+      if (Math.abs(d) > 0.12) {
+        switch (best[1]) {
+          case 'collective': text = d > 0 ? `${big}more collective` : `${big}less collective`; break;
+          case 'elevator': text = d > 0 ? `nose down ${big}(forward)` : `nose up ${big}(back)`; break;
+          case 'aileron': text = d > 0 ? `roll right ${big}` : `roll left ${big}`; break;
+          case 'rudder': text = d > 0 ? `nose right ${big}(rudder)` : `nose left ${big}(rudder)`; break;
+        }
+      } else text = 'Good, hold it there';
+    }
+    // Hold each instruction briefly so it reads as advice, not a flicker.
+    const now = performance.now();
+    if (text !== this.coachText && now - this.coachSince > 700) {
+      this.coachText = text;
+      this.coachSince = now;
+      this.coach.textContent = text.charAt(0).toUpperCase() + text.slice(1);
+      this.coach.classList.toggle('ok', text.startsWith('Good'));
+    }
+    this.coach.style.display = '';
   }
 
   private draw(ctl: ControlFrame, hint: ControlFrame | null): void {

@@ -255,3 +255,47 @@ describe('realism: stall, vortex ring state, battery', () => {
     expect(sim.telemetry.headspeedRpm).toBeLessThan(2500); // spooling down, no power
   });
 });
+
+describe('boom strike', () => {
+  it('on a flybar head, full cyclic with the disc unloaded over-flaps the blades into the boom', () => {
+    const sim = new HelicopterSim(HELI_450_FLYBAR, new Wind());
+    const ctl = neutralFrame();
+    ctl.flightMode = 1;
+    ctl.collective = -0.05;
+    run(sim, ctl, 25);
+    sim.state.pos.y = 60;
+    sim.state.onGround = false;
+    ctl.collective = -0.4; // pushing negative: the disc pulls the other way
+    run(sim, ctl, 1);
+    ctl.aileron = 1; // and a big cyclic demand
+    run(sim, ctl, 1.5);
+    expect(sim.state.crashed).toBe(true);
+    expect(sim.state.crashReason).toContain('Boom strike');
+    // A flybarless head takes the same abuse.
+    const sim3 = new HelicopterSim(HELI_450, new Wind());
+    const ctl3 = neutralFrame();
+    ctl3.flightMode = 1;
+    ctl3.collective = -0.05;
+    run(sim3, ctl3, 25);
+    sim3.state.pos.y = 80;
+    sim3.state.onGround = false;
+    ctl3.collective = -0.4;
+    run(sim3, ctl3, 1);
+    ctl3.aileron = 1;
+    run(sim3, ctl3, 1.0);
+    expect(sim3.state.crashed).toBe(false);
+    // The same cyclic with a loaded disc is a normal roll.
+    const sim2 = new HelicopterSim(HELI_450_FLYBAR, new Wind());
+    const ctl2 = neutralFrame();
+    ctl2.flightMode = 1;
+    ctl2.collective = -0.05;
+    run(sim2, ctl2, 25);
+    sim2.state.pos.y = 60;
+    sim2.state.onGround = false;
+    ctl2.collective = 0.5;
+    run(sim2, ctl2, 1);
+    ctl2.aileron = 1;
+    run(sim2, ctl2, 0.6);
+    expect(sim2.state.crashed).toBe(false);
+  });
+});
