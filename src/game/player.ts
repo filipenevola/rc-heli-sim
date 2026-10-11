@@ -78,8 +78,8 @@ export class RankingClient {
     return this.call('/api/auth/request', { email, name });
   }
 
-  verifyCode(email: string, code: string): Promise<{ token: string; name: string; completed: string[]; bestFlight: number }> {
-    return this.call('/api/auth/verify', { email, code });
+  verifyCode(email: string, code: string, deviceId: string): Promise<{ token: string; name: string; completed: string[]; bestFlight: number }> {
+    return this.call('/api/auth/verify', { email, code, deviceId });
   }
 
   /** Push the current records. Unverified players are keyed by device id and shown unverified. */

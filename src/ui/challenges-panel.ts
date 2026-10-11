@@ -207,7 +207,7 @@ export class ChallengesPanel {
     this.el.querySelector('#verify-code')?.addEventListener('click', async () => {
       const code = (this.el.querySelector('#pilot-code') as HTMLInputElement).value.trim();
       try {
-        const r = await this.client.verifyCode(this.pendingEmail!, code);
+        const r = await this.client.verifyCode(this.pendingEmail!, code, p.deviceId);
         p.email = this.pendingEmail;
         p.verified = true;
         p.token = r.token;

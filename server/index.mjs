@@ -60,6 +60,7 @@ const q = {
   delCode: db.prepare('DELETE FROM codes WHERE email = ?'),
   addToken: db.prepare('INSERT INTO tokens (hash, player_id) VALUES (?, ?)'),
   playerByToken: db.prepare('SELECT p.* FROM tokens t JOIN players p ON p.id = t.player_id WHERE t.hash = ?'),
+  deletePlayer: db.prepare('DELETE FROM players WHERE key = ?'),
   topFlight: db.prepare(`SELECT name, best_flight AS value, verified, updated_at AS at FROM players WHERE best_flight > 0 AND name <> '' ORDER BY best_flight DESC, updated_at ASC LIMIT 100`),
   all: db.prepare(`SELECT name, completed, verified, updated_at AS at FROM players WHERE name <> ''`),
 };
@@ -70,6 +71,20 @@ const cleanName = (n) => String(n ?? '').trim().slice(0, 24).replace(/[<>]/g, ''
 const cleanEmail = (e) => String(e ?? '').trim().toLowerCase();
 const validEmail = (e) => /^[^\s@]+@[^\s@]+\.[^\s@]+$/.test(e) && e.length < 200;
 const cleanCompleted = (c) => (Array.isArray(c) ? [...new Set(c.filter((id) => typeof id === 'string' && id in POINTS))] : []);
+const validDeviceId = (d) => /^[0-9a-f-]{36}$/.test(String(d ?? ''));
+
+/** Fold a device's anonymous row into an email account (progress union, best flight max) and drop the device row. */
+function absorbDevice(emailKey, deviceId) {
+  if (!validDeviceId(deviceId)) return;
+  const dev = q.playerByKey.get(`device:${deviceId}`);
+  if (!dev) return;
+  const acct = q.playerByKey.get(emailKey);
+  if (acct) {
+    const merged = [...new Set([...JSON.parse(acct.completed), ...JSON.parse(dev.completed)])];
+    q.upsertPlayer.run(emailKey, acct.name, 1, JSON.stringify(merged), Math.max(acct.best_flight, dev.best_flight));
+  }
+  q.deletePlayer.run(dev.key);
+}
 
 // Simple per-IP rate limit for the email endpoint.
 const buckets = new Map();
@@ -163,6 +178,8 @@ createServer(async (req, res) => {
       const existing = q.playerByKey.get(key);
       // An existing account keeps its callsign; the name typed on a new device only seeds a brand-new account.
       q.upsertPlayer.run(key, existing?.name || row.name, 1, existing?.completed ?? '[]', existing?.best_flight ?? 0);
+      // The device played anonymously before signing in: carry that progress over and remove the duplicate row.
+      absorbDevice(key, body.deviceId);
       const player = q.playerByKey.get(key);
       const token = randomBytes(24).toString('base64url');
       q.addToken.run(hash(token), player.id);
@@ -178,10 +195,12 @@ createServer(async (req, res) => {
       const auth = req.headers.authorization?.replace(/^Bearer /, '');
       const verified = auth ? q.playerByToken.get(hash(auth)) : null;
       let key;
-      if (verified) key = verified.key;
-      else {
+      if (verified) {
+        key = verified.key;
+        absorbDevice(key, body.deviceId); // cleans up a leftover anonymous row from before sign-in
+      } else {
         const deviceId = String(body.deviceId ?? '');
-        if (!/^[0-9a-f-]{36}$/.test(deviceId)) return json(res, 400, { error: 'Bad device id.' });
+        if (!validDeviceId(deviceId)) return json(res, 400, { error: 'Bad device id.' });
         key = `device:${deviceId}`;
       }
       const existing = q.playerByKey.get(key);
