@@ -89,10 +89,15 @@ function paint(b: Billboard, logo: HTMLImageElement | null): THREE.CanvasTexture
 }
 
 function drawText(g: CanvasRenderingContext2D, b: Billboard, x: number, y: number, w: number, h: number, compact: boolean): void {
-  const nameSize = compact ? Math.round(h * 0.38) : Math.round(h * 0.3);
+  let nameSize = compact ? Math.round(h * 0.38) : Math.round(h * 0.3);
   g.fillStyle = b.fg;
   g.textBaseline = 'top';
   g.font = `bold ${nameSize}px system-ui, -apple-system, Segoe UI, Roboto, sans-serif`;
+  // Shrink long names to the available width instead of clipping them.
+  while (nameSize > 12 && g.measureText(b.name).width > w) {
+    nameSize = Math.round(nameSize * 0.92);
+    g.font = `bold ${nameSize}px system-ui, -apple-system, Segoe UI, Roboto, sans-serif`;
+  }
   g.fillText(b.name, x, y);
   const tagSize = Math.round(nameSize * 0.42);
   g.font = `${tagSize}px system-ui, -apple-system, Segoe UI, Roboto, sans-serif`;

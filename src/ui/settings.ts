@@ -310,7 +310,8 @@ export class SettingsPanel {
 
   private applyCamera(): void {
     const label = this.cb.onCamera(this.cameraMode);
-    (this.bar.querySelector('#btn-camera') as HTMLElement).textContent = `Cam: ${label.split(' ')[0]}`;
+    (this.bar.querySelector('#btn-camera') as HTMLElement).textContent = `Cam: ${{ pilot: 'Pilot', chase: 'Chase', front: 'Front', top: 'Top', drone: 'Drone' }[this.cameraMode]}`;
+    void label;
     const sel = this.panel.querySelector('#camera') as HTMLSelectElement | null;
     if (sel) sel.value = this.cameraMode;
   }
