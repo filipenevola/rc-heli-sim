@@ -1,6 +1,6 @@
 import { HELI_MODELS, type HeliModel } from '../sim/heli-model';
 import type { InputManager, SourceChoice } from '../input/manager';
-import { saveMapping, type AxisMapping, type GamepadMapping } from '../input/gamepad';
+import { saveMapping, type AxisMapping, type GamepadMapping, type SwitchMapping } from '../input/gamepad';
 import type { StickMode } from '../input/types';
 import type { Wind } from '../sim/wind';
 import type { AudioEngine } from '../audio/engine';
@@ -19,18 +19,22 @@ export interface SettingsCallbacks {
 }
 
 type AxisName = 'aileron' | 'elevator' | 'rudder' | 'collective';
+type SwitchName = 'flightModeSwitch' | 'throttleHoldSwitch';
 const AXES: AxisName[] = ['aileron', 'elevator', 'rudder', 'collective'];
-const AXIS_HINT: Record<AxisName, string> = {
+const SWITCHES: [SwitchName, string][] = [['flightModeSwitch', 'Idle-Up switch'], ['throttleHoldSwitch', 'Throttle-hold switch']];
+const AXIS_HINT: Record<AxisName | SwitchName, string> = {
   aileron: 'move the AILERON stick fully RIGHT',
   elevator: 'push the ELEVATOR stick fully FORWARD (nose down)',
   rudder: 'move the RUDDER stick fully RIGHT',
   collective: 'move the THROTTLE / collective stick fully UP',
+  flightModeSwitch: 'start with the IDLE-UP switch in its Normal position, then flip it',
+  throttleHoldSwitch: 'start with the THROTTLE HOLD switch off, then flip it on',
 };
 
 /** Plain-DOM settings drawer: model, input device, stick mode, rates/expo, wind, and the transmitter mapping wizard. */
 export class SettingsPanel {
   private panel: HTMLElement;
-  private wizardState: { axis: AxisName; baseline: number[] } | null = null;
+  private wizardState: { axis: AxisName | SwitchName; baseline: number[]; baselineButtons: boolean[] } | null = null;
   private wizardStatus: HTMLElement | null = null;
   private axisBars: HTMLElement | null = null;
   private calibrating: { min: number[]; max: number[] } | null = null;
@@ -156,6 +160,8 @@ export class SettingsPanel {
         <div id="axis-bars"></div>
         <div class="wizard">
           ${AXES.map((a) => `<button data-assign="${a}">Assign ${a}</button>`).join('')}
+          ${SWITCHES.map(([k, l]) => `<button data-assign="${k}">Assign ${l}</button>`).join('')}
+          <button id="clear-switches">Clear switches</button>
           <button id="calibrate">Calibrate travel</button>
           <button id="save-mapping">Save</button>
         </div>
@@ -222,9 +228,18 @@ export class SettingsPanel {
     this.wizardStatus = q('#wizard-status');
     this.axisBars = q('#axis-bars');
     for (const b of this.panel.querySelectorAll<HTMLButtonElement>('[data-assign]')) {
-      b.addEventListener('click', () => this.startAssign(b.dataset.assign as AxisName));
+      b.addEventListener('click', () => this.startAssign(b.dataset.assign as AxisName | SwitchName));
     }
     q('#calibrate').addEventListener('click', () => this.startCalibrate());
+    q('#clear-switches').addEventListener('click', () => {
+      if (g.mapping) {
+        delete g.mapping.flightModeSwitch;
+        delete g.mapping.throttleHoldSwitch;
+        delete g.mapping.flightModeAxis;
+        delete g.mapping.throttleHoldButton;
+        this.wizardStatus!.textContent = 'Switches cleared; flight mode and hold come from the buttons / keys again. Click Save to keep.';
+      }
+    });
     q('#save-mapping').addEventListener('click', () => {
       if (g.mapping) {
         saveMapping(g.mapping);
@@ -233,13 +248,13 @@ export class SettingsPanel {
     });
   }
 
-  private startAssign(axis: AxisName): void {
+  private startAssign(axis: AxisName | SwitchName): void {
     const g = this.input.gamepad;
     if (!g.available()) {
       this.wizardStatus!.textContent = 'No transmitter detected.';
       return;
     }
-    this.wizardState = { axis, baseline: [...g.rawAxes] };
+    this.wizardState = { axis, baseline: [...g.rawAxes], baselineButtons: [...g.rawButtons] };
     this.wizardStatus!.textContent = `Now ${AXIS_HINT[axis]} and hold it...`;
   }
 
@@ -312,7 +327,7 @@ export class SettingsPanel {
       }
     }
     if (this.wizardState && g.mapping) {
-      const { axis, baseline } = this.wizardState;
+      const { axis, baseline, baselineButtons } = this.wizardState;
       let best = -1;
       let bestDelta = 0;
       for (let i = 0; i < g.rawAxes.length; i++) {
@@ -322,10 +337,24 @@ export class SettingsPanel {
           best = i;
         }
       }
+      const isSwitch = axis === 'flightModeSwitch' || axis === 'throttleHoldSwitch';
+      if (isSwitch) {
+        // Switches on sim dongles show up as a button or as an axis that jumps between fixed values.
+        const pressed = g.rawButtons.findIndex((b, i) => b && !baselineButtons[i]);
+        let sw: SwitchMapping | null = null;
+        if (pressed >= 0) sw = { kind: 'button', index: pressed, rest: 0 };
+        else if (best >= 0 && Math.abs(bestDelta) > 0.6) sw = { kind: 'axis', index: best, rest: baseline[best] };
+        if (sw) {
+          (g.mapping as GamepadMapping)[axis] = sw;
+          this.wizardState = null;
+          this.wizardStatus!.textContent = `${axis === 'flightModeSwitch' ? 'Idle-Up' : 'Throttle hold'} → ${sw.kind} ${sw.index}. Flip it back, then Save.`;
+        }
+        return;
+      }
       if (best >= 0 && Math.abs(bestDelta) > 0.6) {
         // The hint asks for the positive direction, so a negative delta means the axis is inverted.
-        const am: AxisMapping = { ...g.mapping[axis], index: best, invert: bestDelta < 0 };
-        (g.mapping as GamepadMapping)[axis] = am;
+        const am: AxisMapping = { ...g.mapping[axis as AxisName], index: best, invert: bestDelta < 0 };
+        (g.mapping as GamepadMapping)[axis as AxisName] = am;
         this.wizardState = null;
         this.wizardStatus!.textContent = `${axis} → axis ${best}${am.invert ? ' (inverted)' : ''}. Assign the next one or Save.`;
       }

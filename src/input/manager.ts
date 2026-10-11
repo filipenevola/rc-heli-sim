@@ -1,6 +1,6 @@
 import { applyShaping, neutralFrame, type ControlFrame, type InputSource, type StickShaping } from './types';
 import { KeyboardInput } from './keyboard';
-import { GamepadInput } from './gamepad';
+import { GamepadInput, hasSwitch } from './gamepad';
 import { TouchInput } from './touch';
 import { MotionInput } from './motion';
 
@@ -77,8 +77,8 @@ export class InputManager {
     o.collective = Math.max(-1, Math.min(1, raw.collective));
     // Mode/hold toggles from the keyboard apply to every source unless the transmitter has them on a switch.
     const kb = frames.keyboard;
-    o.flightMode = this.active === this.gamepad && this.gamepad.mapping?.flightModeAxis !== undefined ? raw.flightMode : kb.flightMode;
-    o.throttleHold = this.active === this.gamepad && this.gamepad.mapping?.throttleHoldButton !== undefined ? raw.throttleHold : kb.throttleHold;
+    o.flightMode = this.active === this.gamepad && hasSwitch(this.gamepad.mapping, 'flightMode') ? raw.flightMode : kb.flightMode;
+    o.throttleHold = this.active === this.gamepad && hasSwitch(this.gamepad.mapping, 'throttleHold') ? raw.throttleHold : kb.throttleHold;
     return o;
   }
 

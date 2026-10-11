@@ -63,6 +63,34 @@ const HELP_HTML = `
 </section>
 
 <section>
+  <h4>Inverted flight and 3D — the "flip switch"</h4>
+  <p>Collective-pitch helicopters do not reverse the blades to fly upside down. The <b>Idle-Up</b> switch on the
+  transmitter (sometimes labelled flight mode, ID1/ID2 or stunt) changes two things: the throttle curve becomes flat so the
+  governor holds a constant head speed, and the <b>pitch curve becomes symmetric</b>: bottom of the stick = −11°, centre = 0°,
+  top = +11°. Inverted, you push the collective stick <i>down</i> and the negative pitch pushes the helicopter toward the sky.
+  Everything else keeps its meaning relative to the helicopter; from where you stand, aileron and elevator look reversed.</p>
+  <ol>
+    <li>Take off in <b>Normal</b> and climb well above 20 m. Mistakes cost altitude.</li>
+    <li>Flip to <b>Idle-Up 1</b> (Mode button, key 2, or your transmitter's switch once mapped). Keep the stick just above centre:
+      the hover is now at about +5° with centre = 0°.</li>
+    <li><b>Flip:</b> full aileron (or elevator) until inverted, then centre the cyclic and <i>push the collective stick below centre</i>
+      to hold the inverted hover. Finish the roll with aileron the same way and bring the stick back above centre.</li>
+    <li><b>Loop:</b> fly forward, pull elevator, reduce collective over the top (around 0° to slightly negative), add it back when
+      level. A small "pitch pump" on the way down keeps the head speed up.</li>
+    <li>Switch back to Normal only when upright and clear of the ground; Normal mode removes negative pitch.</li>
+  </ol>
+  <p><b>Idle-Up 2</b> is the same with more pitch (±12°/13°) and a higher head speed for aggressive 3D.</p>
+</section>
+
+<section>
+  <h4>Transmitter switches</h4>
+  <p>In Settings → Transmitter mapping you can assign your radio's switches as well as its sticks: <i>Assign Idle-Up switch</i>
+  and <i>Assign Throttle-hold switch</i>. Start with the switch in its off/Normal position, click the button, flip the switch.
+  USB dongles present switches as a joystick button or as an extra axis; both are detected. Until a switch is mapped, the Mode
+  and Hold buttons (keys 1/2/3 and H) do the job. <i>Clear switches</i> gives them back.</p>
+</section>
+
+<section>
   <h4>Helicopters</h4>
   <ul>
     <li><b>450 flybar trainer</b> — softest and most damped. The mechanical flybar adds stability but less authority.</li>

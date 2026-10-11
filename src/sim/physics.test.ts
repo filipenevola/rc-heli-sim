@@ -143,3 +143,30 @@ describe('attitude assist', () => {
     expect(sim.state.crashed).toBe(false);
   });
 });
+
+describe('inverted flight (Idle-Up negative pitch)', () => {
+  it('upside down with the collective stick pushed below centre, the rotor holds the heli up', () => {
+    const sim = new HelicopterSim(HELI_450, new Wind());
+    const ctl = neutralFrame();
+    ctl.flightMode = 1;
+    ctl.collective = -0.05;
+    run(sim, ctl, 25);
+    sim.state.pos.y = 30;
+    sim.state.onGround = false;
+    sim.state.vel = { x: 0, y: 0, z: 0 };
+    // Roll 180 degrees about the fore/aft axis.
+    sim.state.ori = { x: 0, y: 0, z: Math.sin(Math.PI / 2), w: Math.cos(Math.PI / 2) };
+    ctl.collective = -0.5; // about -5.5 deg: inverted hover region
+    run(sim, ctl, 2);
+    expect(sim.telemetry.collectiveDeg).toBeLessThan(-4);
+    expect(sim.telemetry.thrust).toBeLessThan(0); // negative along the (now downward-pointing) rotor axis = pushes up
+    expect(sim.state.pos.y).toBeGreaterThan(24); // far less than a free fall of 19.6 m
+    expect(sim.state.crashed).toBe(false);
+    // Normal mode cannot do this: its curve has almost no negative pitch.
+    const sim2 = new HelicopterSim(HELI_450, new Wind());
+    sim2.state = structuredClone(sim.state);
+    const ctl2 = { ...ctl, flightMode: 0 as const };
+    run(sim2, ctl2, 1);
+    expect(sim2.telemetry.collectiveDeg).toBeGreaterThan(-3);
+  });
+});

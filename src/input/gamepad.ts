@@ -22,6 +22,16 @@ export interface GamepadMapping {
   /** Optional switches (buttons or axes used as switches). */
   throttleHoldButton?: number;
   flightModeAxis?: number;
+  /** Newer, more general form: a switch can be a button or an axis (2- or 3-position). */
+  flightModeSwitch?: SwitchMapping;
+  throttleHoldSwitch?: SwitchMapping;
+}
+
+export interface SwitchMapping {
+  kind: 'axis' | 'button';
+  index: number;
+  /** For axes: raw value when the switch is in its "off"/Normal position, to know which way it goes. */
+  rest: number;
 }
 
 const STORAGE_KEY = 'rc-heli-sim.gamepad-mappings.v1';
@@ -99,15 +109,32 @@ export class GamepadInput implements InputSource {
     f.elevator = readAxis(this.rawAxes, m.elevator);
     f.rudder = readAxis(this.rawAxes, m.rudder);
     f.collective = readAxis(this.rawAxes, m.collective);
-    if (m.throttleHoldButton !== undefined && this.rawButtons[m.throttleHoldButton] !== undefined) {
-      f.throttleHold = this.rawButtons[m.throttleHoldButton];
-    } else f.throttleHold = this.throttleHold;
-    if (m.flightModeAxis !== undefined && this.rawAxes[m.flightModeAxis] !== undefined) {
-      const v = this.rawAxes[m.flightModeAxis];
-      f.flightMode = v < -0.33 ? 0 : v > 0.33 ? 2 : 1;
-    } else f.flightMode = this.flightMode;
+    const hold = readSwitch(this.rawAxes, this.rawButtons, m.throttleHoldSwitch ?? (m.throttleHoldButton !== undefined ? { kind: 'button', index: m.throttleHoldButton, rest: 0 } : undefined));
+    f.throttleHold = hold === null ? this.throttleHold : hold > 0;
+    const fm = readSwitch(this.rawAxes, this.rawButtons, m.flightModeSwitch ?? (m.flightModeAxis !== undefined ? { kind: 'axis', index: m.flightModeAxis, rest: -1 } : undefined));
+    f.flightMode = fm === null ? this.flightMode : fm;
     return f;
   }
+}
+
+/** Returns 0/1/2 for a switch position, or null when the switch is not mapped / not present. */
+function readSwitch(axes: number[], buttons: boolean[], sw: SwitchMapping | undefined): 0 | 1 | 2 | null {
+  if (!sw) return null;
+  if (sw.kind === 'button') {
+    const b = buttons[sw.index];
+    return b === undefined ? null : b ? 1 : 0;
+  }
+  const v = axes[sw.index];
+  if (v === undefined) return null;
+  // Distance from the rest position: 2-position switches jump the full range, 3-position ones stop half way.
+  const d = Math.abs(v - sw.rest);
+  return d < 0.5 ? 0 : d < 1.5 ? 1 : 2;
+}
+
+/** True once a switch is mapped so the transmitter, not the keyboard/buttons, owns that function. */
+export function hasSwitch(m: GamepadMapping | null, which: 'flightMode' | 'throttleHold'): boolean {
+  if (!m) return false;
+  return which === 'flightMode' ? m.flightModeSwitch !== undefined || m.flightModeAxis !== undefined : m.throttleHoldSwitch !== undefined || m.throttleHoldButton !== undefined;
 }
 
 function readAxis(axes: number[], m: AxisMapping): number {
