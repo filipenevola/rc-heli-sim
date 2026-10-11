@@ -348,11 +348,15 @@ export class HelicopterSim {
 
     // Landing-target detection: every skid on the same target, barely moving, for a moment.
     const skidCount = m.contacts.filter((c) => c.kind === 'skid').length;
+    // The helipad is ground, not a collider: skids on plain ground near the H count as the 'pad' target.
+    if (skidsTouching === skidCount && skidsOnTarget === null && this.world.pad && Math.hypot(s.pos.x - this.world.pad.centre.x, s.pos.z - this.world.pad.centre.z) < 2.2) {
+      skidsOnTarget = this.world.pad.id;
+    }
     if (skidsTouching === skidCount && skidsOnTarget && len(s.vel) < 0.25 && !s.crashed) {
       if (s.restingOn !== skidsOnTarget) { s.restingOn = skidsOnTarget; s.restingTime = 0; }
       s.restingTime += dt;
       if (s.restingTime > 1.5 && !s.landed) {
-        const target = this.world.targets.find((t) => t.id === skidsOnTarget)!;
+        const target = skidsOnTarget === this.world.pad?.id ? this.world.pad : this.world.targets.find((t) => t.id === skidsOnTarget)!;
         s.landed = { target, offset: Math.hypot(s.pos.x - target.centre.x, s.pos.z - target.centre.z) };
       }
     } else {

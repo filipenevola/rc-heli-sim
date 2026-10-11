@@ -3,6 +3,16 @@
 All notable changes to RC Heli Sim. The version shown in the game (Help and Settings) matches the latest
 entry here; the commit hash next to it identifies the exact build.
 
+## 0.7.0 — 2026-10-11
+
+- Nine new challenges following the classic RC heli progression (hover in every orientation, pirouettes,
+  figure eights, precision, 3D): Side-in hover left and right, Elevator, Spot landing on the H, Pirouette,
+  Figure eight (new seven-ring course in blue), Loop, Inverted hover, Nose-in circuit. 21 challenges, 1,020 points.
+- Challenges are grouped by level: Beginner, Intermediate, Advanced, 3D, with per-level progress.
+- Every new challenge has Show me and Teach me lessons, tested on all three helicopters.
+- The helipad counts as a landing target (spot landing precision).
+- Lift/climb steps in lessons now hold position instead of drifting.
+
 ## 0.6.2 — 2026-10-11
 
 - Show me reviewed on all three helicopters (36 lesson/model combinations now run in the test suite). Fixed the

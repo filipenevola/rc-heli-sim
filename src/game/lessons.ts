@@ -1,7 +1,7 @@
 import type { HelicopterSim } from '../sim/physics';
-import { eulerFromQ } from '../sim/math';
+import { eulerFromQ, rotate, v3 } from '../sim/math';
 import { Autopilot } from './autopilot';
-import { GATES } from './challenges';
+import { GATES, EIGHT_GATES } from './challenges';
 import { neutralFrame, type ControlFrame } from '../input/types';
 
 /**
@@ -54,7 +54,13 @@ const spoolUp = (mode: 0 | 1 | 2, caption: string): LessonStep => ({
 
 const liftTo = (height: number, caption: string, holdSeconds = 0): LessonStep => ({
   caption,
-  run: ({ ap, sim }) => ap.goTo({ x: sim.state.pos.x, y: height, z: sim.state.pos.z }, ap.heading, { vzMax: 0.8 }),
+  // Hold the spot where the step started (re-targeting the current position every frame lets the heli drift).
+  run: ({ ap, sim, mem }) => {
+    mem.x ??= sim.state.pos.x;
+    mem.z ??= sim.state.pos.z;
+    mem.h ??= ap.heading;
+    return ap.goTo({ x: mem.x, y: height, z: mem.z }, mem.h, { vzMax: 0.8 });
+  },
   done: ({ sim, t, mem }) => {
     if (Math.abs(sim.state.pos.y - height) < 0.3) mem.held = (mem.held ?? 0) + (t - (mem.lastT ?? t));
     mem.lastT = t;
@@ -319,6 +325,229 @@ export const LESSONS: Lesson[] = [
     title: 'Fifteen minutes up',
     intro: 'Same as five minutes, three times. The demo shows one minute.',
     steps: [spoolUp(0, 'Spool up.'), liftTo(2, 'Lift off.'), hoverFor(60, 'Smooth, small, early. Fly a slow lap now and then to keep yourself awake.')],
+  },
+
+  // ---------------- The classic progression ----------------
+  {
+    challengeId: 'side-in-left',
+    title: 'Side-in hover (nose left)',
+    intro: 'Side-in is the half-way house between tail-in and nose-in: one cyclic axis is still "normal", the other is rotated 90°.',
+    steps: [
+      spoolUp(0, 'Spool up.'),
+      liftTo(2.5, 'Lift to 2.5 m, tail-in.'),
+      {
+        caption: 'Rudder: turn the nose to YOUR left. Watch the elevator: pushing forward now moves the heli to your left.',
+        run: ({ ap, mem, sim }) => { mem.x ??= sim.state.pos.x; mem.z ??= sim.state.pos.z; return ap.goTo({ x: mem.x, y: 2.5, z: mem.z }, ap.headingToPilot() + Math.PI / 2); },
+        done: ({ ap }) => { let e = ap.headingToPilot() + Math.PI / 2 - ap.heading; while (e > Math.PI) e -= 2 * Math.PI; while (e < -Math.PI) e += 2 * Math.PI; return Math.abs(e) < 0.15; },
+        timeout: 20,
+      },
+      {
+        caption: 'Hold it. Aileron still moves it toward/away from you; elevator moves it left/right. Fifteen seconds.',
+        run: ({ ap, mem, sim }) => { mem.x ??= sim.state.pos.x; mem.z ??= sim.state.pos.z; return ap.goTo({ x: mem.x, y: 2.5, z: mem.z }, ap.headingToPilot() + Math.PI / 2); },
+        done: ({ t }) => t >= 17,
+      },
+    ],
+  },
+  {
+    challengeId: 'side-in-right',
+    title: 'Side-in hover (nose right)',
+    intro: 'Same drill, the other way. Practise both sides equally or one will always feel wrong.',
+    steps: [
+      spoolUp(0, 'Spool up.'),
+      liftTo(2.5, 'Lift to 2.5 m, tail-in.'),
+      {
+        caption: 'Rudder: turn the nose to YOUR right.',
+        run: ({ ap, mem, sim }) => { mem.x ??= sim.state.pos.x; mem.z ??= sim.state.pos.z; return ap.goTo({ x: mem.x, y: 2.5, z: mem.z }, ap.headingToPilot() - Math.PI / 2); },
+        done: ({ ap }) => { let e = ap.headingToPilot() - Math.PI / 2 - ap.heading; while (e > Math.PI) e -= 2 * Math.PI; while (e < -Math.PI) e += 2 * Math.PI; return Math.abs(e) < 0.15; },
+        timeout: 20,
+      },
+      {
+        caption: 'Hold it for fifteen seconds. Small, early corrections.',
+        run: ({ ap, mem, sim }) => { mem.x ??= sim.state.pos.x; mem.z ??= sim.state.pos.z; return ap.goTo({ x: mem.x, y: 2.5, z: mem.z }, ap.headingToPilot() - Math.PI / 2); },
+        done: ({ t }) => t >= 17,
+      },
+    ],
+  },
+  {
+    challengeId: 'elevator',
+    title: 'Elevator',
+    intro: 'Pure collective work: climb and descend on the spot without the cyclic wandering. Lead with small collective changes and stop them early.',
+    steps: [
+      spoolUp(0, 'Spool up.'),
+      liftTo(1.5, 'Hover low, about 1.5 m. Three seconds.', 3.5),
+      liftTo(7, 'A little more collective, a steady climb to 7 m. Ease it back before you get there so you do not overshoot.', 3.5),
+      liftTo(1.5, 'Collective down a touch: steady descent. Watch the sink rate; more collective early if it builds.', 3.5),
+    ],
+  },
+  {
+    challengeId: 'spot-landing',
+    title: 'Spot landing',
+    intro: 'A short flight, then come home and put it on the H. Approach high, stop over the pad, sink vertically.',
+    steps: [
+      spoolUp(0, 'Spool up.'),
+      liftTo(3, 'Lift off.'),
+      goTo({ x: -8, y: 4, z: -14 }, 'Fly a short leg out to the left...', { vmax: 3 }),
+      goTo({ x: 8, y: 4, z: -14 }, '...and across to the right. At least twenty seconds in the air.', { vmax: 3 }),
+      hoverFor(6, 'Hold here a moment.'),
+      ...landOn({ x: 0, y: 0, z: -6 }, 'Back over the H, 1.5 m up, stop all drift.'),
+    ],
+  },
+  {
+    challengeId: 'pirouette',
+    title: 'Pirouette',
+    intro: 'A slow, constant rudder input while the cyclic keeps the heli on the spot. The cyclic "rotates" with the heli: push the stick toward the low side of the disc, whatever the nose is doing.',
+    steps: [
+      spoolUp(0, 'Spool up.'),
+      liftTo(3, 'Lift to 3 m.'),
+      hoverFor(2, 'Settle.'),
+      {
+        caption: 'A little constant rudder: the nose starts turning slowly. Keep the cyclic correcting toward the low side as the orientation changes.',
+        run: ({ ap, mem, sim, t }) => {
+          mem.x ??= sim.state.pos.x; mem.z ??= sim.state.pos.z; mem.h0 ??= ap.heading;
+          return ap.goTo({ x: mem.x, y: 3, z: mem.z }, mem.h0 + t * 0.6);
+        },
+        done: ({ t }) => t >= (2 * Math.PI) / 0.6 + 1,
+      },
+      hoverFor(3, 'Full circle. Rudder to centre and settle.'),
+    ],
+  },
+  {
+    challengeId: 'figure-eight',
+    title: 'Figure eight',
+    intro: 'Two circles joined in the middle, flown nose-first. The turns away from you are easy; the ones toward you are where orientation changes. Use rudder with the aileron to keep the nose on the path.',
+    steps: [
+      spoolUp(1, 'Spool up in Idle-Up 1.'),
+      liftTo(4, 'Climb to ring height.'),
+      ...EIGHT_GATES.map((g, i) => goTo({ x: g.x, y: g.y, z: g.z }, `Ring ${i + 1} of 7: coordinated turn, nose into it, hold height with collective.`, { tol: 1.3, vmax: 4, heading: 'keep' })),
+      goTo({ x: 0, y: 3, z: -6 }, 'Back to the pad.', { vmax: 4 }),
+    ],
+  },
+  {
+    challengeId: 'loop',
+    title: 'Loop',
+    intro: 'Idle-Up for negative pitch. Forward speed helps. Pull elevator through; collective positive on the way up, back through zero over the top, positive again on the way down to level.',
+    steps: [
+      spoolUp(1, 'Idle-Up 1. Spool up.'),
+      liftTo(16, 'Climb to 16 m: plenty of margin.'),
+      hoverFor(3, 'Settle and centre everything.'),
+      {
+        caption: 'Back elevator and hold it. Collective follows the loop: positive upright, centre on the way over, slightly negative inverted.',
+        run: ({ ap, sim, mem }) => {
+          sim.assist = 'rate';
+          const up = rotate(sim.state.ori, v3(0, 1, 0));
+          const fwd = rotate(sim.state.ori, v3(0, 0, -1));
+          ap.ctl.elevator = -1;
+          ap.ctl.aileron = 0;
+          ap.ctl.rudder = 0;
+          ap.ctl.collective = 0.45 * up.y + (up.y > 0 ? 0.05 : -0.05);
+          if (fwd.y > 0.7) mem.up = 1;
+          if (mem.up && up.y < -0.6) mem.inv = 1;
+          return ap.ctl;
+        },
+        done: ({ sim, mem }) => !!mem.inv && rotate(sim.state.ori, v3(0, 1, 0)).y > 0.85 && Math.abs(rotate(sim.state.ori, v3(0, 0, -1)).y) < 0.4,
+        timeout: 7,
+      },
+      {
+        caption: 'Level: elevator to centre, collective back to hover, catch the descent.',
+        run: (ctx) => { ctx.sim.assist = 'attitude'; return hoverFor(5, '').run(ctx); },
+        done: ({ t }) => t >= 5,
+      },
+    ],
+  },
+  {
+    challengeId: 'inverted-hover',
+    title: 'Inverted hover',
+    intro: 'Inverted, collective works the other way (push the stick down to go up) and elevator is reversed from your point of view; aileron feels the same. Idle-Up, plenty of height.',
+    steps: [
+      spoolUp(1, 'Idle-Up 1. Spool up.'),
+      liftTo(14, 'Climb to 14 m.'),
+      hoverFor(2, 'Settle.'),
+      {
+        caption: 'Full aileron to roll inverted; as it passes the side, push the collective below centre.',
+        run: ({ ap, sim }) => {
+          sim.assist = 'rate';
+          const up = rotate(sim.state.ori, v3(0, 1, 0));
+          ap.ctl.aileron = 1; ap.ctl.elevator = 0; ap.ctl.rudder = 0;
+          ap.ctl.collective = 0.45 * up.y;
+          return ap.ctl;
+        },
+        done: ({ sim }) => rotate(sim.state.ori, v3(0, 1, 0)).y < -0.9,
+        timeout: 5,
+      },
+      {
+        caption: 'Inverted hover: collective below centre holds the height, small cyclic corrections keep it level upside down. Ten seconds.',
+        run: ({ ap, sim, mem }) => {
+          sim.assist = 'rate';
+          const s = sim.state;
+          const up = rotate(s.ori, v3(0, 1, 0));
+          const fwd = rotate(s.ori, v3(0, 0, -1));
+          const right = rotate(s.ori, v3(1, 0, 0));
+          mem.y ??= s.pos.y;
+          mem.x ??= s.pos.x;
+          mem.z ??= s.pos.z;
+          const c = sim.model.controller;
+          // Position hold while inverted. Wanted world acceleration from the position/velocity error, like goTo.
+          const g = 9.81;
+          let vxW = mem.x - s.pos.x;
+          let vzW = mem.z - s.pos.z;
+          const vm = Math.hypot(vxW, vzW);
+          if (vm > 1.5) { vxW *= 1.5 / vm; vzW *= 1.5 / vm; }
+          const axW = 1.4 * (vxW - s.vel.x);
+          const azW = 1.4 * (vzW - s.vel.z);
+          const rl = Math.hypot(right.x, right.z) || 1;
+          const fl = Math.hypot(fwd.x, fwd.z) || 1;
+          const aRight = (axW * right.x + azW * right.z) / rl;
+          const aFwd = (axW * fwd.x + azW * fwd.z) / fl;
+          // Inverted: a roll to the right makes right.y positive and tilts the thrust AWAY from the right vector;
+          // a nose-down pitch makes fwd.y positive and tilts the thrust backwards. Hence the wanted tilts below.
+          const rightYWanted = Math.max(-0.3, Math.min(0.3, -aRight / g));
+          const fwdYWanted = Math.max(-0.3, Math.min(0.3, -aFwd / g));
+          ap.ctl.aileron = Math.max(-1, Math.min(1, (-(right.y - rightYWanted) * 8) / c.cyclicRate));
+          ap.ctl.elevator = Math.max(-1, Math.min(1, (-(fwd.y - fwdYWanted) * 8) / c.cyclicRate));
+          ap.ctl.rudder = 0;
+          // Inverted: more negative collective = more lift upward.
+          const vyWanted = Math.max(-1, Math.min(1, (mem.y - s.pos.y)));
+          ap.ctl.collective = Math.max(-1, Math.min(0, -0.45 - 0.35 * (vyWanted - s.vel.y)));
+          void up;
+          return ap.ctl;
+        },
+        done: ({ t }) => t >= 12,
+      },
+      {
+        caption: 'Roll back upright: full aileron, collective through zero to positive as it comes level.',
+        run: ({ ap, sim }) => {
+          sim.assist = 'rate';
+          const up = rotate(sim.state.ori, v3(0, 1, 0));
+          ap.ctl.aileron = 1; ap.ctl.elevator = 0; ap.ctl.rudder = 0;
+          ap.ctl.collective = 0.45 * up.y;
+          return ap.ctl;
+        },
+        done: ({ sim }) => rotate(sim.state.ori, v3(0, 1, 0)).y > 0.9,
+        timeout: 5,
+      },
+      {
+        caption: 'Upright. Catch the descent and settle.',
+        run: (ctx) => { ctx.sim.assist = 'attitude'; return hoverFor(5, '').run(ctx); },
+        done: ({ t }) => t >= 5,
+      },
+    ],
+  },
+  {
+    challengeId: 'nose-in-circuit',
+    title: 'Nose-in circuit',
+    intro: 'The circuit flown with the nose always toward you: you are flying backwards and sideways with reversed cyclic. Slow, and keep the rudder working to hold the nose on you.',
+    steps: [
+      spoolUp(1, 'Spool up in Idle-Up 1.'),
+      liftTo(4, 'Climb to ring height.'),
+      {
+        caption: 'Turn the nose toward you first.',
+        run: ({ ap, sim, mem }) => { mem.x ??= sim.state.pos.x; mem.z ??= sim.state.pos.z; return ap.goTo({ x: mem.x, y: 4, z: mem.z }, ap.headingToPilot()); },
+        done: ({ ap }) => { let e = ap.headingToPilot() - ap.heading; while (e > Math.PI) e -= 2 * Math.PI; while (e < -Math.PI) e += 2 * Math.PI; return Math.abs(e) < 0.2; },
+        timeout: 20,
+      },
+      ...GATES.map((g, i) => goTo({ x: g.x, y: g.y, z: g.z }, `Ring ${i + 1}: slide toward it nose-in. Aileron is reversed from your view; elevator pulls it toward you.`, { tol: 1.3, vmax: 2.5, heading: 'toPilot' })),
+      goTo({ x: 0, y: 3, z: -6 }, 'Back to the pad, still nose-in.', { vmax: 2.5, heading: 'toPilot' }),
+    ],
   },
 ];
 

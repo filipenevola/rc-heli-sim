@@ -27,6 +27,8 @@ export interface ContactHit {
 export class World {
   readonly colliders: Collider[] = [];
   readonly targets: LandingTarget[] = [];
+  /** The helipad (flat on the ground, so not a collider). */
+  pad: LandingTarget | null = null;
 
   add(c: Collider): void {
     this.colliders.push(c);
@@ -190,6 +192,8 @@ export function buildField(): { layout: FieldLayout; world: World } {
     if (p.style === 'truck') world.add({ kind: 'box', name: 'the pickup cab', min: { x: p.x - 1.0, y: 0, z: p.z - 3.3 }, max: { x: p.x + 1.0, y: 1.9, z: p.z - 1.1 } });
     if (p.style === 'table') world.add({ kind: 'box', name: 'the table', min: { x: p.x - 0.5, y: 0, z: p.z - 0.5 }, max: { x: p.x + 0.5, y: p.height - 0.08, z: p.z + 0.5 } });
   }
+
+  world.pad = { id: 'pad', name: 'helipad', centre: { x: 0, y: 0, z: -6 }, radius: 0.5 };
 
   // Billboards: the panel plus its posts, as one box each.
   for (const b of BILLBOARDS) {

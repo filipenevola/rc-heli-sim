@@ -314,7 +314,7 @@ function frame(now: number): void {
     flightTimer.update(sim, dt);
     tracker.update(sim, dt, flightTimer.flying ? flightTimer.airTime : 0);
   }
-  gates.update(tracker.nextGate, tracker.completed.has('circuit'));
+  gates.update([tracker.nextGate('circuit'), tracker.nextGate('figure-eight')], [tracker.completed.has('circuit'), tracker.completed.has('figure-eight')]);
   challenges.tick();
   hud.update(sim, ctl, input.active.label, input.active.id, dt);
   audio.update(sim, pilotCam.eye, wind.speed);

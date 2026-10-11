@@ -1,4 +1,4 @@
-import { CHALLENGES, TOTAL_POINTS, type ChallengeTracker, type FlightTimer } from '../game/challenges';
+import { CHALLENGES, TOTAL_POINTS, LEVELS, type ChallengeTracker, type FlightTimer } from '../game/challenges';
 import { lessonFor } from '../game/lessons';
 import { importMappings, loadMappings, type GamepadMapping } from '../input/gamepad';
 import { fmtTime, localRankings, saveLocalRanking, saveProfile, type Profile, type RankingClient } from '../game/player';
@@ -106,8 +106,8 @@ export class ChallengesPanel {
     if (this.tab === 'challenges') {
       body = `
         <p class="hint">${this.tracker.points} / ${TOTAL_POINTS} points · ${this.tracker.completed.size} / ${CHALLENGES.length} done · current flight <b id="air-time">${this.timer.flying ? fmtTime(this.timer.airTime) : '—'}</b> · best clean flight <b>${fmtTime(Math.max(p.bestFlight, this.timer.best))}</b></p>
-        <ul class="challenge-list">
-          ${CHALLENGES.map((c) => {
+        ${LEVELS.map((lv) => `<h5 class="level">${lv} · ${CHALLENGES.filter((c) => c.level === lv && this.tracker.completed.has(c.id)).length}/${CHALLENGES.filter((c) => c.level === lv).length}</h5><ul class="challenge-list">
+          ${CHALLENGES.filter((c) => c.level === lv).map((c) => {
             const done = this.tracker.completed.has(c.id);
             const pr = done ? 1 : this.tracker.progress[c.id] ?? 0;
             const teach = lessonFor(c.id)
@@ -115,7 +115,7 @@ export class ChallengesPanel {
               : '';
             return `<li class="${done ? 'done' : ''}"><div class="row"><b>${done ? '✓ ' : ''}${c.title}</b><span>${c.points} pts ${teach}</span></div><div class="desc">${c.description}</div><div class="bar"><i data-bar="${c.id}" style="width:${Math.round(pr * 100)}%"></i></div></li>`;
           }).join('')}
-        </ul>`;
+        </ul>`).join('')}`;
     } else if (this.tab === 'rankings') {
       const local = Object.entries(localRankings());
       const list = (rows: { name: string; value: string; verified?: boolean }[], empty: string) =>

@@ -1,35 +1,46 @@
 import * as THREE from 'three';
-import { GATES } from '../game/challenges';
+import { GATES, EIGHT_GATES, type GateSpec } from '../game/challenges';
 
 /** Checkpoint rings for the circuit challenge. The next ring to fly through glows yellow; done ones green. */
 export class GateMeshes {
   readonly group = new THREE.Group();
-  private rings: THREE.Mesh[] = [];
   private mats = {
     next: new THREE.MeshStandardMaterial({ color: 0xffd34d, emissive: 0xffd34d, emissiveIntensity: 0.6 }),
     todo: new THREE.MeshStandardMaterial({ color: 0xffffff, roughness: 0.6 }),
     done: new THREE.MeshStandardMaterial({ color: 0x3ddc84, emissive: 0x3ddc84, emissiveIntensity: 0.4 }),
   };
 
+  private sets: { gates: GateSpec[]; rings: THREE.Mesh[] }[] = [];
+
   constructor() {
+    for (const gates of [GATES, EIGHT_GATES]) this.sets.push({ gates, rings: this.build(gates, gates === EIGHT_GATES ? 0x6ec6ff : 0xffffff) });
+  }
+
+  private build(gates: GateSpec[], color: number): THREE.Mesh[] {
+    const rings: THREE.Mesh[] = [];
     const geo = new THREE.TorusGeometry(2.2, 0.12, 10, 40);
-    for (const g of GATES) {
-      const ring = new THREE.Mesh(geo, this.mats.todo);
+    const todo = new THREE.MeshStandardMaterial({ color, roughness: 0.6 });
+    for (const g of gates) {
+      const ring = new THREE.Mesh(geo, todo);
+      ring.userData.todo = todo;
       ring.position.set(g.x, g.y, g.z);
-      // Face the direction of travel around the circuit: rings 1/3 face along z, 2/4 along x.
       ring.rotation.y = g.order % 2 === 0 ? 0 : Math.PI / 2;
       ring.castShadow = true;
       this.group.add(ring);
-      this.rings.push(ring);
+      rings.push(ring);
       const pole = new THREE.Mesh(new THREE.CylinderGeometry(0.05, 0.05, g.y - 2.2, 6), new THREE.MeshStandardMaterial({ color: 0x888888 }));
       pole.position.set(g.x, (g.y - 2.2) / 2, g.z);
       this.group.add(pole);
     }
+    return rings;
   }
 
-  update(nextGate: number, circuitDone: boolean): void {
-    this.rings.forEach((r, i) => {
-      r.material = circuitDone || i < nextGate ? this.mats.done : i === nextGate ? this.mats.next : this.mats.todo;
+  /** Highlight: next ring yellow, passed rings green, for each gate set. */
+  update(next: [number, number], done: [boolean, boolean]): void {
+    this.sets.forEach((set, k) => {
+      set.rings.forEach((r, i) => {
+        r.material = done[k] || i < next[k] ? this.mats.done : i === next[k] ? this.mats.next : (r.userData.todo as THREE.Material);
+      });
     });
   }
 }

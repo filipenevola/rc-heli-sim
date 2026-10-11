@@ -31,6 +31,8 @@ const CORS_ORIGINS = (process.env.CORS_ORIGIN ?? '*').split(',').map((o) => o.tr
 const POINTS = {
   'first-hover': 10, 'hover-box': 20, 'nose-in': 40, 'land-table': 25, 'land-truck': 30, 'land-pontoon': 35, 'land-tower': 60,
   circuit: 50, roll: 70, autorotation: 80, 'endurance-5': 40, 'endurance-15': 100,
+  'side-in-left': 20, 'side-in-right': 20, elevator: 25, 'spot-landing': 20, pirouette: 30, 'figure-eight': 50,
+  loop: 70, 'inverted-hover': 90, 'nose-in-circuit': 80,
 };
 const MAX_FLIGHT_SECONDS = 6 * 3600;
 

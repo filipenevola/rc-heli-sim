@@ -161,13 +161,16 @@ const HELP_HTML = `
 
 <section>
   <h4>Learning path</h4>
+  <p>The challenges follow the progression every RC heli instructor teaches, grouped by level:</p>
   <ol>
-    <li>Normal mode, 450 trainer, no wind. Spool up, lift to 1 m, hold a hover tail-in (tail toward you). Land. Repeat.</li>
-    <li>Hover and move a box: forward, right, back, left. Then the same with the nose 45° and 90° to you.</li>
-    <li>Nose-in hover (nose toward you): aileron and elevator feel reversed. This is the big one.</li>
-    <li>Slow circuits, figure eights, then add wind in Settings.</li>
-    <li>Idle-Up, flips and rolls high up; throttle hold and autorotations.</li>
+    <li><b>Beginner</b>: first hover tail-in, hover box, side-in both ways, the Elevator (collective only), picnic table and
+      spot landings, five minutes up. Normal mode, 450 trainer, no wind.</li>
+    <li><b>Intermediate</b>: nose-in hover (the big one: cyclic feels reversed), pirouette, figure eight, the ring circuit,
+      truck and pontoon landings, fifteen minutes up. Add wind in Settings once these are easy.</li>
+    <li><b>Advanced</b>: tower landing out of ground effect, nose-in circuit, autorotation.</li>
+    <li><b>3D</b>: roll, loop, inverted hover. Idle-Up, high up, and lots of Show me first.</li>
   </ol>
+  <p>Rule of thumb from the field: do not move to the next item until the current one is boring.</p>
   <p>Crashes: a blade strike or a hard hit ends the flight; press R or Reset.</p>
 </section>
 `;

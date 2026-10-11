@@ -6,11 +6,14 @@ import { eulerFromQ, rotate, v3 } from '../sim/math';
  * for long enough. Points add up into the "challenge" ranking; the "flight" ranking is the longest single
  * flight without a crash (see FlightTimer).
  */
+export type Level = 'Beginner' | 'Intermediate' | 'Advanced' | '3D';
+
 export interface Challenge {
   id: string;
   title: string;
   description: string;
   points: number;
+  level: Level;
   /** Returns progress 0..1; 1 completes the challenge. Called every frame. */
   check(ctx: ChallengeContext): number;
 }
@@ -24,6 +27,37 @@ export const GATES: GateSpec[] = [
   { id: 'g3', order: 2, x: 14, y: 7, z: -24, r: 2.2 },
   { id: 'g4', order: 3, x: 14, y: 5, z: -8, r: 2.2 },
 ];
+
+/** Figure-eight course: two pylons at x = ±9, z = -16; six rings trace the 8 (crossing in the middle). */
+export const EIGHT_GATES: GateSpec[] = [
+  { id: 'e1', order: 0, x: 0, y: 4, z: -16, r: 2.2 },
+  { id: 'e2', order: 1, x: 9, y: 4, z: -10, r: 2.2 },
+  { id: 'e3', order: 2, x: 15, y: 4, z: -16, r: 2.2 },
+  { id: 'e4', order: 3, x: 9, y: 4, z: -22, r: 2.2 },
+  { id: 'e5', order: 4, x: -9, y: 4, z: -10, r: 2.2 },
+  { id: 'e6', order: 5, x: -15, y: 4, z: -16, r: 2.2 },
+  { id: 'e7', order: 6, x: -9, y: 4, z: -22, r: 2.2 },
+];
+
+/** Signed angle from the nose to the pilot: positive when the pilot is to the heli's left. */
+export function pilotSide(sim: HelicopterSim): number {
+  const fwd = rotate(sim.state.ori, v3(0, 0, -1));
+  const dx = -sim.state.pos.x;
+  const dz = -sim.state.pos.z;
+  const len = Math.hypot(dx, dz) || 1;
+  // 2D cross product (fwd × toPilot) in the ground plane; y-up right-handed: positive = pilot on the left.
+  return (fwd.z * dx - fwd.x * dz) / len / (Math.hypot(fwd.x, fwd.z) || 1);
+}
+
+function gateSequence(gates: GateSpec[], ctx: ChallengeContext): number {
+  const s = ctx.sim.state;
+  if (s.crashed) ctx.mem.next = 0;
+  const next = gates[ctx.mem.next ?? 0];
+  if (!next) return 1;
+  const d = Math.hypot(s.pos.x - next.x, s.pos.y - next.y, s.pos.z - next.z);
+  if (d < next.r) ctx.mem.next = (ctx.mem.next ?? 0) + 1;
+  return (ctx.mem.next ?? 0) / gates.length;
+}
 
 export interface ChallengeContext {
   sim: HelicopterSim;
@@ -53,17 +87,19 @@ function hold(ctx: ChallengeContext, key: string, ok: boolean, seconds: number):
   return Math.min(1, (ctx.mem[key] ?? 0) / seconds);
 }
 
-const landing = (id: string, title: string, points: number, description: string): Challenge => ({
+const landing = (id: string, title: string, points: number, description: string, level: Level = 'Intermediate'): Challenge => ({
   id: `land-${id}`,
   title,
   description,
   points,
+  level,
   check: ({ sim }) => (sim.state.landed?.target.id === id ? 1 : 0),
 });
 
 export const CHALLENGES: Challenge[] = [
   {
     id: 'first-hover',
+    level: 'Beginner',
     title: 'First hover',
     description: 'Hold the helicopter above 1 m for 10 seconds.',
     points: 10,
@@ -71,6 +107,7 @@ export const CHALLENGES: Challenge[] = [
   },
   {
     id: 'hover-box',
+    level: 'Beginner',
     title: 'Hover in the box',
     description: 'Hover between 1 and 4 m, within 4 m of the pad, for 30 seconds.',
     points: 20,
@@ -78,32 +115,27 @@ export const CHALLENGES: Challenge[] = [
   },
   {
     id: 'nose-in',
+    level: 'Intermediate',
     title: 'Nose-in hover',
     description: 'Hover 15 seconds between 1 and 5 m with the nose pointing at you (within 35°). Everything feels reversed.',
     points: 40,
     check: (ctx) => hold(ctx, 'h', hoverHeight(ctx.sim) > 1 && hoverHeight(ctx.sim) < 5 && noseToPilot(ctx.sim) < (35 * Math.PI) / 180 && !ctx.sim.state.crashed, 15),
   },
-  landing('table', 'Picnic table landing', 25, 'Land on the picnic table, all four skids inside the ring.'),
+  landing('table', 'Picnic table landing', 25, 'Land on the picnic table, all four skids inside the ring.', 'Beginner'),
   landing('truck', 'Pickup bed landing', 30, 'Land in the bed of the pickup truck. Mind the cab.'),
   landing('pontoon', 'Pontoon landing', 35, 'Land on the pontoon in the middle of the pond.'),
-  landing('tower', 'Tower pad landing', 60, 'Land on the 7 m tower pad. Small, high, no ground effect.'),
+  landing('tower', 'Tower pad landing', 60, 'Land on the 7 m tower pad. Small, high, no ground effect.', 'Advanced'),
   {
     id: 'circuit',
+    level: 'Intermediate',
     title: 'Gate circuit',
     description: 'Fly through the four rings in order (yellow is next). Start again from the first ring if you crash.',
     points: 50,
-    check: (ctx) => {
-      const s = ctx.sim.state;
-      if (s.crashed) ctx.mem.next = 0;
-      const next = GATES[ctx.mem.next ?? 0];
-      if (!next) return 1;
-      const d = Math.hypot(s.pos.x - next.x, s.pos.y - next.y, s.pos.z - next.z);
-      if (d < next.r) ctx.mem.next = (ctx.mem.next ?? 0) + 1;
-      return (ctx.mem.next ?? 0) / GATES.length;
-    },
+    check: (ctx) => gateSequence(GATES, ctx),
   },
   {
     id: 'roll',
+    level: '3D',
     title: 'Roll it',
     description: 'Above 8 m, roll fully through inverted and recover to level without crashing.',
     points: 70,
@@ -120,6 +152,7 @@ export const CHALLENGES: Challenge[] = [
   },
   {
     id: 'autorotation',
+    level: 'Advanced',
     title: 'Autorotation',
     description: 'From above 25 m, switch throttle hold on and land upright touching down slower than 1.5 m/s.',
     points: 80,
@@ -138,6 +171,7 @@ export const CHALLENGES: Challenge[] = [
   },
   {
     id: 'endurance-5',
+    level: 'Beginner',
     title: 'Five minutes up',
     description: 'Stay airborne for five minutes without crashing.',
     points: 40,
@@ -145,14 +179,145 @@ export const CHALLENGES: Challenge[] = [
   },
   {
     id: 'endurance-15',
+    level: 'Intermediate',
     title: 'Fifteen minutes up',
     description: 'Fifteen minutes in the air in one flight.',
     points: 100,
     check: (ctx) => Math.min(1, ctx.airTime / 900),
   },
+
+
+  // ---- The classic progression: hover in every orientation, pirouettes, figure eights, precision ----
+  {
+    id: 'side-in-left',
+    level: 'Beginner',
+    title: 'Side-in hover (nose left)',
+    description: 'Hover 15 s between 1 and 5 m with the nose pointing to YOUR left, so you see the heli from its right side.',
+    points: 20,
+    check: (ctx) => hold(ctx, 'h', hoverHeight(ctx.sim) > 1 && hoverHeight(ctx.sim) < 5 && !ctx.sim.state.crashed && Math.abs(noseToPilot(ctx.sim) - Math.PI / 2) < (30 * Math.PI) / 180 && pilotSide(ctx.sim) < 0, 15),
+  },
+  {
+    id: 'side-in-right',
+    level: 'Beginner',
+    title: 'Side-in hover (nose right)',
+    description: 'Hover 15 s between 1 and 5 m with the nose pointing to YOUR right.',
+    points: 20,
+    check: (ctx) => hold(ctx, 'h', hoverHeight(ctx.sim) > 1 && hoverHeight(ctx.sim) < 5 && !ctx.sim.state.crashed && Math.abs(noseToPilot(ctx.sim) - Math.PI / 2) < (30 * Math.PI) / 180 && pilotSide(ctx.sim) > 0, 15),
+  },
+  {
+    id: 'elevator',
+    level: 'Beginner',
+    title: 'Elevator',
+    description: 'Within 4 m of the pad: hover at 1–2 m for 3 s, climb to 6–8 m and hold 3 s, come back down to 1–2 m and hold 3 s. Collective control without drifting.',
+    points: 25,
+    check: (ctx) => {
+      const s = ctx.sim.state;
+      if (s.crashed || distToPad(ctx.sim) > 4) { ctx.mem.phase = 0; ctx.mem.t = 0; return 0; }
+      const h = hoverHeight(ctx.sim);
+      const phase = ctx.mem.phase ?? 0;
+      const inBand = phase === 1 ? h > 6 && h < 8 : h > 1 && h < 2;
+      ctx.mem.t = inBand ? (ctx.mem.t ?? 0) + ctx.dt : 0;
+      if ((ctx.mem.t ?? 0) >= 3) {
+        ctx.mem.phase = phase + 1;
+        ctx.mem.t = 0;
+        if (ctx.mem.phase >= 3) return 1;
+      }
+      return (ctx.mem.phase ?? 0) / 3;
+    },
+  },
+  {
+    id: 'spot-landing',
+    level: 'Beginner',
+    title: 'Spot landing',
+    description: 'After at least 20 s in the air, land on the helipad within 50 cm of the centre of the H.',
+    points: 20,
+    check: (ctx) => {
+      const s = ctx.sim.state;
+      if (ctx.airTime > 20) ctx.mem.flew = 1;
+      if (s.crashed) ctx.mem.flew = 0;
+      if (ctx.mem.flew && s.landed?.target.id === 'pad' && s.landed.offset < 0.5) return 1;
+      return ctx.mem.flew ? 0.5 : Math.min(0.5, ctx.airTime / 40);
+    },
+  },
+  {
+    id: 'pirouette',
+    level: 'Intermediate',
+    title: 'Pirouette',
+    description: 'One full slow 360° turn on the spot (either direction) between 1 and 5 m, staying within 2 m of where you started. Keep the cyclic working as the orientation changes.',
+    points: 30,
+    check: (ctx) => {
+      const s = ctx.sim.state;
+      const e = eulerFromQ(s.ori);
+      const h = hoverHeight(ctx.sim);
+      if (s.crashed || h < 1 || h > 5) { ctx.mem.acc = 0; ctx.mem.has = 0; return 0; }
+      if (!ctx.mem.has) { ctx.mem.has = 1; ctx.mem.x = s.pos.x; ctx.mem.z = s.pos.z; ctx.mem.yaw = e.yaw; ctx.mem.acc = 0; }
+      if (Math.hypot(s.pos.x - ctx.mem.x, s.pos.z - ctx.mem.z) > 2) { ctx.mem.has = 0; return 0; }
+      let d = e.yaw - ctx.mem.yaw;
+      while (d > Math.PI) d -= 2 * Math.PI;
+      while (d < -Math.PI) d += 2 * Math.PI;
+      ctx.mem.yaw = e.yaw;
+      // Accumulate in the direction already started; a reversal restarts the count.
+      const acc = (ctx.mem.acc ?? 0) + d;
+      if (Math.sign(acc) !== Math.sign(ctx.mem.acc ?? acc) && Math.abs(ctx.mem.acc ?? 0) > 0.3) ctx.mem.acc = d;
+      else ctx.mem.acc = acc;
+      return Math.min(1, Math.abs(ctx.mem.acc) / (2 * Math.PI));
+    },
+  },
+  {
+    id: 'figure-eight',
+    level: 'Intermediate',
+    title: 'Figure eight',
+    description: 'Fly the seven rings of the figure-eight course in order (yellow is next), crossing the middle twice. Round, even circles.',
+    points: 50,
+    check: (ctx) => gateSequence(EIGHT_GATES, ctx),
+  },
+  {
+    id: 'loop',
+    level: '3D',
+    title: 'Loop',
+    description: 'Above 10 m, pull a full loop: nose up through inverted and back to level, no crash. Collective positive going up, reduced over the top.',
+    points: 70,
+    check: (ctx) => {
+      const s = ctx.sim.state;
+      if (s.crashed || s.pos.y < 3) { ctx.mem.phase = 0; return 0; }
+      const fwd = rotate(s.ori, v3(0, 0, -1));
+      const up = rotate(s.ori, v3(0, 1, 0));
+      const phase = ctx.mem.phase ?? 0;
+      if (phase === 0 && s.pos.y > 10 && up.y > 0.9) ctx.mem.phase = 1; // level and high
+      else if (phase === 1 && fwd.y > 0.7) ctx.mem.phase = 2; // nose pointing up: it is a loop, not a roll
+      else if (phase === 2 && up.y < -0.6) ctx.mem.phase = 3; // over the top, inverted
+      else if (phase === 3 && up.y > 0.85 && Math.abs(fwd.y) < 0.4) return 1;
+      return (ctx.mem.phase ?? 0) / 4;
+    },
+  },
+  {
+    id: 'inverted-hover',
+    level: '3D',
+    title: 'Inverted hover',
+    description: 'Hover upside down for 10 s above 5 m (Idle-Up, collective below centre). The hardest hover there is.',
+    points: 90,
+    check: (ctx) => {
+      const s = ctx.sim.state;
+      const up = rotate(s.ori, v3(0, 1, 0));
+      return hold(ctx, 'h', !s.crashed && s.pos.y > 5 && up.y < -0.85 && Math.hypot(s.vel.x, s.vel.y, s.vel.z) < 2.5, 10);
+    },
+  },
+  {
+    id: 'nose-in-circuit',
+    level: 'Advanced',
+    title: 'Nose-in circuit',
+    description: 'Fly the four-ring circuit with the nose pointing at you the whole way (within 45°). Backwards and sideways flight with reversed controls.',
+    points: 80,
+    check: (ctx) => {
+      const ok = noseToPilot(ctx.sim) < (45 * Math.PI) / 180;
+      if (!ok && ctx.sim.state.pos.y > 1.5) { ctx.mem.next = 0; return 0; }
+      return gateSequence(GATES, ctx);
+    },
+  },
 ];
 
 export const TOTAL_POINTS = CHALLENGES.reduce((a, c) => a + c.points, 0);
+export const LEVELS: Level[] = ['Beginner', 'Intermediate', 'Advanced', '3D'];
 
 export class ChallengeTracker {
   completed = new Set<string>();
@@ -169,9 +334,9 @@ export class ChallengeTracker {
     return CHALLENGES.filter((c) => this.completed.has(c.id)).reduce((a, c) => a + c.points, 0);
   }
 
-  /** Gate index the circuit is waiting for (for the renderer to highlight). */
-  get nextGate(): number {
-    return this.mem.circuit?.next ?? 0;
+  /** Gate index a gate challenge is waiting for (for the renderer to highlight). */
+  nextGate(challengeId = 'circuit'): number {
+    return this.mem[challengeId]?.next ?? 0;
   }
 
   update(sim: HelicopterSim, dt: number, airTime: number): void {
