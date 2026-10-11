@@ -1,3 +1,5 @@
+import { BILLBOARDS } from '../sim/ads';
+
 /** In-game manual. Plain HTML so it works on every device and can be read while paused. */
 export class HelpPanel {
   private el: HTMLElement;
@@ -133,6 +135,15 @@ const HELP_HTML = `
   skids down inside the ring and hold still for a moment: the sim measures your distance from the centre and remembers your
   best on this device. Try the table in Normal mode first, then the truck, the pontoon, and the tower last (it is high, small
   and out of ground effect).</p>
+</section>
+
+<section>
+  <h4>Billboards: the Quave Holdings portfolio</h4>
+  <p>The billboards around the field are the companies and products of <a href="https://quaveholdings.com/portfolio" target="_blank" rel="noopener">Quave Holdings</a>,
+  the group behind this simulator. Tap or click a billboard in the scene to open its site, or use the links here:</p>
+  <ul>
+    ${BILLBOARDS.map((b) => `<li><a href="${b.url}" target="_blank" rel="noopener"><b>${b.name}</b></a> — ${b.tagline}</li>`).join('')}
+  </ul>
 </section>
 
 <section>

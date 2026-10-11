@@ -284,6 +284,11 @@ export class SettingsPanel {
 
   cameraMode: CameraMode = 'pilot';
 
+  setCamera(mode: CameraMode): void {
+    this.cameraMode = mode;
+    this.applyCamera();
+  }
+
   cycleCamera(): void {
     this.cameraMode = CAMERA_MODES[(CAMERA_MODES.indexOf(this.cameraMode) + 1) % CAMERA_MODES.length];
     this.applyCamera();

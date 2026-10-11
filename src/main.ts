@@ -4,6 +4,7 @@ import { createScene } from './render/scene';
 import { HeliMesh } from './render/heli-mesh';
 import { PilotCamera, CAMERA_LABELS } from './render/camera';
 import { createClouds, driftClouds } from './render/clouds';
+import { createBillboards } from './render/billboards';
 import { HelicopterSim, PHYSICS_DT } from './sim/physics';
 import { HELI_MODELS } from './sim/heli-model';
 import { Wind } from './sim/wind';
@@ -29,6 +30,8 @@ const field = createScene(layout);
 const { scene } = field;
 const clouds = createClouds();
 scene.add(clouds);
+const billboards = createBillboards();
+scene.add(billboards.group);
 const pilotCam = new PilotCamera(window.innerWidth / window.innerHeight);
 
 const wind = new Wind();
@@ -77,6 +80,23 @@ window.addEventListener('keydown', (e) => {
   if (e.code === 'KeyC') settings.cycleCamera();
 });
 
+// URL options, handy for sharing a view or for screenshots: ?cam=chase&pos=0,6,-28&yaw=180
+{
+  const q = new URLSearchParams(location.search);
+  const cam = q.get('cam');
+  const pos = q.get('pos')?.split(',').map(Number);
+  if (pos && pos.length === 3 && pos.every(Number.isFinite)) {
+    sim.state.pos = { x: pos[0], y: pos[1], z: pos[2] };
+    sim.state.onGround = false;
+  }
+  const yaw = Number(q.get('yaw'));
+  if (Number.isFinite(yaw) && q.has('yaw')) {
+    const r = (yaw * Math.PI) / 180;
+    sim.state.ori = { x: 0, y: Math.sin(r / 2), z: 0, w: Math.cos(r / 2) };
+  }
+  if (cam && (CAMERA_LABELS as Record<string, string>)[cam]) settings.setCamera(cam as keyof typeof CAMERA_LABELS);
+}
+
 // Exposed for automated checks and tinkering from the devtools console.
 (window as unknown as { rcHeli: unknown }).rcHeli = { sim, input, wind, audio, camera: pilotCam, clouds, world, layout };
 
@@ -86,6 +106,23 @@ function reset(): void {
 
 window.addEventListener('keydown', (e) => {
   if (e.code === 'KeyR') reset();
+});
+
+// Tap a billboard to open the site. A short press with no drag only, so camera-free touches on the field do nothing.
+const raycaster = new THREE.Raycaster();
+let pressAt: { x: number; y: number; t: number } | null = null;
+renderer.domElement.addEventListener('pointerdown', (e) => (pressAt = { x: e.clientX, y: e.clientY, t: performance.now() }));
+renderer.domElement.addEventListener('pointerup', (e) => {
+  if (!pressAt) return;
+  const moved = Math.hypot(e.clientX - pressAt.x, e.clientY - pressAt.y);
+  const quick = performance.now() - pressAt.t < 400;
+  pressAt = null;
+  if (moved > 8 || !quick) return;
+  const ndc = new THREE.Vector2((e.clientX / window.innerWidth) * 2 - 1, -(e.clientY / window.innerHeight) * 2 + 1);
+  raycaster.setFromCamera(ndc, pilotCam.camera);
+  const hit = raycaster.intersectObjects(billboards.panels, false)[0];
+  const ad = hit?.object.userData.billboard as { url: string } | undefined;
+  if (ad) window.open(ad.url, '_blank', 'noopener');
 });
 window.addEventListener('resize', () => {
   renderer.setSize(window.innerWidth, window.innerHeight);

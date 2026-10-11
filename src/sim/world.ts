@@ -1,4 +1,5 @@
 import type { V3 } from './math';
+import { BILLBOARDS, billboardFootprint } from './ads';
 
 /**
  * Static world geometry shared by the physics (collisions, landing targets) and the renderer (meshes).
@@ -188,6 +189,12 @@ export function buildField(): { layout: FieldLayout; world: World } {
     if (p.style === 'tower') world.add({ kind: 'cylinder', name: 'the tower', x: p.x, z: p.z, r: 0.35, y0: 0, y1: p.height - 0.08 });
     if (p.style === 'truck') world.add({ kind: 'box', name: 'the pickup cab', min: { x: p.x - 1.0, y: 0, z: p.z - 3.3 }, max: { x: p.x + 1.0, y: 1.9, z: p.z - 1.1 } });
     if (p.style === 'table') world.add({ kind: 'box', name: 'the table', min: { x: p.x - 0.5, y: 0, z: p.z - 0.5 }, max: { x: p.x + 0.5, y: p.height - 0.08, z: p.z + 0.5 } });
+  }
+
+  // Billboards: the panel plus its posts, as one box each.
+  for (const b of BILLBOARDS) {
+    const f = billboardFootprint(b);
+    world.add({ kind: 'box', name: `the ${b.name} billboard`, min: { x: f.minX, y: 0, z: f.minZ }, max: { x: f.maxX, y: b.elevation + b.height + 0.2, z: f.maxZ } });
   }
 
   return { layout, world };

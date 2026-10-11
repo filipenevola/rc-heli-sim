@@ -38,6 +38,7 @@ body.ui-hidden .topbar, body.ui-hidden .hud, body.ui-hidden .hud-sticks, body.ui
 .help ul, .help ol { padding-left: 20px; margin: 4px 0; }
 .help li { margin: 3px 0; }
 .help p { margin: 4px 0; }
+.help a { color: #ffd34d; }
 .help button { background: rgba(0,0,0,0.55); color: #fff; border: 1px solid rgba(255,255,255,0.3); border-radius: 6px; padding: 6px 10px; font-size: 14px; cursor: pointer; }
 .settings h3 { margin: 0 0 8px; display: flex; justify-content: space-between; align-items: center; }
 .settings h4 { margin: 12px 0 6px; opacity: 0.8; font-weight: 600; }
