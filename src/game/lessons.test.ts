@@ -2,14 +2,15 @@ import { describe, expect, it } from 'vitest';
 import { HelicopterSim, PHYSICS_DT } from '../sim/physics';
 import { HELI_450 } from '../sim/heli-model';
 import { Wind } from '../sim/wind';
-import { buildField } from '../sim/world';
+import { buildSite } from '../sim/world';
+import { siteFor } from '../site';
 import { ChallengeTracker, FlightTimer } from './challenges';
 import { LESSONS, LessonRunner } from './lessons';
 
 /** Every lesson must complete its own challenge on the real physics, without crashing. */
 describe.each(LESSONS)('lesson $challengeId', (lesson) => {
   it('completes the challenge', () => {
-    const { world } = buildField();
+    const { world } = buildSite(siteFor(lesson.challengeId));
     const sim = new HelicopterSim(HELI_450, new Wind(), world);
     sim.assist = 'attitude';
     const tracker = new ChallengeTracker();

@@ -3,6 +3,12 @@
 All notable changes to RC Heli Sim. The version shown in the game (Help and Settings) matches the latest
 entry here; the commit hash next to it identifies the exact build.
 
+## 0.48.0
+
+- **Three new landing challenges** for the other sites, each with Show me and Teach me: the container roof on
+  the parking lot (35 pts), the mat stack (15) and the vault box (30) in the gym. 30 challenges, 1,465 points.
+- A one-line "Updated to vX" note with the release log link when you come back to a new build.
+
 ## 0.47.0
 
 - **Parking lot**, a third flying site (Settings → Flying site): the club's car park, asphalt with painted bays,

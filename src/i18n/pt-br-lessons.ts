@@ -121,4 +121,11 @@ export const PT_BR_LESSONS: Record<string, string> = {
   'Flight {n}: lift to 3 m and hold.': 'Voo {n}: suba a 3 m e segure.',
   'Flight {n}: back over the H and settle.': 'Voo {n}: de volta sobre o H e estabilize.',
   'Step timed out: {rest}': 'Passo expirou: {rest}',
+  'A roof is a roof: approach high, stop dead above it, and sink straight down. Up there the ground effect is gone, so the last metre needs a little more collective than on the pad.': 'Teto é teto: aproxime alto, pare completamente em cima dele e desça reto. Lá em cima o efeito solo some, então o último metro pede um pouco mais de coletivo do que no heliponto.',
+  'Lift to 4 m: higher than the container.': 'Suba a 4 m: mais alto que o contêiner.',
+  'Fly over the container and stop above its roof, about 1.5 m up. Kill all drift before you sink.': 'Voe até o contêiner e pare sobre o teto, a uns 1,5 m. Mate toda a deriva antes de descer.',
+  "The gym's easy target: a wide, soft stack of mats half a metre up. Slow, vertical, centred.": 'O alvo fácil do ginásio: uma pilha larga e macia de colchões a meio metro. Devagar, na vertical, centrado.',
+  'Fly over the mats and stop above them, about 1.5 m up. Wait for the drift to die.': 'Voe até os colchões e pare sobre eles, a uns 1,5 m. Espere a deriva morrer.',
+  'The vault box is a 1.2 m square: the skids only just fit. Centre it from above before you commit.': 'O plinto é um quadrado de 1,2 m: os esquis mal cabem. Centre por cima antes de se comprometer.',
+  'Fly over the vault box and stop above it, about 1.5 m up. Centre it exactly, then sink.': 'Voe até o plinto e pare sobre ele, a uns 1,5 m. Centre exatamente, depois desça.',
 };

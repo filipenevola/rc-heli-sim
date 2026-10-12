@@ -2,7 +2,8 @@ import { describe, expect, it } from 'vitest';
 import { HelicopterSim, PHYSICS_DT } from '../sim/physics';
 import { HELI_MODELS } from '../sim/heli-model';
 import { Wind } from '../sim/wind';
-import { buildField } from '../sim/world';
+import { buildSite } from '../sim/world';
+import { siteFor } from '../site';
 import { ChallengeTracker, FlightTimer } from './challenges';
 import { LESSONS, LessonRunner } from './lessons';
 import { CHALLENGES } from './challenges';
@@ -15,7 +16,7 @@ for (const model of HELI_MODELS) {
     .filter((l) => !((model.rotor.radius < 0.3 || model.controller.type === 'flybar') && l.challengeId === 'autorotation'));
   describe.each(lessons)(`show-me on ${model.name}: $challengeId`, (lesson) => {
     it('completes without crashing', () => {
-      const { world } = buildField();
+      const { world } = buildSite(siteFor(lesson.challengeId));
       const sim = new HelicopterSim(model, new Wind(), world);
       sim.assist = 'attitude';
       const tracker = new ChallengeTracker();

@@ -336,6 +336,15 @@ onLangChange(() => {
   challenges.refresh();
   help.setLanguage();
 });
+// Returning after an update: a one-line note with the release log link.
+{
+  let prefs: { seenVersion?: string } = {};
+  try { prefs = JSON.parse(localStorage.getItem('rc-heli-sim.prefs.v1') ?? '{}') as { seenVersion?: string }; } catch { /* no prefs */ }
+  if (prefs.seenVersion && prefs.seenVersion !== __VERSION__ && !settings.firstVisit) {
+    hud.notify(`<b>${t('Updated to v{version}', { version: __VERSION__ })}</b><br><a href="https://github.com/filipenevola/rc-heli-sim/blob/main/CHANGELOG.md" target="_blank" rel="noopener">${t('Release log')}</a>`, 6000);
+  }
+  if (prefs.seenVersion !== __VERSION__) settings.markVersionSeen(__VERSION__);
+}
 // First visit: a short welcome card with the three things a newcomer needs. Dismissed by its button or by flying.
 if (settings.firstVisit && !new URLSearchParams(location.search).get('lesson')) {
   const touch = matchMedia('(pointer: coarse)').matches;

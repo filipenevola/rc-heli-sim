@@ -2,7 +2,8 @@ import { describe, expect, it } from 'vitest';
 import { HelicopterSim, PHYSICS_DT } from '../sim/physics';
 import { HELI_450 } from '../sim/heli-model';
 import { Wind } from '../sim/wind';
-import { buildField } from '../sim/world';
+import { buildSite } from '../sim/world';
+import { siteFor } from '../site';
 import { ChallengeTracker, FlightTimer } from './challenges';
 import { LESSONS, LessonRunner } from './lessons';
 
@@ -13,7 +14,7 @@ import { LESSONS, LessonRunner } from './lessons';
  */
 describe.each(LESSONS.filter((l) => !l.challengeId.startsWith('endurance')))('teach $challengeId', (lesson) => {
   it('a player following the hints completes the lesson', () => {
-    const { world } = buildField();
+    const { world } = buildSite(siteFor(lesson.challengeId));
     const sim = new HelicopterSim(HELI_450, new Wind(), world);
     sim.assist = 'rate';
     const tracker = new ChallengeTracker();

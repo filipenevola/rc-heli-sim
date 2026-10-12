@@ -13,12 +13,18 @@ export function getSite(): SiteId {
 
 /** Challenges that need the outdoor field (altitude, wind or its landing targets). */
 export const FIELD_ONLY = new Set(['land-table', 'land-truck', 'land-pontoon', 'land-tower', 'crosswind-landing', 'autorotation', 'stall-turn', 'loop', 'funnel', 'tic-toc', 'piro-flip']);
-/** The field's four landing targets do not exist on the parking lot. */
-const LOT_UNAVAILABLE = new Set(['land-table', 'land-truck', 'land-pontoon', 'land-tower']);
+/** Challenges tied to one site's landing targets. Everything else is available on every site that can host it. */
+const SITE_OF: Record<string, SiteId> = { 'land-table': 'field', 'land-truck': 'field', 'land-pontoon': 'field', 'land-tower': 'field', 'land-container': 'lot', 'land-mat': 'gym', 'land-vault': 'gym' };
+
+/** The site a challenge (and its lesson) belongs to when it has one; the field otherwise. */
+export function siteFor(id: string): SiteId {
+  return SITE_OF[id] ?? 'field';
+}
 
 /** Challenges that cannot be completed on the current site. */
 export function unavailableHere(id: string): boolean {
+  const home = SITE_OF[id];
+  if (home) return home !== current;
   if (current === 'gym') return FIELD_ONLY.has(id);
-  if (current === 'lot') return LOT_UNAVAILABLE.has(id);
   return false;
 }

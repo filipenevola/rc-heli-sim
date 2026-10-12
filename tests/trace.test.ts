@@ -2,14 +2,15 @@ import { it } from 'vitest';
 import { HelicopterSim, PHYSICS_DT } from '../src/sim/physics';
 import { HELI_MODELS } from '../src/sim/heli-model';
 import { Wind } from '../src/sim/wind';
-import { buildField } from '../src/sim/world';
+import { buildSite } from '../src/sim/world';
+import { siteFor } from '../src/site';
 import { rotate, v3, eulerFromQ } from '../src/sim/math';
 import { ChallengeTracker, FlightTimer } from '../src/game/challenges';
 import { LESSONS, LessonRunner } from '../src/game/lessons';
 it('trace', () => {
   const id = process.env.TRACE ?? 'stall-turn';
   const from = Number(process.env.FROM ?? 3);
-  const { world } = buildField();
+  const { world } = buildSite(siteFor(id));
   const model = HELI_MODELS.find((m) => m.id === (process.env.MODEL ?? '450-fbl'))!;
   const sim = new HelicopterSim(model, new Wind(), world);
   sim.assist = 'attitude';

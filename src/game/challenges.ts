@@ -141,6 +141,9 @@ export const CHALLENGES: Challenge[] = [
   landing('truck', 'Pickup bed landing', 30, 'Land in the bed of the pickup truck. Mind the cab.'),
   landing('pontoon', 'Pontoon landing', 35, 'Land on the pontoon in the middle of the pond.'),
   landing('tower', 'Tower pad landing', 60, 'Land on the 7 m tower pad. Small, high, no ground effect.', 'Advanced'),
+  landing('container', 'Container roof landing', 35, 'Parking lot: land on the shipping container\'s roof, 2.6 m up, narrow, with no ground effect to float on.'),
+  landing('mat', 'Mat stack landing', 15, 'Gym: land on the stack of mats, all four skids inside the ring.', 'Beginner'),
+  landing('vault', 'Vault box landing', 30, 'Gym: land on the vault box, a 1.2 m square with nothing to spare.'),
   {
     id: 'circuit',
     level: 'Intermediate',

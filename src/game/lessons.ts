@@ -203,6 +203,24 @@ export const LESSONS: Lesson[] = [
     steps: [spoolUp(0, 'Spool up.'), liftTo(2.5, 'Lift off.'), ...landOn({ x: 9, y: 0.9, z: -12 }, 'Fly over the table and stop above it, about 1.5 m up. Wait for the drift to die.')],
   },
   {
+    challengeId: 'land-container',
+    title: 'Container roof landing',
+    intro: 'A roof is a roof: approach high, stop dead above it, and sink straight down. Up there the ground effect is gone, so the last metre needs a little more collective than on the pad.',
+    steps: [spoolUp(0, 'Spool up.'), liftTo(4, 'Lift to 4 m: higher than the container.'), ...landOn({ x: 12, y: 2.6, z: -24 }, 'Fly over the container and stop above its roof, about 1.5 m up. Kill all drift before you sink.')],
+  },
+  {
+    challengeId: 'land-mat',
+    title: 'Mat stack landing',
+    intro: 'The gym\'s easy target: a wide, soft stack of mats half a metre up. Slow, vertical, centred.',
+    steps: [spoolUp(0, 'Spool up.'), liftTo(2.5, 'Lift off.'), ...landOn({ x: 8, y: 0.5, z: -16 }, 'Fly over the mats and stop above them, about 1.5 m up. Wait for the drift to die.')],
+  },
+  {
+    challengeId: 'land-vault',
+    title: 'Vault box landing',
+    intro: 'The vault box is a 1.2 m square: the skids only just fit. Centre it from above before you commit.',
+    steps: [spoolUp(0, 'Spool up.'), liftTo(3, 'Lift to 3 m.'), ...landOn({ x: -9, y: 1.2, z: -22 }, 'Fly over the vault box and stop above it, about 1.5 m up. Centre it exactly, then sink.')],
+  },
+  {
     challengeId: 'land-truck',
     title: 'Pickup bed landing',
     intro: 'Same as the table, with an obstacle: approach from behind the truck so the cab is never under the blades.',
