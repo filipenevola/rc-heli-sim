@@ -97,7 +97,18 @@ export interface HouseSpec { x: number; z: number; w: number; d: number; h: numb
 export interface AnimalSpec { x: number; z: number; kind: 'cow' | 'sheep'; rot: number }
 export interface BaleSpec { x: number; z: number; rot: number }
 
+export interface HallSpec {
+  /** Inner half-width (x) and the z extent of the hall; height of the ceiling. */
+  halfW: number;
+  zFront: number;
+  zBack: number;
+  height: number;
+}
+
 export interface FieldLayout {
+  /** 'field' (outdoors, default) or 'gym' (an indoor sports hall for micro practice). */
+  site: 'field' | 'gym';
+  hall?: HallSpec;
   trees: TreeSpec[];
   houses: HouseSpec[];
   animals: AnimalSpec[];
@@ -129,6 +140,7 @@ export function buildField(): { layout: FieldLayout; world: World } {
   const rnd = () => ((seed = (seed * 16807) % 2147483647) / 2147483647);
   const world = new World();
   const layout: FieldLayout = {
+    site: 'field',
     trees: [],
     houses: [],
     animals: [],
@@ -212,4 +224,57 @@ export function buildField(): { layout: FieldLayout; world: World } {
   }
 
   return { layout, world };
+}
+
+
+/**
+ * An indoor sports hall: 36 x 48 m, 12 m to the ceiling, bleachers along one side and a hoop at each end. No wind,
+ * walls and ceiling that bite, two low landing targets (a stack of mats and a vault box). Micro-sized practice.
+ */
+export function buildGym(): { layout: FieldLayout; world: World } {
+  const world = new World();
+  const hall: HallSpec = { halfW: 18, zFront: 10, zBack: -38, height: 12 };
+  const layout: FieldLayout = {
+    site: 'gym',
+    hall,
+    trees: [],
+    houses: [],
+    animals: [],
+    bales: [],
+    pond: { x: 0, z: 0, r: 0 },
+    road: { x: 0, z: 0, length: 0, width: 0, rot: 0 },
+    windsock: { x: -6, z: -3, height: 0 },
+    platforms: [
+      { id: 'mat', name: 'Mat stack', x: 8, z: -16, height: 0.5, size: 2.0, style: 'table', radius: 0.6 },
+      { id: 'vault', name: 'Vault box', x: -9, z: -22, height: 1.2, size: 1.2, style: 'table', radius: 0.45 },
+    ],
+  };
+  for (const p of layout.platforms) {
+    const half = p.size / 2;
+    const target: LandingTarget = { id: p.id, name: p.name, centre: { x: p.x, y: p.height, z: p.z }, radius: p.radius };
+    world.add({ kind: 'box', name: p.name, target, min: { x: p.x - half, y: Math.max(0, p.height - 0.08), z: p.z - half }, max: { x: p.x + half, y: p.height, z: p.z + half } });
+    world.add({ kind: 'box', name: p.name, min: { x: p.x - half, y: 0, z: p.z - half }, max: { x: p.x + half, y: p.height - 0.08, z: p.z + half } });
+  }
+  world.pad = { id: 'pad', name: 'helipad', centre: { x: 0, y: 0, z: -6 }, radius: 0.5 };
+  // Walls, ceiling.
+  const t = 1;
+  world.add({ kind: 'box', name: 'the wall', min: { x: -hall.halfW - t, y: 0, z: hall.zBack - t }, max: { x: -hall.halfW, y: hall.height + t, z: hall.zFront + t } });
+  world.add({ kind: 'box', name: 'the wall', min: { x: hall.halfW, y: 0, z: hall.zBack - t }, max: { x: hall.halfW + t, y: hall.height + t, z: hall.zFront + t } });
+  world.add({ kind: 'box', name: 'the wall', min: { x: -hall.halfW, y: 0, z: hall.zFront }, max: { x: hall.halfW, y: hall.height + t, z: hall.zFront + t } });
+  world.add({ kind: 'box', name: 'the wall', min: { x: -hall.halfW, y: 0, z: hall.zBack - t }, max: { x: hall.halfW, y: hall.height + t, z: hall.zBack } });
+  world.add({ kind: 'box', name: 'the ceiling', min: { x: -hall.halfW, y: hall.height, z: hall.zBack }, max: { x: hall.halfW, y: hall.height + t, z: hall.zFront } });
+  // Bleachers along the +x wall: five steps.
+  for (let i = 0; i < 5; i++) {
+    world.add({ kind: 'box', name: 'the bleachers', min: { x: hall.halfW - 5 + i, y: 0, z: hall.zBack + 8 }, max: { x: hall.halfW, y: 0.45 * (i + 1), z: hall.zFront - 8 } });
+  }
+  // Hoops at each end: pole and backboard.
+  for (const z of [hall.zFront - 1.2, hall.zBack + 1.2]) {
+    world.add({ kind: 'cylinder', name: 'the hoop post', x: 0, z, r: 0.08, y0: 0, y1: 3.9 });
+    world.add({ kind: 'box', name: 'the backboard', min: { x: -0.9, y: 2.9, z: z - 0.05 }, max: { x: 0.9, y: 3.95, z: z + 0.05 } });
+  }
+  return { layout, world };
+}
+
+export function buildSite(site: 'field' | 'gym'): { layout: FieldLayout; world: World } {
+  return site === 'gym' ? buildGym() : buildField();
 }

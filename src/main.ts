@@ -8,7 +8,9 @@ import { createBillboards } from './render/billboards';
 import { HelicopterSim, PHYSICS_DT } from './sim/physics';
 import { HELI_MODELS } from './sim/heli-model';
 import { Wind } from './sim/wind';
-import { buildField } from './sim/world';
+import { buildSite } from './sim/world';
+import { createGymScene } from './render/gym';
+import { getSite, setSite, type SiteId } from './site';
 import { InputManager } from './input/manager';
 import { Hud } from './ui/hud';
 import { SettingsPanel, MODE_HELP, HOLD_HELP } from './ui/settings';
@@ -43,19 +45,28 @@ renderer.toneMapping = THREE.ACESFilmicToneMapping;
 renderer.toneMappingExposure = 1.0;
 app.appendChild(renderer.domElement);
 
-const { layout, world } = buildField();
-const field = createScene(layout);
+// Site: ?site=gym or the saved preference; the field otherwise. Changing it reloads the page.
+{
+  const fromUrl = new URLSearchParams(location.search).get('site');
+  let saved: SiteId | undefined;
+  try { saved = (JSON.parse(localStorage.getItem('rc-heli-sim.prefs.v1') ?? '{}') as { site?: SiteId }).site; } catch { /* no prefs */ }
+  const site = fromUrl === 'gym' || fromUrl === 'field' ? fromUrl : saved === 'gym' ? 'gym' : 'field';
+  setSite(site);
+}
+const { layout, world } = buildSite(getSite());
+const field = getSite() === 'gym' ? createGymScene(layout) : createScene(layout);
 const { scene } = field;
 const clouds = createClouds();
-scene.add(clouds);
+if (getSite() === 'field') scene.add(clouds);
 const billboards = createBillboards();
-scene.add(billboards.group);
+if (getSite() === 'field') scene.add(billboards.group);
 const gates = new GateMeshes();
 scene.add(gates.group);
 const pilotCam = new PilotCamera(window.innerWidth / window.innerHeight);
 
 const wind = new Wind();
 wind.obstacles = world.windObstacles();
+if (getSite() === 'gym') wind.speed = 0;
 const sim = new HelicopterSim(HELI_MODELS[0], wind, world);
 let heliMesh = new HeliMesh(sim.model);
 scene.add(heliMesh.root);
@@ -247,7 +258,9 @@ const settings = new SettingsPanel(ui, input, wind, audio, {
   },
   onPilotSpot(spot) {
     // The road spot stands beside the cerradoX billboard (x = 0, z = 56), not behind it.
-    const spots: Record<string, [number, number]> = { pad: [0, 0], barn: [-40, -6], pond: [28, -12], tower: [14, -34], road: [14, 64] };
+    const spots: Record<string, [number, number]> = getSite() === 'gym'
+      ? { pad: [0, 0], bleachers: [15, -14], end: [0, -34] }
+      : { pad: [0, 0], barn: [-40, -6], pond: [28, -12], tower: [14, -34], road: [14, 64] };
     let x: number;
     let z: number;
     if (spot === 'heli') {
@@ -339,7 +352,7 @@ challenges.onProfileChange = () => settings.setPilotLabel(profile.name, profile.
 }
 
 // Exposed for automated checks and tinkering from the devtools console.
-(window as unknown as { rcHeli: unknown }).rcHeli = { sim, input, wind, audio, camera: pilotCam, clouds, world, layout, tracker, flightTimer, profile, flightLog, challengesList: CHALLENGES };
+(window as unknown as { rcHeli: unknown }).rcHeli = { sim, input, wind, audio, camera: pilotCam, clouds, scene, world, layout, tracker, flightTimer, profile, flightLog, challengesList: CHALLENGES };
 
 function reset(): void {
   if (replay) stopReplay();

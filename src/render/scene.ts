@@ -404,7 +404,7 @@ function makeGrassTexture(): THREE.Texture {
   return t;
 }
 
-function makePadTexture(): THREE.Texture {
+export function makePadTexture(): THREE.Texture {
   const c = document.createElement('canvas');
   c.width = c.height = 512;
   const g = c.getContext('2d')!;

@@ -235,6 +235,11 @@ const HELP_HTML = `
 </section>
 
 <section>
+  <h4>The indoor gym</h4>
+  <p>Settings → <b>Flying site</b> → Indoor gym loads a sports hall instead of the field: 36 × 48 m, 12 m to the
+  ceiling, bleachers, two hoops, a stack of mats and a vault box to land on, and no wind. It is the place for the
+  250 micro and for tight hover work; walls, ceiling, hoops and bleachers all bite. The circuits and hover
+  challenges work in here; the ones that need altitude, wind or the field's targets are marked "Field only".</p>
   <h4>Billboards: the Quave Holdings portfolio</h4>
   <p>The billboards around the field are the companies and products of <a href="https://quaveholdings.com/portfolio" target="_blank" rel="noopener">Quave Holdings</a>,
   the group behind this simulator. Tap or click a billboard in the scene to open its site, or use the links here:</p>

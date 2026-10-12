@@ -188,6 +188,11 @@ export const HELP_HTML_PT = `
 </section>
 
 <section>
+  <h4>O ginásio coberto</h4>
+  <p>Configurações → <b>Local de voo</b> → Ginásio coberto carrega um ginásio em vez do campo: 36 × 48 m, 12 m até o
+  teto, arquibancada, duas cestas, uma pilha de colchões e um plinto para pousar, e sem vento. É o lugar do
+  micro 250 e do trabalho de pairado apertado; paredes, teto, cestas e arquibancada mordem. Os circuitos e os desafios de
+  pairado funcionam aqui dentro; os que precisam de altura, vento ou dos alvos do campo aparecem como "Só no campo".</p>
   <h4>Outdoors: o portfólio da Quave Holdings</h4>
   <p>Os outdoors ao redor do campo são as empresas e produtos da <a href="https://quaveholdings.com/portfolio" target="_blank" rel="noopener">Quave Holdings</a>,
   o grupo por trás deste simulador. Toque ou clique num outdoor na cena para abrir o site, ou use os links aqui:</p>

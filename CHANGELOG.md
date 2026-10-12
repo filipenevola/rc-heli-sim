@@ -3,6 +3,13 @@
 All notable changes to RC Heli Sim. The version shown in the game (Help and Settings) matches the latest
 entry here; the commit hash next to it identifies the exact build.
 
+## 0.35.0
+
+- **Indoor gym**, a second flying site (Settings → Flying site): a 36 × 48 m sports hall with a 12 m ceiling,
+  bleachers, two hoops, a stack of mats and a vault box as landing targets, wooden floor with court lines, and
+  no wind. Walls, ceiling, hoops and bleachers are all solid. Made for the 250 micro and tight hover work.
+  Challenges that need altitude, wind or the field's targets are marked "Field only" there.
+
 ## 0.34.0
 
 - **Português (Brasil)**: the whole interface, the 27 challenges, every lesson caption and the manual are

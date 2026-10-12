@@ -1,6 +1,7 @@
 import { HELI_MODELS, type HeliModel, type ModelSetup } from '../sim/heli-model';
 import { DEFAULT_CUSTOM, normalizeSpec, type CustomSpec } from '../sim/custom-model';
 import { getLang, localizeDom, setLang, t, type Lang } from '../i18n';
+import { getSite, type SiteId } from '../site';
 import type { InputManager, SourceChoice } from '../input/manager';
 import { saveMapping, builtinName, readAxis, type AxisMapping, type GamepadMapping, type SwitchMapping } from '../input/gamepad';
 import type { StickMode } from '../input/types';
@@ -59,7 +60,7 @@ const AXIS_HINT: Record<AxisName | SwitchName, string> = {
 };
 
 const PREFS_KEY = 'rc-heli-sim.prefs.v1';
-interface Prefs { lang?: Lang; welcomed?: boolean; custom?: CustomSpec; trail?: boolean; gear?: boolean; nrate?: number; model?: string; source?: string; stickMode?: number; expo?: number; rate?: number; rexpo?: number; assist?: string; camera?: string; spot?: string; arrow?: boolean; wind?: number; windDir?: number; gust?: number; volume?: number; muted?: boolean; tilt?: number }
+interface Prefs { site?: SiteId; lang?: Lang; welcomed?: boolean; custom?: CustomSpec; trail?: boolean; gear?: boolean; nrate?: number; model?: string; source?: string; stickMode?: number; expo?: number; rate?: number; rexpo?: number; assist?: string; camera?: string; spot?: string; arrow?: boolean; wind?: number; windDir?: number; gust?: number; volume?: number; muted?: boolean; tilt?: number }
 function loadPrefs(): Prefs {
   try { return JSON.parse(localStorage.getItem(PREFS_KEY) ?? '{}') as Prefs; } catch { return {}; }
 }
@@ -333,6 +334,7 @@ export class SettingsPanel {
     this.panel.innerHTML = `
       <h3>Settings <button id="close">×</button></h3>
       <label>Language ${sel('lang', [['en', 'English'], ['pt-BR', 'Português (Brasil)']], getLang())}</label>
+      <label>Flying site ${sel('site', [['field', 'The field (default)'], ['gym', 'Indoor gym (micro-sized hall, no wind)']], getSite())}</label>
       <p class="hint">v${__VERSION__} · build <code>${__COMMIT__}</code> (${__BUILD__.split(' ').slice(1).join(' ')}) · <a href="https://github.com/filipenevola/rc-heli-sim/blob/main/CHANGELOG.md" target="_blank" rel="noopener">Release log</a></p>
       <section>
         <h4>Helicopter</h4>
@@ -376,7 +378,7 @@ export class SettingsPanel {
         <h4>Camera</h4>
         ${sel('camera', CAMERA_MODES.map((m) => [m, CAMERA_LABELS[m]]), this.cameraMode)}
         <p class="hint">Cam button or C key cycles. "Pilot" is the realistic one: you stand on the field.</p>
-        <label>Pilot stands at ${sel('spot', [['pad', 'The helipad (default)'], ['barn', 'By the barn'], ['pond', 'By the pond'], ['tower', 'By the tower'], ['road', 'On the road']], this.spot)}</label>
+        <label>Pilot stands at ${sel('spot', getSite() === 'gym' ? [['pad', 'The helipad (default)'], ['bleachers', 'On the bleachers'], ['end', 'At the far end']] : [['pad', 'The helipad (default)'], ['barn', 'By the barn'], ['pond', 'By the pond'], ['tower', 'By the tower'], ['road', 'On the road']], this.spot)}</label>
         <button id="walk">Walk to the heli (G)</button>
         <label><input type="checkbox" id="arrow" ${this.arrowOn ? 'checked' : ''}> Orientation arrow under the heli (beginner aid)</label>
         <label><input type="checkbox" id="trail" ${this.trailOn ? 'checked' : ''}> Smoke trail: fading path of the last 12 s (T)</label>
@@ -386,7 +388,7 @@ export class SettingsPanel {
         ${slider('volume', 'Volume', 0, 1, 0.05, this.audio.volume)}
       </section>
       <section>
-        <h4>Wind</h4>
+        <h4>Wind</h4>${getSite() === 'gym' ? '<p class="hint">No wind indoors: the sliders are ignored in the gym.</p>' : ''}
         ${slider('wind', 'Speed (m/s)', 0, 10, 0.5, this.wind.speed)}
         ${slider('winddir', 'From (°)', 0, 359, 5, this.wind.fromDeg)}
         ${slider('gust', 'Gustiness', 0, 1, 0.1, this.wind.gustiness)}
@@ -394,6 +396,10 @@ export class SettingsPanel {
 
     const q = <T extends HTMLElement>(s: string) => this.panel.querySelector(s) as T;
     q('#close').addEventListener('click', () => this.toggle());
+    q<HTMLSelectElement>('#site').addEventListener('change', (e) => {
+      savePrefs({ site: (e.target as HTMLSelectElement).value as SiteId });
+      location.reload();
+    });
     q<HTMLSelectElement>('#lang').addEventListener('change', (e) => {
       const lang = (e.target as HTMLSelectElement).value as Lang;
       savePrefs({ lang });
