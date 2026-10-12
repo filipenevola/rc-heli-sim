@@ -257,6 +257,12 @@ const HELP_HTML = `
   light poles, a few parked cars, two warehouses along the back and a shipping container whose roof is a landing
   target (2.6 m up, almost no ground effect). Open sky and wind, like a real club lot; the poles are the usual
   surprise. The field's picnic table, truck, pontoon and tower challenges are marked "Field only" there.</p>
+  <h4>Rescue: the buddy box</h4>
+  <p>Hold <b>Space</b> (or press and hold the 🛟 button) and the instructor takes the sticks: the heli rolls upright,
+  the drift stops and it holds a hover where it is, climbing to 3 m first if it was lower. Let go and the sticks are
+  yours again, with your assist mode restored. It is the trainer switch of a buddy box, or the rescue button of a
+  flybarless unit: use it the moment you lose it, not after the ground arrives. Rescue needs a turning rotor and some
+  height; on the ground or after a crash it does nothing. It is off during lessons and replays.</p>
   <h4>Phone radio: your phone as the transmitter</h4>
   <p>Fly the sim on a laptop or TV with a phone in your hands: Settings → Input → <b>Pair a phone</b> shows a four-letter
   code; on the phone open <b>/radio.html</b> (same site), type the code, and its touch gimbals (or phone tilt for

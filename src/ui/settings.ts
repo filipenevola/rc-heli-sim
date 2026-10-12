@@ -39,6 +39,8 @@ export interface SettingsCallbacks {
   onChallenges(): void;
   onPilot(): void;
   onPause(): void;
+  /** Rescue (buddy box) pressed / released. */
+  onRescue(on: boolean): void;
   /** Set a camera mode, or cycle when undefined. Returns the label of the active mode. */
   onCamera(mode?: CameraMode): string;
   /** Move the pilot to a named spot, or walk toward the helicopter ('heli'). */
@@ -210,6 +212,7 @@ export class SettingsPanel {
       <button id="btn-reset" data-tip="Reset the helicopter to the pad (R). Shift+R resets into a hover at 6 m for 3D drills." title="Reset (R)">↺</button>
       <button id="btn-mode" data-tip="Flight mode (1 / 2 / 3): Normal, Idle-Up 1, Idle-Up 2. Idle-Up = fixed head speed and negative pitch for inverted flight." title="Flight mode (1/2/3)">🔀 N</button>
       <button id="btn-hold" data-tip="Throttle hold (H): motor off, rotor freewheels. Autorotation practice or a safety." title="Throttle hold (H)">✋</button>
+      <button id="btn-rescue" data-tip="Rescue (hold Space): the instructor takes the sticks, levels the heli and holds a hover until you let go. A buddy box." title="Rescue (hold Space)">🛟</button>
       <button id="btn-sound" data-tip="Sound on / off (M)" title="Sound (M)">🔊</button>
       <button id="btn-camera" data-tip="Camera (C): Pilot on the field, Chase, Front, Top, Drone" title="Camera (C)">🎥 Pilot</button>
       <button id="btn-challenges" data-tip="Challenges, Show me / Teach me lessons, rankings" title="Challenges & rankings">🏁</button>
@@ -242,6 +245,13 @@ export class SettingsPanel {
     const ro = new ResizeObserver(() => document.documentElement.style.setProperty('--topbar-h', `${bar.offsetHeight}px`));
     ro.observe(bar);
     bar.querySelector('#btn-recentre')!.addEventListener('click', () => input.motion.recentre());
+    {
+      const b = bar.querySelector('#btn-rescue') as HTMLButtonElement;
+      const down = (e: Event) => { e.preventDefault(); b.classList.add('active'); cb.onRescue(true); };
+      const up = () => { b.classList.remove('active'); cb.onRescue(false); };
+      b.addEventListener('pointerdown', down);
+      for (const ev of ['pointerup', 'pointercancel', 'pointerleave']) b.addEventListener(ev, up);
+    }
     bar.querySelector('#btn-full')!.addEventListener('click', () => void toggleFullscreen());
     window.addEventListener('keydown', (e) => {
       if (e.code === 'KeyU') setHidden(!document.body.classList.contains('ui-hidden'));

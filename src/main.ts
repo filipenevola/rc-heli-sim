@@ -26,6 +26,7 @@ import { FlightLog } from './game/flightlog';
 import { GateMeshes } from './render/gates';
 import { ChallengesPanel } from './ui/challenges-panel';
 import { installTypingGuard } from './input/typing-guard';
+import { Rescue } from './game/rescue';
 import { lessonFor, LessonRunner } from './game/lessons';
 import { recordGhost, type GhostFrame } from './game/ghost';
 import { Trail } from './render/trail';
@@ -222,6 +223,23 @@ tracker.onComplete = (c) => {
 };
 const stats = new FlightStats();
 let telemetryClock = 0;
+// Rescue (buddy box): hold Space or the 🛟 button and the demo pilot levels the heli and holds a hover.
+const rescue = new Rescue(sim);
+const rescueBadge = document.createElement('div');
+rescueBadge.className = 'rescue-badge';
+rescueBadge.style.display = 'none';
+ui.appendChild(rescueBadge);
+function setRescue(on: boolean): void {
+  if (on) {
+    if (lesson || replay) return;
+    if (!rescue.engage()) { hud.notify(`<b>🛟 ${t('Rescue')}</b><br>${t('Nothing to rescue: the heli is on the ground or already crashed.')}`, 2000); return; }
+    rescueBadge.innerHTML = `🛟 <b>${t('RESCUE')}</b> · ${t('the instructor has the sticks; let go to fly')}`;
+    rescueBadge.style.display = '';
+  } else {
+    rescue.release();
+    rescueBadge.style.display = 'none';
+  }
+}
 flightTimer.onFlightEnd = (seconds, crashed) => {
   const d = stats.end(sim, seconds, crashed);
   lastFlight = flightFrames();
@@ -285,6 +303,9 @@ const settings = new SettingsPanel(ui, input, wind, audio, {
   },
   onPause() {
     setPaused(!paused);
+  },
+  onRescue(on) {
+    setRescue(on);
   },
   onPilotSpot(spot) {
     // The road spot stands beside the cerradoX billboard (x = 0, z = 56), not behind it.
@@ -423,6 +444,7 @@ challenges.onProfileChange = () => settings.setPilotLabel(profile.name, profile.
 (window as unknown as { rcHeli: unknown }).rcHeli = { sim, input, wind, audio, camera: pilotCam, clouds, scene, world, layout, loadFlightText, loadFlightGhostText, exportFlight, setFlightGhost, tracker, flightTimer, profile, flightLog, challengesList: CHALLENGES };
 
 function reset(): void {
+  setRescue(false);
   if (replay) stopReplay();
   hoverArmed = false;
   recording.length = 0;
@@ -465,7 +487,10 @@ function hoverStick(model: HeliModel): number {
   return best;
 }
 
+window.addEventListener('keyup', (e) => { if (e.code === 'Space') setRescue(false); });
+window.addEventListener('blur', () => setRescue(false));
 window.addEventListener('keydown', (e) => {
+  if (e.code === 'Space' && !e.repeat) { e.preventDefault(); setRescue(true); }
   if (e.code === 'KeyR' && e.shiftKey) resetHover();
   else if (e.code === 'KeyR') reset();
   if (e.code === 'KeyT') settings.setTrail(!trail.visible);
@@ -682,6 +707,11 @@ function frame(now: number): void {
     } else {
       accumulator = 0;
     }
+  }
+  // Rescue: the instructor's sticks replace the pilot's while the key or button is held.
+  if (rescue.active) {
+    ctl = rescue.update(ctl);
+    if (!rescue.active) setRescue(false); // it let go by itself (crash)
   }
   if (!paused && !hoverArmed) {
     accumulator += dt;

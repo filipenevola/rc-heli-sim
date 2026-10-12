@@ -3,6 +3,12 @@
 All notable changes to RC Heli Sim. The version shown in the game (Help and Settings) matches the latest
 entry here; the commit hash next to it identifies the exact build.
 
+## 0.59.0
+
+- **Rescue (buddy box)**: hold Space or the 🛟 button and the instructor takes the sticks, rolls the heli upright,
+  kills the drift and holds a hover (climbing to 3 m first when low). Release and the sticks come back with your
+  assist mode restored. Off on the ground, after a crash, in lessons and replays.
+
 ## 0.58.0
 
 - Trees on the field and the hillside lean downwind and flutter with the gusts, each sampling the wind where it

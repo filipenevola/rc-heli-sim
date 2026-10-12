@@ -210,6 +210,12 @@ export const HELP_HTML_PT = `
   postes de luz, alguns carros estacionados, dois galpões no fundo e um contêiner cujo teto é um alvo de
   pouso (a 2,6 m, quase sem efeito solo). Céu aberto e vento, como um estacionamento de clube de verdade; os postes são a
   surpresa de sempre. Os desafios da mesa, picape, pontão e torre do campo aparecem como "Só no campo" lá.</p>
+  <h4>Resgate: o buddy box</h4>
+  <p>Segure <b>Espaço</b> (ou pressione e segure o botão 🛟) e o instrutor assume os sticks: o heli fica de pé, a deriva
+  para e ele segura um pairado onde está, subindo primeiro a 3 m se estava mais baixo. Solte e os sticks voltam para
+  você, com o seu modo de assistência restaurado. É a chave de treinador de um buddy box, ou o botão de resgate de uma
+  unidade flybarless: use no instante em que perder o controle, não depois que o chão chegar. O resgate precisa de rotor
+  girando e alguma altura; no chão ou depois de uma queda ele não faz nada. Fica desligado durante lições e replays.</p>
   <h4>Rádio no celular: seu celular como rádio</h4>
   <p>Voe o simulador num notebook ou TV com o celular nas mãos: Configurações → Entrada → <b>Parear um celular</b> mostra
   um código de quatro letras; no celular abra <b>/radio.html</b> (mesmo site), digite o código, e os sticks de toque

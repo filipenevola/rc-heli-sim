@@ -191,3 +191,4 @@ body.radio-page { background: #141618; }
 .radio-hint { position: absolute; bottom: calc(4px + env(safe-area-inset-bottom)); left: 0; right: 0; text-align: center; margin: 0; pointer-events: none; }
 .radio-tel { position: absolute; top: 50%; left: 50%; transform: translate(-50%, -50%); font-size: 16px; text-align: center; pointer-events: none; }
 .radio-crash { color: #ff8a80; font-weight: 700; }
+.rescue-badge { position: absolute; top: calc(var(--topbar-h) + 60px + env(safe-area-inset-top)); left: 50%; transform: translateX(-50%); background: rgba(190, 120, 0, 0.85); border: 1px solid #ffd34d; padding: 8px 16px; border-radius: 10px; font-size: 15px; pointer-events: none; white-space: nowrap; }

@@ -35,6 +35,13 @@ export const PT_BR: Record<string, string> = {
   'Front': 'Frente',
   'Top': 'De cima',
   'Drone': 'Drone',
+  // ---- Rescue ----
+  'Rescue': 'Resgate',
+  'RESCUE': 'RESGATE',
+  'Nothing to rescue: the heli is on the ground or already crashed.': 'Nada para resgatar: o heli está no chão ou já caiu.',
+  'the instructor has the sticks; let go to fly': 'o instrutor está com os sticks; solte para voar',
+  'Rescue (hold Space): the instructor takes the sticks, levels the heli and holds a hover until you let go. A buddy box.': 'Resgate (segure Espaço): o instrutor assume os sticks, nivela o heli e segura um pairado até você soltar. Um buddy box.',
+  'Rescue (hold Space)': 'Resgate (segure Espaço)',
   // ---- Stick analysis ----
   'Sticks:': 'Sticks:',
   'calm': 'calmos',
