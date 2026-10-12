@@ -3,6 +3,12 @@
 All notable changes to RC Heli Sim. The version shown in the game (Help and Settings) matches the latest
 entry here; the commit hash next to it identifies the exact build.
 
+## 0.29.0
+
+- **Logbook** (Challenges → Pilot): the last sixty flights on this device with duration, landing grade, peak
+  altitude and G, plus a progress line comparing the last ten flights with the ten before (clean rate and landing
+  softness).
+
 ## 0.28.0
 
 - **Fly your own helicopter**: Settings → Helicopter → My helicopter takes the numbers from the box and the radio

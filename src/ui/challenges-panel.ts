@@ -2,6 +2,7 @@ import { CHALLENGES, TOTAL_POINTS, LEVELS, type ChallengeTracker, type FlightTim
 import { lessonFor } from '../game/lessons';
 import { importMappings, loadMappings, type GamepadMapping } from '../input/gamepad';
 import { fmtTime, localRankings, saveLocalRanking, saveProfile, type Profile, type RankingClient } from '../game/player';
+import { logbookHtml, type FlightLog } from '../game/flightlog';
 
 /**
  * Challenges + rankings drawer. Tabs: Challenges (list with live progress), Rankings (longest flight,
@@ -22,6 +23,7 @@ export class ChallengesPanel {
     private timer: FlightTimer,
     private client: RankingClient,
     private onTeach: (challengeId: string, mode: 'show' | 'teach') => void,
+    private log: FlightLog | null = null,
   ) {
     this.el = document.createElement('div');
     this.el.className = 'challenges';
@@ -158,7 +160,8 @@ export class ChallengesPanel {
         <label>Email <input id="pilot-email" type="email" autocomplete="email" value="${esc(p.email ?? '')}" placeholder="you@example.com"></label>
         <div class="row-buttons"><button id="send-code">${this.pendingEmail ? 'Resend code' : 'Send code'}</button>
         ${this.pendingEmail ? `<input id="pilot-code" inputmode="numeric" autocomplete="one-time-code" maxlength="6" placeholder="6-digit code"><button id="verify-code">Verify</button>` : ''}</div>`}`
-        : '<p class="hint">This build has no online rankings; your callsign and records stay on this device.</p>'}`;
+        : '<p class="hint">This build has no online rankings; your callsign and records stay on this device.</p>'}
+        ${this.log ? logbookHtml(this.log, fmtTime) : ''}`;
     }
     this.el.innerHTML = `<h3>Challenges & rankings <button id="ch-close">×</button></h3><div class="tabs">${tabs}</div>${body}${this.status ? `<p class="hint status">${esc(this.status)}</p>` : ''}`;
     this.el.querySelector('#ch-close')!.addEventListener('click', () => this.toggle());

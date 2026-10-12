@@ -152,3 +152,10 @@ table.channels button { padding: 2px 8px; font-size: 12px; }
 .setup-row { display: grid; grid-template-columns: 1fr 120px 52px; gap: 8px; align-items: center; font-size: 12px; margin: 2px 0; }
 .setup-row input[type=range] { width: 100%; }
 .setup button { margin-top: 6px; }
+
+/* Logbook (Pilot tab) */
+.logbook { display: flex; flex-direction: column; gap: 3px; margin-top: 6px; max-height: 40vh; overflow: auto; }
+.log-row { display: grid; grid-template-columns: 5.5em 1fr 3.5em 8em 8em; gap: 6px; font-size: 12px; padding: 3px 6px; border-radius: 4px; background: rgba(255,255,255,0.06); align-items: center; }
+.log-row.crash { background: rgba(200, 40, 40, 0.18); }
+.log-row span { white-space: nowrap; overflow: hidden; text-overflow: ellipsis; }
+@media (max-width: 600px) { .log-row { grid-template-columns: 4.5em 1fr 3.2em 6.5em; } .log-row span:last-child { display: none; } }

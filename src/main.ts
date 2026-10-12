@@ -18,6 +18,7 @@ import { ChallengeTracker, FlightTimer, CHALLENGES } from './game/challenges';
 import { HELI_450, applySetup, withTrainingGear, type HeliModel, type ModelSetup } from './sim/heli-model';
 import { loadProfile, RankingClient, fmtTime } from './game/player';
 import { FlightStats, debriefHtml } from './game/debrief';
+import { FlightLog } from './game/flightlog';
 import { GateMeshes } from './render/gates';
 import { ChallengesPanel } from './ui/challenges-panel';
 import { installTypingGuard } from './input/typing-guard';
@@ -89,6 +90,7 @@ const profile = loadProfile();
 if (profile.setup?.[baseModel.id]) setModel(baseModel);
 const tracker = new ChallengeTracker(profile.completed);
 const flightTimer = new FlightTimer();
+const flightLog = new FlightLog();
 const rankingClient = new RankingClient();
 let lesson: LessonRunner | null = null;
 let assistBeforeLesson: AssistMode = 'rate';
@@ -98,7 +100,7 @@ let ghostFrames: GhostFrame[][] | null = null;
 let ghostMesh: HeliMesh | null = null;
 let ghostClock = 0;
 const lessonOverlay = new LessonOverlay(ui);
-const challenges = new ChallengesPanel(ui, profile, tracker, flightTimer, rankingClient, startLesson);
+const challenges = new ChallengesPanel(ui, profile, tracker, flightTimer, rankingClient, startLesson, flightLog);
 
 /** "Teach me": a demo pilot flies the challenge on the real physics while the overlay shows the sticks. */
 function startLesson(challengeId: string, mode: 'show' | 'teach' = 'show'): void {
@@ -176,6 +178,7 @@ flightTimer.onFlightEnd = (seconds, crashed) => {
   const d = stats.end(sim, seconds, crashed);
   lastFlight = flightFrames();
   if (d && seconds > 8) {
+    flightLog.add(d, sim.model.name);
     const extra = !crashed && seconds >= flightTimer.best ? '<br>Your longest clean flight' : '';
     hud.notify(debriefHtml(d, fmtTime, (id) => CHALLENGES.find((c) => c.id === id)?.title ?? id) + extra + '<br><button data-action="replay-flight">▶ Replay flight</button>', 12000);
   }
@@ -311,7 +314,7 @@ challenges.onProfileChange = () => settings.setPilotLabel(profile.name, profile.
 }
 
 // Exposed for automated checks and tinkering from the devtools console.
-(window as unknown as { rcHeli: unknown }).rcHeli = { sim, input, wind, audio, camera: pilotCam, clouds, world, layout, tracker, flightTimer, profile, challengesList: CHALLENGES };
+(window as unknown as { rcHeli: unknown }).rcHeli = { sim, input, wind, audio, camera: pilotCam, clouds, world, layout, tracker, flightTimer, profile, flightLog, challengesList: CHALLENGES };
 
 function reset(): void {
   if (replay) stopReplay();

@@ -1,0 +1,49 @@
+import { beforeAll, describe, expect, it } from 'vitest';
+import { FlightLog, logbookHtml, fmtAgo } from './flightlog';
+import type { FlightSummary } from './debrief';
+
+// Node 26 exposes a `localStorage` global that is undefined without --localstorage-file, and that shadows the
+// jsdom one, so give the tests a plain in-memory Storage.
+beforeAll(() => {
+  const mem = new Map<string, string>();
+  const storage = {
+    getItem: (k: string) => mem.get(k) ?? null,
+    setItem: (k: string, v: string) => void mem.set(k, String(v)),
+    removeItem: (k: string) => void mem.delete(k),
+    clear: () => mem.clear(),
+    key: (i: number) => [...mem.keys()][i] ?? null,
+    get length() { return mem.size; },
+  };
+  Object.defineProperty(globalThis, 'localStorage', { value: storage, configurable: true, writable: true });
+});
+
+const flight = (over: Partial<FlightSummary>): FlightSummary => ({ seconds: 30, crashed: false, crashReason: '', maxAltitude: 5, maxSpeed: 4, maxG: 1.2, minG: 0.9, vrsSeconds: 0, stallSeconds: 0, batteryUsed: 0.05, touchdown: 0.4, tricks: [], ...over });
+
+describe('logbook', () => {
+  it('stores flights, survives a reload and reports progress', () => {
+    localStorage.clear();
+    const log = new FlightLog();
+    for (let i = 0; i < 12; i++) log.add(flight({ touchdown: 1.5, crashed: i % 3 === 0, crashReason: 'Blade strike' }), 'A');
+    for (let i = 0; i < 10; i++) log.add(flight({ touchdown: 0.3 }), 'B');
+    const again = new FlightLog();
+    expect(again.entries.length).toBe(22);
+    const st = again.stats();
+    expect(st.flights).toBe(22);
+    expect(st.recentClean).toBe(1);
+    expect(st.earlierClean).toBeLessThan(1);
+    expect(st.recentTouchdown).toBeCloseTo(0.3, 5);
+    expect(st.earlierTouchdown).toBeCloseTo(1.5, 5);
+    const html = logbookHtml(again, (s) => `${s}s`);
+    expect(html).toContain('Last 10 flights: 100% clean');
+    expect(html).toContain('soft 0.3 m/s');
+    expect(html).toContain('Blade strike');
+    expect(fmtAgo(Date.now() - 5 * 60000)).toBe('5 min ago');
+  });
+
+  it('keeps at most sixty entries', () => {
+    localStorage.clear();
+    const log = new FlightLog();
+    for (let i = 0; i < 70; i++) log.add(flight({}), 'A');
+    expect(log.entries.length).toBe(60);
+  });
+});
