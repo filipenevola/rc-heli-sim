@@ -3,6 +3,17 @@
 All notable changes to RC Heli Sim. The version shown in the game (Help and Settings) matches the latest
 entry here; the commit hash next to it identifies the exact build.
 
+## 0.53.0
+
+- **Phone radio**: use a phone as the transmitter for the sim on another screen. Settings → Input → Pair a phone
+  gives a four-letter code; the phone opens `/radio.html`, types it, and its touch gimbals (or phone tilt) stream
+  sticks at 50 Hz over a direct WebRTC data channel. The rankings server only relays the one-time pairing handshake
+  (`POST /api/radio/signal`, in-memory rooms with a 10-minute life).
+- The phone page carries flight mode, throttle hold, stick mode 1–4, phone tilt with recentre, and shows the
+  round-trip latency; it keeps the screen awake while connected.
+- New input source "Phone radio": in Auto it takes over as soon as a stick moves on the phone, and fails safe like a
+  real receiver when frames stop (cyclic and rudder centre, collective holds, next source takes over).
+
 ## 0.52.0
 
 - New flying site: the **hillside**. Real terrain (a height field shared by physics and renderer): a flat pad, a 10° slope

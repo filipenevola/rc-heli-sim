@@ -3,8 +3,9 @@ import { KeyboardInput } from './keyboard';
 import { GamepadInput, hasSwitch } from './gamepad';
 import { TouchInput } from './touch';
 import { MotionInput } from './motion';
+import { RemoteInput } from './remote';
 
-export type SourceChoice = 'auto' | 'keyboard' | 'gamepad' | 'touch' | 'motion';
+export type SourceChoice = 'auto' | 'keyboard' | 'gamepad' | 'touch' | 'motion' | 'remote';
 
 /**
  * Picks the active input source and applies transmitter-style shaping (expo, dual rates, deadband).
@@ -15,6 +16,7 @@ export class InputManager {
   readonly gamepad: GamepadInput;
   readonly touch: TouchInput;
   readonly motion: MotionInput;
+  readonly remote: RemoteInput;
   choice: SourceChoice = 'auto';
   active: InputSource;
   /** Extra cyclic rate multiplier in Normal mode only (1 = same as Idle-Up). */
@@ -31,6 +33,7 @@ export class InputManager {
     this.gamepad = new GamepadInput();
     this.touch = new TouchInput(touchContainer);
     this.motion = new MotionInput(this.touch);
+    this.remote = new RemoteInput();
     this.active = this.touch.available() ? this.touch : this.keyboard;
   }
 
@@ -48,12 +51,15 @@ export class InputManager {
   }
 
   private pick(): InputSource {
-    if (this.choice !== 'auto') return this[this.choice];
-    const candidates: InputSource[] = [this.gamepad, this.touch, this.keyboard].filter((s) => s.available());
+    if (this.choice !== 'auto') return this.choice === 'remote' && !this.remote.available() ? this.keyboard : this[this.choice];
+    const candidates: InputSource[] = [this.remote, this.gamepad, this.touch, this.keyboard].filter((s) => s.available());
     let best = candidates[0] ?? this.keyboard;
     for (const s of candidates) if (s.lastActivity() > best.lastActivity()) best = s;
-    // Prefer the transmitter unless something else was touched in the last few seconds.
-    if (this.gamepad.available() && performance.now() - best.lastActivity() > 4000) best = this.gamepad;
+    // Prefer a real radio (the phone link, then the USB transmitter) unless something else was touched in the last few seconds.
+    if (performance.now() - best.lastActivity() > 4000) {
+      if (this.remote.available()) best = this.remote;
+      else if (this.gamepad.available()) best = this.gamepad;
+    }
     return best;
   }
 
@@ -64,6 +70,7 @@ export class InputManager {
       gamepad: this.gamepad.poll(dt),
       touch: this.touch.poll(dt),
       motion: this.motion.poll(dt),
+      remote: this.remote.poll(dt),
     };
     const next = this.pick();
     if (next !== this.active) {
@@ -78,7 +85,8 @@ export class InputManager {
     o.rudder = applyShaping(raw.rudder, this.shaping.rudder);
     // Dual rates by flight mode, as on a real radio: a lower cyclic rate in Normal for calm hovering, full in Idle-Up.
     const kbMode = frames.keyboard.flightMode;
-    const mode = this.active === this.gamepad && hasSwitch(this.gamepad.mapping, 'flightMode') ? raw.flightMode : kbMode;
+    const ownSwitches = this.active === this.remote || (this.active === this.gamepad && hasSwitch(this.gamepad.mapping, 'flightMode'));
+    const mode = ownSwitches ? raw.flightMode : kbMode;
     if (mode === 0 && this.normalRate < 1) {
       o.aileron *= this.normalRate;
       o.elevator *= this.normalRate;
@@ -86,8 +94,8 @@ export class InputManager {
     o.collective = Math.max(-1, Math.min(1, raw.collective));
     // Mode/hold toggles from the keyboard apply to every source unless the transmitter has them on a switch.
     const kb = frames.keyboard;
-    o.flightMode = this.active === this.gamepad && hasSwitch(this.gamepad.mapping, 'flightMode') ? raw.flightMode : kb.flightMode;
-    o.throttleHold = this.active === this.gamepad && hasSwitch(this.gamepad.mapping, 'throttleHold') ? raw.throttleHold : kb.throttleHold;
+    o.flightMode = ownSwitches ? raw.flightMode : kb.flightMode;
+    o.throttleHold = this.active === this.remote || (this.active === this.gamepad && hasSwitch(this.gamepad.mapping, 'throttleHold')) ? raw.throttleHold : kb.throttleHold;
     return o;
   }
 

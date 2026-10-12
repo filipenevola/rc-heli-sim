@@ -12,6 +12,7 @@
 //   POST /api/auth/verify  {email, code}      -> {token, name, completed, bestFlight}
 //   POST /api/scores       {name, deviceId, completed[], bestFlight}  (Bearer token optional)
 //   GET  /api/rankings?kind=flight|challenge  -> [{name, value, verified, at}]
+//   POST /api/radio/signal {code, role, sdp?}   -> {peer: sdp|null}  (phone-radio WebRTC signalling, in memory)
 //   GET  /api/health
 
 import { createServer } from 'node:http';
@@ -19,6 +20,7 @@ import { DatabaseSync } from 'node:sqlite';
 import { randomBytes, randomInt, createHash } from 'node:crypto';
 import { mkdirSync } from 'node:fs';
 import { dirname } from 'node:path';
+import { createRooms } from './radio-rooms.mjs';
 
 const PORT = Number(process.env.PORT ?? 8787);
 const DB_PATH = process.env.DB_PATH ?? './data/rankings.sqlite';
@@ -78,6 +80,7 @@ const q = {
   all: db.prepare(`SELECT name, completed, verified, updated_at AS at FROM players WHERE name <> ''`),
 };
 
+const radioRooms = createRooms();
 const hash = (t) => createHash('sha256').update(t).digest('hex');
 const points = (completed) => completed.reduce((a, id) => a + (POINTS[id] ?? 0), 0);
 const cleanName = (n) => String(n ?? '').trim().slice(0, 24).replace(/[<>]/g, '');
@@ -156,6 +159,15 @@ createServer(async (req, res) => {
     const ip = req.headers['x-forwarded-for']?.split(',')[0]?.trim() || req.socket.remoteAddress || '?';
     if (req.method === 'OPTIONS') return json(res, 204, {});
     if (url.pathname === '/api/health') return json(res, 200, { ok: true });
+
+    // Phone radio: the sim and the phone swap one offer/answer pair here, then stream sticks peer to peer.
+    if (req.method === 'POST' && url.pathname === '/api/radio/signal') {
+      if (limited(`radio:${ip}`, 900, 60 * 1000)) return json(res, 429, { error: 'Too many requests.' });
+      const body = await readJson(req);
+      const out = radioRooms.signal(String(body.code ?? '').toUpperCase(), body.role, body.sdp);
+      if (!out) return json(res, 404, { error: 'No such pairing code.' });
+      return json(res, 200, out);
+    }
 
     if (req.method === 'POST' && url.pathname === '/api/auth/request') {
       if (limited(ip)) return json(res, 429, { error: 'Too many requests, try again later.' });

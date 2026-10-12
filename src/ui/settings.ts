@@ -366,8 +366,10 @@ export class SettingsPanel {
       </section>
       <section>
         <h4>Input</h4>
-        ${sel('source', [['auto', 'Auto (last used)'], ['gamepad', 'Transmitter (USB dongle)'], ['touch', 'Touch sticks'], ['motion', 'Phone tilt + touch throttle'], ['keyboard', 'Keyboard']], im.choice)}
+        ${sel('source', [['auto', 'Auto (last used)'], ['gamepad', 'Transmitter (USB dongle)'], ['touch', 'Touch sticks'], ['motion', 'Phone tilt + touch throttle'], ['remote', 'Phone radio (paired phone)'], ['keyboard', 'Keyboard']], im.choice)}
         <div id="source-status" class="hint"></div>
+        <div class="wizard"><button id="radio-pair">📻 Pair a phone</button><button id="radio-unpair">Disconnect phone</button></div>
+        <div id="radio-status" class="hint">Phone radio: fly this screen with a phone as the transmitter. Press Pair, then open <b>${location.origin}/radio.html</b> on the phone and type the code. On the same Wi-Fi the sticks arrive in a few milliseconds.</div>
         <label>Assist ${sel('assist', [['rate', 'Rate — real helicopter behaviour'], ['attitude', 'Attitude — stick sets bank angle, self-levels']], this.assist)}</label>
         ${slider('tilt', 'Phone tilt for full stick (°)', 10, 45, 1, im.motion.maxTiltDeg)}
         <label>Touch stick mode ${sel('stickmode', [['1', 'Mode 1'], ['2', 'Mode 2'], ['3', 'Mode 3'], ['4', 'Mode 4']], String(im.touch.mode))}</label>
@@ -460,6 +462,20 @@ export class SettingsPanel {
       });
     });
     q<HTMLSelectElement>('#assist').addEventListener('change', (e) => this.setAssist((e.target as HTMLSelectElement).value as AssistMode));
+    {
+      const status = q('#radio-status');
+      const show = (html: string) => { status.innerHTML = html; };
+      im.remote.onState = (s, code) => {
+        const url = `${location.origin}/radio.html?c=${code}`;
+        if (s === 'waiting') show(`${t('Code')}: <b class="radio-code">${code}</b><br>${t('On the phone open')} <b>${url}</b> ${t('(or /radio.html and type the code). Waiting for the phone…')}`);
+        else if (s === 'connecting') show(`<b>${code}</b> · ${t('Phone found, connecting…')}`);
+        else if (s === 'connected') show(`<b>${code}</b> · <b>${t('Phone connected.')}</b> ${t('Move a stick on the phone and it takes over; the HUD shows "Phone radio".')}`);
+        else if (s === 'failed') show(im.remote.apiBase ? t('Pairing failed or the phone dropped. Press Pair again for a new code.') : t('Pairing needs the online rankings server, which this build does not have.'));
+        else if (s === 'closed') show(t('Phone disconnected.'));
+      };
+      q('#radio-pair').addEventListener('click', () => { im.remote.pair(); });
+      q('#radio-unpair').addEventListener('click', () => { im.remote.unpair(); show(t('Phone disconnected.')); });
+    }
     q<HTMLSelectElement>('#stickmode').addEventListener('change', (e) => { const v = Number((e.target as HTMLSelectElement).value) as StickMode; im.touch.setMode(v); savePrefs({ stickMode: v }); });
     const bind = (id: string, f: (v: number) => void) => {
       const el = q<HTMLInputElement>(`#${id}`);

@@ -210,6 +210,14 @@ export const HELP_HTML_PT = `
   postes de luz, alguns carros estacionados, dois galpões no fundo e um contêiner cujo teto é um alvo de
   pouso (a 2,6 m, quase sem efeito solo). Céu aberto e vento, como um estacionamento de clube de verdade; os postes são a
   surpresa de sempre. Os desafios da mesa, picape, pontão e torre do campo aparecem como "Só no campo" lá.</p>
+  <h4>Rádio no celular: seu celular como rádio</h4>
+  <p>Voe o simulador num notebook ou TV com o celular nas mãos: Configurações → Entrada → <b>Parear um celular</b> mostra
+  um código de quatro letras; no celular abra <b>/radio.html</b> (mesmo site), digite o código, e os sticks de toque
+  dele (ou a inclinação do celular para o cíclico) comandam o simulador. Os dois aparelhos conversam direto por WebRTC,
+  então no mesmo Wi-Fi os sticks chegam em poucos milissegundos; o servidor de rankings só passa o aperto de mão do
+  pareamento. A página do celular tem as chaves de modo de voo e throttle hold e mostra a latência de ida e volta. Se o
+  link cair, o simulador entra em failsafe como um receptor de verdade: cíclico e leme no centro, coletivo mantido, e o
+  teclado ou o rádio USB assume.</p>
   <h4>A encosta</h4>
   <p>Configurações → <b>Local de voo</b> → Encosta: um campo inclinado com terreno de verdade. O heliponto fica no plano;
   à sua frente o chão sobe a 10° até um morrote, e à direita um barranco de 20°. Dois anéis marcam os pontos de pouso

@@ -257,6 +257,13 @@ const HELP_HTML = `
   light poles, a few parked cars, two warehouses along the back and a shipping container whose roof is a landing
   target (2.6 m up, almost no ground effect). Open sky and wind, like a real club lot; the poles are the usual
   surprise. The field's picnic table, truck, pontoon and tower challenges are marked "Field only" there.</p>
+  <h4>Phone radio: your phone as the transmitter</h4>
+  <p>Fly the sim on a laptop or TV with a phone in your hands: Settings → Input → <b>Pair a phone</b> shows a four-letter
+  code; on the phone open <b>/radio.html</b> (same site), type the code, and its touch gimbals (or phone tilt for
+  the cyclic) drive the sim. The two devices talk directly over WebRTC, so on the same Wi-Fi the sticks arrive in a
+  few milliseconds; the rankings server only passes the pairing handshake. The phone page has the flight-mode and
+  throttle-hold switches and shows the round-trip latency. If the link drops, the sim fails safe like a real
+  receiver: cyclic and rudder centre, collective holds, and the keyboard or USB radio takes over.</p>
   <h4>The hillside</h4>
   <p>Settings → <b>Flying site</b> → Hillside: a sloping meadow with real terrain. The pad sits on the flat; in front
   of you the ground climbs at 10° to a knoll, and to the right a 20° bank rises. Two rings mark the slope landing

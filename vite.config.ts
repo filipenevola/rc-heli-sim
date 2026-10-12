@@ -22,5 +22,5 @@ const build = `${sha} ${new Date().toISOString().slice(0, 16).replace('T', ' ')}
 export default defineConfig({
   base: process.env.GITHUB_PAGES ? '/rc-heli-sim/' : '/',
   define: { __BUILD__: JSON.stringify(build), __VERSION__: JSON.stringify(pkg.version), __COMMIT__: JSON.stringify(sha) },
-  build: { target: 'es2022', sourcemap: true },
+  build: { target: 'es2022', sourcemap: true, rollupOptions: { input: { main: 'index.html', radio: 'radio.html' } } },
 });

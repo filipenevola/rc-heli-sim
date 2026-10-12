@@ -118,6 +118,7 @@ const tracker = new ChallengeTracker(profile.completed);
 const flightTimer = new FlightTimer();
 const flightLog = new FlightLog();
 const rankingClient = new RankingClient();
+input.remote.apiBase = rankingClient.baseUrl;
 let lesson: LessonRunner | null = null;
 let assistBeforeLesson: AssistMode = 'rate';
 let lessonEndTimer: number | null = null;
