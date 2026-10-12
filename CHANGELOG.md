@@ -3,6 +3,11 @@
 All notable changes to RC Heli Sim. The version shown in the game (Help and Settings) matches the latest
 entry here; the commit hash next to it identifies the exact build.
 
+## 0.73.0
+
+- Teach me speaks corrections: when a stick sits more than a third of its travel from the ghost stick for 1.5 s,
+  the instructor says which way to move it ("more collective", "nose right"), at most once every 5 s.
+
 ## 0.72.0
 
 - **Spoken captions**: the instructor reads each lesson step aloud (intro included), calls out tail rotor failures

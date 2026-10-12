@@ -215,8 +215,9 @@ export const HELP_HTML_PT = `
   surpresa de sempre. Os desafios da mesa, picape, pontão e torre do campo aparecem como "Só no campo" lá.</p>
   <h4>Legendas faladas</h4>
   <p>No Me mostre e no Me ensine o instrutor lê cada passo em voz alta (e anuncia emergências e desafios concluídos),
-  com a voz que o seu aparelho tem para o idioma escolhido, para os seus olhos ficarem no modelo. Configurações →
-  Som → Legendas faladas desliga.</p>
+  com a voz que o seu aparelho tem para o idioma escolhido, para os seus olhos ficarem no modelo. No Me ensine ele
+  também fala correções quando um stick fica longe do stick fantasma por um ou dois segundos ("mais coletivo",
+  "nariz para a direita"). Configurações → Som → Legendas faladas desliga.</p>
   <h4>Emergências: falha do rotor de cauda</h4>
   <p>Configurações → <b>Emergências</b> faz o rotor de cauda falhar na hora, ou aleatoriamente uma vez por voo acima de
   15 m. A fuselagem então segue o torque do rotor principal: com potência o nariz entra num giro em um segundo. O treino

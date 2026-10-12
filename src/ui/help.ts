@@ -266,8 +266,9 @@ const HELP_HTML = `
   surprise. The field's picnic table, truck, pontoon and tower challenges are marked "Field only" there.</p>
   <h4>Spoken captions</h4>
   <p>In Show me and Teach me the instructor reads every step aloud (and calls out emergencies and completed
-  challenges), using the voice your device has for the chosen language, so your eyes stay on the model. Settings →
-  Sound → Spoken captions turns it off.</p>
+  challenges), using the voice your device has for the chosen language, so your eyes stay on the model. In Teach me
+  it also calls corrections when a stick sits far from the ghost stick for a second or two ("more collective",
+  "nose right"). Settings → Sound → Spoken captions turns it off.</p>
   <h4>Emergencies: tail rotor failure</h4>
   <p>Settings → <b>Emergencies</b> fails the tail rotor on demand, or at random once per flight above 15 m. The
   fuselage then follows the main rotor torque: under power the nose swings into a spin within a second. The drill is

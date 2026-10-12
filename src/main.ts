@@ -28,6 +28,7 @@ import { ChallengesPanel } from './ui/challenges-panel';
 import { installTypingGuard } from './input/typing-guard';
 import { Rescue } from './game/rescue';
 import { Voice } from './ui/voice';
+import { CueTimer, coachCue } from './game/coach-cue';
 import { lessonFor, LessonRunner } from './game/lessons';
 import { recordGhost, type GhostFrame } from './game/ghost';
 import { Trail } from './render/trail';
@@ -228,6 +229,7 @@ const stats = new FlightStats();
 let telemetryClock = 0;
 // Rescue (buddy box): hold Space or the 🛟 button and the demo pilot levels the heli and holds a hover.
 const voice = new Voice();
+const cueTimer = new CueTimer();
 let spokenStep = -1;
 let spokenLesson: unknown = null;
 const rescue = new Rescue(sim);
@@ -677,6 +679,11 @@ function frame(now: number): void {
     // The player flies; the runner judges the step and computes the ghost-stick hint.
     lesson.coach(dt, ctl);
     lessonOverlay.update(lesson, ctl, lesson.hint);
+    // Spoken corrections: when a stick sits far from the ghost stick for a while, say which way to move it.
+    if (lesson.hint && !lesson.finished && !lesson.crashed) {
+      const cue = cueTimer.update(coachCue(ctl, lesson.hint), performance.now());
+      if (cue) voice.say(t(cue), getLang());
+    }
     // Ghost: loop the demo pilot's recording of the current step.
     if (ghostFrames && ghostMesh) {
       const frames = ghostFrames[lesson.stepIndex] ?? [];
