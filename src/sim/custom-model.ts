@@ -24,9 +24,11 @@ export interface CustomSpec {
   power?: 'electric' | 'nitro';
   /** Fuel tank, ml (nitro only). */
   tankMl?: number;
+  /** Canopy colour, CSS hex like #d8262a. */
+  color?: string;
 }
 
-export const DEFAULT_CUSTOM: CustomSpec = { name: 'My heli', bladeMm: 500, massG: 1900, cells: 6, mah: 3300, headspeedRpm: [1900, 2100, 2300], flybar: false, blades: 2, power: 'electric', tankMl: 300 };
+export const DEFAULT_CUSTOM: CustomSpec = { name: 'My heli', bladeMm: 500, massG: 1900, cells: 6, mah: 3300, headspeedRpm: [1900, 2100, 2300], flybar: false, blades: 2, power: 'electric', tankMl: 300, color: '#2a8f4a' };
 
 const R450 = HELI_450.rotor.radius;
 const R700 = HELI_700.rotor.radius;
@@ -88,6 +90,7 @@ export function buildCustomModel(spec: CustomSpec): HeliModel {
     maxMotorTorque: law(HELI_450.maxMotorTorque, HELI_700.maxMotorTorque, R) * Math.pow(mk, 1.5),
     batteryWh: spec.power === 'nitro' ? Math.max(50, spec.tankMl ?? 300) : Math.max(1, (spec.cells * 3.7 * spec.mah) / 1000) * 0.8,
     power: spec.power === 'nitro' ? 'nitro' : 'electric',
+    color: spec.color,
     // Glow engines peak a little above the Idle-Up 1 head speed, so the pilot's chosen head speeds sit on the fat part of the curve.
     nitroPeakHeadRpm: spec.power === 'nitro' ? spec.headspeedRpm[1] * 1.08 : undefined,
     headspeeds: [rpm(spec.headspeedRpm[0]), rpm(spec.headspeedRpm[1]), rpm(spec.headspeedRpm[2])],
@@ -124,5 +127,6 @@ export function normalizeSpec(s: Partial<CustomSpec>): CustomSpec {
     blades: Number(s.blades) === 3 ? 3 : 2,
     power: s.power === 'nitro' ? 'nitro' : 'electric',
     tankMl: n(s.tankMl, 300, 50, 2000),
+    color: /^#[0-9a-fA-F]{6}$/.test(String(s.color ?? '')) ? String(s.color).toLowerCase() : DEFAULT_CUSTOM.color,
   };
 }

@@ -3,6 +3,10 @@
 All notable changes to RC Heli Sim. The version shown in the game (Help and Settings) matches the latest
 entry here; the commit hash next to it identifies the exact build.
 
+## 0.38.0
+
+- **Canopy colour** for your own helicopter (My helicopter → Canopy colour), so it looks like yours on the field.
+
 ## 0.37.0
 
 - **Nitro helicopters** (My helicopter → Power → Nitro): a glow engine behind a centrifugal clutch with a fuel

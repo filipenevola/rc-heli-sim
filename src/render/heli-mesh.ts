@@ -21,7 +21,7 @@ export class HeliMesh {
     const m = model;
     const R = m.rotor.radius;
     const L = m.tailOffset.z;
-    const bodyColor = m.rotor.radius > 0.6 ? 0x1f5fd6 : m.rotor.radius < 0.3 ? 0xf2b705 : 0xd8262a;
+    const bodyColor = m.color && /^#[0-9a-f]{6}$/i.test(m.color) ? parseInt(m.color.slice(1), 16) : m.rotor.radius > 0.6 ? 0x1f5fd6 : m.rotor.radius < 0.3 ? 0xf2b705 : 0xd8262a;
     const body = new THREE.MeshStandardMaterial({ color: bodyColor, roughness: 0.5, metalness: 0.2 });
     const dark = new THREE.MeshStandardMaterial({ color: 0x222222, roughness: 0.7 });
     const metal = new THREE.MeshStandardMaterial({ color: 0x8a8f99, roughness: 0.4, metalness: 0.8 });

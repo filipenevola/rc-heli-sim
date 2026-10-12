@@ -68,6 +68,8 @@ export interface HeliModel {
   idleUpThrottle?: number;
   /** Tail gyro mode. */
   gyroMode?: 'hh' | 'rate';
+  /** Canopy colour (CSS hex) for the renderer; models without one get a colour by size. */
+  color?: string;
   /** Training gear fitted (cross of rods with balls): rendered and part of the physics when true. */
   trainingGear?: boolean;
 }

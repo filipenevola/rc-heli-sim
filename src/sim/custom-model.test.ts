@@ -31,6 +31,12 @@ describe('custom helicopter from the numbers on the box', () => {
     expect(hover(three)).toBeGreaterThan(hover(two));
   });
 
+  it('keeps a valid canopy colour and rejects junk', () => {
+    expect(normalizeSpec({ color: '#ABCDEF' }).color).toBe('#abcdef');
+    expect(normalizeSpec({ color: 'red' }).color).toBe('#2a8f4a');
+    expect(buildCustomModel(normalizeSpec({ color: '#112233' })).color).toBe('#112233');
+  });
+
   it('reproduces the references at their own size', () => {
     const m450 = buildCustomModel(normalizeSpec({ bladeMm: 325, massG: 780, cells: 6, mah: 2200, headspeedRpm: [2500, 2750, 3000] }));
     expect(m450.rotor.radius).toBeCloseTo(HELI_450.rotor.radius, 1);

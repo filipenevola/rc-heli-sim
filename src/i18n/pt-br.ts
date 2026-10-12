@@ -100,6 +100,7 @@ export const PT_BR: Record<string, string> = {
   'Head speed Idle-Up 2 (rpm)': 'Rotação Idle-Up 2 (rpm)',
   'Mechanical flybar head': 'Cabeça com flybar mecânico',
   'Main blades': 'Pás principais',
+  'Canopy colour': 'Cor da canopy',
   'Power plant': 'Motorização',
   'Electric': 'Elétrico',
   'Nitro (glow engine, clutch, fuel tank)': 'Nitro (motor glow, embreagem, tanque)',
