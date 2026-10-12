@@ -13,6 +13,8 @@ export interface ControlFrame {
   collective: number;
   flightMode: 0 | 1 | 2;
   throttleHold: boolean;
+  /** Rescue switch held (transmitter switch mapped to the buddy-box rescue); absent when the source has none. */
+  rescue?: boolean;
 }
 
 export const neutralFrame = (): ControlFrame => ({

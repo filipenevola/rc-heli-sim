@@ -215,7 +215,9 @@ export const HELP_HTML_PT = `
   para e ele segura um pairado onde está, subindo primeiro a 3 m se estava mais baixo. Solte e os sticks voltam para
   você, com o seu modo de assistência restaurado. É a chave de treinador de um buddy box, ou o botão de resgate de uma
   unidade flybarless: use no instante em que perder o controle, não depois que o chão chegar. O resgate precisa de rotor
-  girando e alguma altura; no chão ou depois de uma queda ele não faz nada. Fica desligado durante lições e replays.</p>
+  girando e alguma altura; no chão ou depois de uma queda ele não faz nada. Fica desligado durante lições e replays. Com um
+  rádio de verdade, Configurações → Mapeamento do rádio → <b>Atribuir chave de Resgate</b> coloca o resgate numa chave,
+  exatamente como a função de resgate de uma unidade FBL.</p>
   <h4>Rádio no celular: seu celular como rádio</h4>
   <p>Voe o simulador num notebook ou TV com o celular nas mãos: Configurações → Entrada → <b>Parear um celular</b> mostra
   um código de quatro letras; no celular abra <b>/radio.html</b> (mesmo site), digite o código, e os sticks de toque

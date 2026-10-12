@@ -42,6 +42,8 @@ export const PT_BR: Record<string, string> = {
   'the instructor has the sticks; let go to fly': 'o instrutor está com os sticks; solte para voar',
   'Rescue (hold Space): the instructor takes the sticks, levels the heli and holds a hover until you let go. A buddy box.': 'Resgate (segure Espaço): o instrutor assume os sticks, nivela o heli e segura um pairado até você soltar. Um buddy box.',
   'Rescue (hold Space)': 'Resgate (segure Espaço)',
+  'Assign Rescue switch': 'Atribuir chave de Resgate',
+  'start with the switch you want for RESCUE off, then flip it on': 'comece com a chave que você quer para RESGATE desligada, depois ligue',
   // ---- Stick analysis ----
   'Sticks:': 'Sticks:',
   'calm': 'calmos',

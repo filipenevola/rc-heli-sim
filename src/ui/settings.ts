@@ -55,9 +55,9 @@ export interface SettingsCallbacks {
 }
 
 type AxisName = 'aileron' | 'elevator' | 'rudder' | 'collective';
-type SwitchName = 'flightModeSwitch' | 'throttleHoldSwitch';
+type SwitchName = 'flightModeSwitch' | 'throttleHoldSwitch' | 'rescueSwitch';
 const AXES: AxisName[] = ['aileron', 'elevator', 'rudder', 'collective'];
-const SWITCHES: [SwitchName, string][] = [['flightModeSwitch', 'Idle-Up switch'], ['throttleHoldSwitch', 'Throttle-hold switch']];
+const SWITCHES: [SwitchName, string][] = [['flightModeSwitch', 'Idle-Up switch'], ['throttleHoldSwitch', 'Throttle-hold switch'], ['rescueSwitch', 'Rescue switch']];
 const AXIS_HINT: Record<AxisName | SwitchName, string> = {
   aileron: 'move the AILERON stick fully RIGHT',
   elevator: 'push the ELEVATOR stick fully FORWARD (nose down)',
@@ -65,6 +65,7 @@ const AXIS_HINT: Record<AxisName | SwitchName, string> = {
   collective: 'move the THROTTLE / collective stick fully UP',
   flightModeSwitch: 'start with the IDLE-UP switch in its Normal position, then flip it',
   throttleHoldSwitch: 'start with the THROTTLE HOLD switch off, then flip it on',
+  rescueSwitch: 'start with the switch you want for RESCUE off, then flip it on',
 };
 
 const PREFS_KEY = 'rc-heli-sim.prefs.v1';
@@ -555,6 +556,7 @@ export class SettingsPanel {
       if (g.mapping) {
         delete g.mapping.flightModeSwitch;
         delete g.mapping.throttleHoldSwitch;
+        delete g.mapping.rescueSwitch;
         delete g.mapping.flightModeAxis;
         delete g.mapping.throttleHoldButton;
         this.wizardStatus!.textContent = 'Switches cleared; flight mode and hold come from the buttons / keys again. Click Save to keep.';
@@ -785,7 +787,7 @@ export class SettingsPanel {
           best = i;
         }
       }
-      const isSwitch = axis === 'flightModeSwitch' || axis === 'throttleHoldSwitch';
+      const isSwitch = axis === 'flightModeSwitch' || axis === 'throttleHoldSwitch' || axis === 'rescueSwitch';
       if (isSwitch) {
         // Switches on sim dongles show up as a button or as an axis that jumps between fixed values.
         const pressed = g.rawButtons.findIndex((b, i) => b && !baselineButtons[i]);
@@ -795,7 +797,7 @@ export class SettingsPanel {
         if (sw) {
           (g.mapping as GamepadMapping)[axis] = sw;
           this.wizardState = null;
-          this.wizardStatus!.textContent = `${axis === 'flightModeSwitch' ? 'Idle-Up' : 'Throttle hold'} → ${sw.kind} ${sw.index}. Flip it back, then Save.`;
+          this.wizardStatus!.textContent = `${axis === 'flightModeSwitch' ? 'Idle-Up' : axis === 'rescueSwitch' ? 'Rescue' : 'Throttle hold'} → ${sw.kind} ${sw.index}. Flip it back, then Save.`;
         }
         return;
       }

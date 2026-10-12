@@ -3,6 +3,11 @@
 All notable changes to RC Heli Sim. The version shown in the game (Help and Settings) matches the latest
 entry here; the commit hash next to it identifies the exact build.
 
+## 0.60.0
+
+- Rescue on a transmitter switch: Settings → Transmitter mapping → Assign Rescue switch. Flip it and the instructor
+  takes over, flip back and the sticks are yours; it works whichever input source is active.
+
 ## 0.59.0
 
 - **Rescue (buddy box)**: hold Space or the 🛟 button and the instructor takes the sticks, rolls the heli upright,

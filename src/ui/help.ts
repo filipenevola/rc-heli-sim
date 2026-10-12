@@ -262,7 +262,9 @@ const HELP_HTML = `
   the drift stops and it holds a hover where it is, climbing to 3 m first if it was lower. Let go and the sticks are
   yours again, with your assist mode restored. It is the trainer switch of a buddy box, or the rescue button of a
   flybarless unit: use it the moment you lose it, not after the ground arrives. Rescue needs a turning rotor and some
-  height; on the ground or after a crash it does nothing. It is off during lessons and replays.</p>
+  height; on the ground or after a crash it does nothing. It is off during lessons and replays. With a real
+  transmitter, Settings → Transmitter mapping → <b>Assign Rescue switch</b> puts it on a switch, exactly like the
+  rescue function of an FBL unit.</p>
   <h4>Phone radio: your phone as the transmitter</h4>
   <p>Fly the sim on a laptop or TV with a phone in your hands: Settings → Input → <b>Pair a phone</b> shows a four-letter
   code; on the phone open <b>/radio.html</b> (same site), type the code, and its touch gimbals (or phone tilt for

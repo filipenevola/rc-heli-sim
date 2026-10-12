@@ -27,6 +27,8 @@ export interface GamepadMapping {
   /** Newer, more general form: a switch can be a button or an axis (2- or 3-position). */
   flightModeSwitch?: SwitchMapping;
   throttleHoldSwitch?: SwitchMapping;
+  /** Rescue (buddy box) on a switch, like the rescue function of an FBL unit. */
+  rescueSwitch?: SwitchMapping;
 }
 
 export interface SwitchMapping {
@@ -179,6 +181,8 @@ export class GamepadInput implements InputSource {
     f.throttleHold = hold === null ? this.throttleHold : hold > 0;
     const fm = readSwitch(this.rawAxes, this.rawButtons, m.flightModeSwitch ?? (m.flightModeAxis !== undefined ? { kind: 'axis', index: m.flightModeAxis, rest: -1 } : undefined));
     f.flightMode = fm === null ? this.flightMode : fm;
+    const rescue = readSwitch(this.rawAxes, this.rawButtons, m.rescueSwitch);
+    f.rescue = rescue === null ? undefined : rescue > 0;
     return f;
   }
 }
@@ -198,8 +202,9 @@ function readSwitch(axes: number[], buttons: boolean[], sw: SwitchMapping | unde
 }
 
 /** True once a switch is mapped so the transmitter, not the keyboard/buttons, owns that function. */
-export function hasSwitch(m: GamepadMapping | null, which: 'flightMode' | 'throttleHold'): boolean {
+export function hasSwitch(m: GamepadMapping | null, which: 'flightMode' | 'throttleHold' | 'rescue'): boolean {
   if (!m) return false;
+  if (which === 'rescue') return m.rescueSwitch !== undefined;
   return which === 'flightMode' ? m.flightModeSwitch !== undefined || m.flightModeAxis !== undefined : m.throttleHoldSwitch !== undefined || m.throttleHoldButton !== undefined;
 }
 

@@ -225,6 +225,7 @@ const stats = new FlightStats();
 let telemetryClock = 0;
 // Rescue (buddy box): hold Space or the 🛟 button and the demo pilot levels the heli and holds a hover.
 const rescue = new Rescue(sim);
+let rescueSwitchWas = false;
 const rescueBadge = document.createElement('div');
 rescueBadge.className = 'rescue-badge';
 rescueBadge.style.display = 'none';
@@ -707,6 +708,11 @@ function frame(now: number): void {
     } else {
       accumulator = 0;
     }
+  }
+  // Rescue switch on the transmitter: edge-triggered so Space and the button still work alongside it.
+  if (ctl.rescue !== undefined && ctl.rescue !== rescueSwitchWas) {
+    rescueSwitchWas = ctl.rescue;
+    setRescue(ctl.rescue);
   }
   // Rescue: the instructor's sticks replace the pilot's while the key or button is held.
   if (rescue.active) {
