@@ -229,7 +229,9 @@ export const HELP_HTML_PT = `
   (0,2–0,4): nessas cargas de pá minúsculas o arrasto de perfil, não a potência induzida, é a maior parte da conta. O
   modelo de rotor não tem fator de perda de ponta, então o simulador paira cerca de um grau mais baixo do que uma
   folha de setup típica; potência e autonomia batem com as correntes de pairado publicadas (um 450 a 8–11 A em 3S, um
-  700 a 12–16 A em 12S).</p>
+  700 a 12–16 A em 12S). A última linha é o "balde" de potência: voo nivelado a 4–8 m/s custa um pouco menos do que o pairado
+  porque o rotor voa em ar novo (sustentação translacional), depois o arrasto toma conta. Em rotores de aeromodelo o
+  balde é raso: a potência induzida é só um quinto da conta do pairado, o arrasto de perfil é o resto.</p>
   <div id="physics-report"></div>
   <h4>Resgate: o buddy box</h4>
   <p>Segure <b>Espaço</b> (ou pressione e segure o botão 🛟) e o instrutor assume os sticks: o heli fica de pé, a deriva

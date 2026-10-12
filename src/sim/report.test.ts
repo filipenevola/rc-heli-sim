@@ -32,6 +32,11 @@ describe('physics report', () => {
     expect(r.autoHeadSpeedFrac).toBeGreaterThan(0.5);
     expect(r.hoverEnduranceMin).toBeGreaterThan(6);
     expect(r.hoverEnduranceMin).toBeLessThan(18);
+    // The power bucket: cruising at 6-12 m/s needs less than the hover (translational lift), fast flight more again.
+    // On model rotors the bucket is shallow: induced power is only ~15-30% of the hover bill, profile drag the rest.
+    const bucket = Math.min(...r.powerCurve.filter((p) => p.v > 3 && p.v < 13).map((p) => p.W));
+    expect(bucket).toBeLessThan(r.hoverTotalPowerW * 0.98);
+    expect(r.powerCurve[r.powerCurve.length - 1].W).toBeGreaterThan(bucket);
   });
 
   it('700: hover 400–900 W, FM 0.15–0.45, and the 250 micro sits between', () => {

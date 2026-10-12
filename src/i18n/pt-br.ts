@@ -87,6 +87,7 @@ export const PT_BR: Record<string, string> = {
   'Max vertical climb': 'Subida vertical máxima',
   'Vertical autorotation': 'Autorrotação vertical',
   'sink at': 'de descida a',
+  'Power in level flight': 'Potência em voo nivelado',
   'head speed': 'da rotação',
   // ---- Rescue ----
   'Rescue': 'Resgate',

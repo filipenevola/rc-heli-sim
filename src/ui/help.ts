@@ -279,7 +279,9 @@ const HELP_HTML = `
   rate, autorotation sink. Model rotors flown at 3D head speeds have a low figure of merit (0.2–0.4): at these tiny
   blade loadings profile drag, not induced power, is most of the bill. The rotor model has no tip-loss factor, so
   the sim hovers about a degree lower than a typical setup sheet; power and endurance match published hover currents
-  (a 450 at 8–11 A on 3S, a 700 at 12–16 A on 12S).</p>
+  (a 450 at 8–11 A on 3S, a 700 at 12–16 A on 12S). The last row is the power bucket: level flight at 4–8 m/s
+  costs a little less than the hover because the rotor flies into fresh air (translational lift), then drag takes
+  over. On model rotors the bucket is shallow: induced power is only a fifth of the hover bill, profile drag the rest.</p>
   <div id="physics-report"></div>
   <h4>Rescue: the buddy box</h4>
   <p>Hold <b>Space</b> (or press and hold the 🛟 button) and the instructor takes the sticks: the heli rolls upright,
@@ -387,6 +389,7 @@ export function physicsTable(reports: PhysicsReport[]): string {
     [t('Hover endurance'), (r) => `${f(r.hoverEnduranceMin)} min`],
     [t('Max vertical climb'), (r) => `${f(r.maxClimb)} m/s`],
     [t('Vertical autorotation'), (r) => `${f(r.autoSink)} m/s ${t('sink at')} ${f(r.autoHeadSpeedFrac * 100, 0)}% ${t('head speed')}`],
+    [t('Power in level flight'), (r) => r.powerCurve.map((p) => `${f(p.v, 0)} m/s: ${f(p.W, 0)} W`).join(' · ')],
   ];
   return `<table class="physics"><tr><th></th>${reports.map((r) => `<th>${r.model}</th>`).join('')}</tr>${rows.map(([label, fn]) => `<tr><td>${label}</td>${reports.map((r) => `<td>${fn(r)}</td>`).join('')}</tr>`).join('')}</table>`;
 }

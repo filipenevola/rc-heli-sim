@@ -40,6 +40,8 @@ export interface PhysicsReport {
   /** Vertical autorotation: steady sink at collective bottom with the motor off, m/s, and the head speed it settles at, fraction of Idle-Up 1. */
   autoSink: number;
   autoHeadSpeedFrac: number;
+  /** Power drawn in level flight at a few speeds (flown): the "bucket" of translational lift. */
+  powerCurve: { v: number; W: number }[];
 }
 
 const blank = (): RotorResult => ({ thrust: 0, torque: 0, hForce: 0, lambda: 0, mu: 0, vi: 0, vrs: 0, stall: 0, lambdaIState: Number.NaN });
@@ -64,7 +66,7 @@ function hoverTrim(model: HeliModel, omega: number): { thetaDeg: number; torque:
 }
 
 /** Flown part: a trimmed hover, a full-collective climb and a vertical autorotation, each a few seconds of the real sim. */
-function flown(model: HeliModel): { hoverPitchDeg: number; hoverPowerW: number; maxClimb: number; autoSink: number; autoHeadSpeedFrac: number } {
+function flown(model: HeliModel): { hoverPitchDeg: number; hoverPowerW: number; maxClimb: number; autoSink: number; autoHeadSpeedFrac: number; powerCurve: { v: number; W: number }[] } {
   const sim = new HelicopterSim(model, new Wind(), new World());
   sim.assist = 'attitude';
   const ctl = neutralFrame();
@@ -106,7 +108,24 @@ function flown(model: HeliModel): { hoverPitchDeg: number; hoverPowerW: number; 
     sim.step(ctl);
     if (i > 6 / PHYSICS_DT) { sum += sim.state.vel.y; rpmSum += sim.state.rotorOmega; n++; }
   }
-  return { hoverPitchDeg, hoverPowerW, maxClimb, autoSink: -sum / n, autoHeadSpeedFrac: rpmSum / n / model.headspeeds[1] };
+  // Level flight at a few speeds: cruise toward a far point with the speed capped, read power once settled.
+  const powerCurve: { v: number; W: number }[] = [];
+  for (const v of [4, 8, 12, 16]) {
+    sim.resetInAir(15);
+    ctl.throttleHold = false;
+    const cruise = new Autopilot(sim);
+    cruise.setMode(1);
+    let w = 0;
+    let vs = 0;
+    let k = 0;
+    for (let f = 0; f < 10 * 60; f++) {
+      const c = cruise.goTo({ x: 0, y: 15, z: -6 - 400 }, 0, { vmax: v, vzMax: 1 });
+      for (let i = 0; i < frameSteps; i++) sim.step(c);
+      if (f >= 7 * 60) { w += sim.telemetry.motorPower; vs += Math.hypot(sim.state.vel.x, sim.state.vel.z); k++; }
+    }
+    powerCurve.push({ v: vs / k, W: w / k });
+  }
+  return { hoverPitchDeg, hoverPowerW, maxClimb, autoSink: -sum / n, autoHeadSpeedFrac: rpmSum / n / model.headspeeds[1], powerCurve };
 }
 
 export function physicsReport(model: HeliModel): PhysicsReport {
@@ -143,5 +162,6 @@ export function physicsReport(model: HeliModel): PhysicsReport {
     maxClimb: f.maxClimb,
     autoSink: f.autoSink,
     autoHeadSpeedFrac: f.autoHeadSpeedFrac,
+    powerCurve: f.powerCurve,
   };
 }

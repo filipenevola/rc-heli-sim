@@ -3,6 +3,12 @@
 All notable changes to RC Heli Sim. The version shown in the game (Help and Settings) matches the latest
 entry here; the commit hash next to it identifies the exact build.
 
+## 0.70.0
+
+- Physics report: the power bucket. Level flight is flown at 4, 8, 12 and 16 m/s and the power drawn is listed; a
+  test pins that cruising costs less than the hover (translational lift) and fast flight more again. On model
+  rotors the bucket is shallow, as the profile-drag-dominated figure of merit predicts.
+
 ## 0.69.0
 
 - **Orientation drill** (50 pts, Intermediate): hover and walk the nose through eight orientations in sequence
