@@ -35,6 +35,14 @@ export const PT_BR: Record<string, string> = {
   'Front': 'Frente',
   'Top': 'De cima',
   'Drone': 'Drone',
+  // ---- Stick analysis ----
+  'Sticks:': 'Sticks:',
+  'calm': 'calmos',
+  'busy': 'agitados',
+  'chasing': 'perseguindo',
+  'reversals/min': 'inversões/min',
+  'Smaller, earlier inputs and let it settle; you are chasing the heli.': 'Comandos menores e mais cedo, e deixe assentar; você está perseguindo o heli.',
+  'Try holding each correction a little longer before the next.': 'Tente segurar cada correção um pouco mais antes da próxima.',
   // ---- Phone radio ----
   'Phone radio (paired phone)': 'Rádio no celular (celular pareado)',
   'Phone radio': 'Rádio no celular',

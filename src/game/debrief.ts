@@ -1,4 +1,5 @@
 import type { HelicopterSim } from '../sim/physics';
+import type { ControlFrame } from '../input/types';
 import { len } from '../sim/math';
 import { t } from '../i18n';
 
@@ -22,6 +23,17 @@ export interface FlightSummary {
   touchdown: number;
   /** Challenge ids completed during the flight. */
   tricks: string[];
+  /** Cyclic stick travel per second, in full throws (0.3 is a calm hover, 2+ is fighting the model). */
+  stickRate?: number;
+  /** Cyclic direction reversals per minute: the over-control signature. */
+  reversalsPerMin?: number;
+}
+
+/** Instructor's word for the stick work: how much and how nervously the cyclic moved. */
+export function stickWord(reversalsPerMin: number, stickRate: number): 'calm' | 'busy' | 'chasing' {
+  if (reversalsPerMin >= 90 || stickRate >= 2) return 'chasing';
+  if (reversalsPerMin >= 40 || stickRate >= 0.9) return 'busy';
+  return 'calm';
 }
 
 export function landingWord(touchdown: number): string {
@@ -35,6 +47,12 @@ export function landingWord(touchdown: number): string {
 export class FlightStats {
   private cur: FlightSummary | null = null;
   private battery0 = 1;
+  private lastAil = 0;
+  private lastEle = 0;
+  private dirAil = 0;
+  private dirEle = 0;
+  private travel = 0;
+  private reversals = 0;
 
   get active(): boolean {
     return this.cur !== null;
@@ -43,15 +61,37 @@ export class FlightStats {
   begin(sim: HelicopterSim): void {
     this.battery0 = sim.telemetry.battery;
     this.cur = { seconds: 0, crashed: false, crashReason: '', maxAltitude: 0, maxSpeed: 0, maxG: 1, minG: 1, vrsSeconds: 0, stallSeconds: 0, batteryUsed: 0, touchdown: 0, tricks: [], nitro: sim.model.power === 'nitro' };
+    this.travel = 0;
+    this.reversals = 0;
+    this.dirAil = this.dirEle = 0;
+    this.lastAil = this.lastEle = 0;
   }
 
   trick(id: string): void {
     this.cur?.tricks.push(id);
   }
 
-  update(sim: HelicopterSim, dt: number): void {
+  update(sim: HelicopterSim, dt: number, ctl?: ControlFrame): void {
     const c = this.cur;
     if (!c) return;
+    if (ctl) {
+      // Stick work: cyclic travel and direction reversals (a reversal needs a real move, not jitter).
+      const da = ctl.aileron - this.lastAil;
+      const de = ctl.elevator - this.lastEle;
+      this.lastAil = ctl.aileron;
+      this.lastEle = ctl.elevator;
+      this.travel += Math.abs(da) + Math.abs(de);
+      for (const [d, key] of [[da, 'dirAil'], [de, 'dirEle']] as [number, 'dirAil' | 'dirEle'][]) {
+        if (Math.abs(d) < 0.004) continue;
+        const dir = Math.sign(d);
+        if (this[key] !== 0 && dir !== this[key]) this.reversals++;
+        this[key] = dir;
+      }
+      if (c.seconds > 1) {
+        c.stickRate = this.travel / c.seconds;
+        c.reversalsPerMin = (this.reversals / c.seconds) * 60;
+      }
+    }
     const s = sim.state;
     const t = sim.telemetry;
     c.seconds += dt;
@@ -91,5 +131,9 @@ export function debriefHtml(d: FlightSummary, fmtTime: (s: number) => string, tr
   if (warnings.length) rows.push(warnings.join(' · '));
   if (d.batteryUsed > 0.005) rows.push(`${d.nitro ? t('Fuel used:') : t('Battery used:')} ${Math.round(d.batteryUsed * 100)}%`);
   if (d.tricks.length) rows.push(`${t('Done:')} ${d.tricks.map(trickTitle).join(', ')}`);
+  if (d.reversalsPerMin !== undefined && d.stickRate !== undefined && d.seconds > 10) {
+    const w = stickWord(d.reversalsPerMin, d.stickRate);
+    rows.push(`${t('Sticks:')} <b>${t(w)}</b> (${Math.round(d.reversalsPerMin)} ${t('reversals/min')})${w === 'chasing' ? ` · ${t('Smaller, earlier inputs and let it settle; you are chasing the heli.')}` : w === 'busy' ? ` · ${t('Try holding each correction a little longer before the next.')}` : ''}`);
+  }
   return `<b>${head}</b><br>${rows.join('<br>')}`;
 }

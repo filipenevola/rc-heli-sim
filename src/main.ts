@@ -732,7 +732,7 @@ function frame(now: number): void {
     const wasFlying = flightTimer.flying;
     flightTimer.update(sim, dt);
     if (flightTimer.flying && !wasFlying) { stats.begin(sim); flightStartFrame = recFrameNo; }
-    if (flightTimer.flying) stats.update(sim, dt);
+    if (flightTimer.flying) stats.update(sim, dt, ctl);
     tracker.update(sim, dt, flightTimer.flying ? flightTimer.airTime : 0);
   }
   gates.update([tracker.nextGate('circuit'), tracker.nextGate('figure-eight')], [tracker.completed.has('circuit'), tracker.completed.has('figure-eight')]);

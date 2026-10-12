@@ -3,6 +3,12 @@
 All notable changes to RC Heli Sim. The version shown in the game (Help and Settings) matches the latest
 entry here; the commit hash next to it identifies the exact build.
 
+## 0.56.0
+
+- Debrief reads your **stick work**: cyclic travel per second and direction reversals per minute, graded calm /
+  busy / chasing, with an instructor's tip when you are over-controlling. The over-control signature (fast
+  reversals) is what separates a pilot who waits for the heli from one who chases it.
+
 ## 0.55.0
 
 - New hillside challenge and lesson: **Slope take-off (20°)** (60 pts). From rest on the bank mark, spool up and lift

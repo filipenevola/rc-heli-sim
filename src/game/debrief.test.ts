@@ -1,5 +1,5 @@
 import { describe, expect, it } from 'vitest';
-import { FlightStats, debriefHtml, landingWord } from './debrief';
+import { FlightStats, debriefHtml, landingWord, stickWord } from './debrief';
 import { HelicopterSim, PHYSICS_DT } from '../sim/physics';
 import { HELI_450 } from '../sim/heli-model';
 import { Wind } from '../sim/wind';
@@ -55,5 +55,39 @@ describe('flight debrief', () => {
     const crashed = debriefHtml({ ...d, crashed: true, crashReason: 'Blade strike' }, (s) => `${s}s`, (id) => id);
     expect(crashed).toContain('Blade strike');
     expect(crashed).not.toContain('Landing:');
+  });
+
+  it('reads the stick work: a steady hand is calm, a nervous one is chasing', () => {
+    const sim = new HelicopterSim(HELI_450, new Wind());
+    const ctl = neutralFrame();
+    ctl.flightMode = 1;
+    ctl.collective = -0.05;
+    run(sim, ctl, 25);
+    sim.state.pos.y = 6;
+    sim.state.onGround = false;
+    ctl.collective = 0.4;
+    const calm = new FlightStats();
+    calm.begin(sim);
+    for (let i = 0; i < 15 * 60; i++) {
+      ctl.aileron = 0.05 * Math.sin(i / 120); // one slow, smooth correction every ~12 s
+      sim.step(ctl, 1 / 60);
+      calm.update(sim, 1 / 60, ctl);
+    }
+    const c = calm.end(sim, 15, false)!;
+    expect(stickWord(c.reversalsPerMin!, c.stickRate!)).toBe('calm');
+    const nervous = new FlightStats();
+    nervous.begin(sim);
+    for (let i = 0; i < 15 * 60; i++) {
+      ctl.aileron = 0.4 * Math.sign(Math.sin(i / 4)); // a reversal every ~0.2 s
+      ctl.elevator = 0.3 * Math.sin(i / 3);
+      sim.step(ctl, 1 / 60);
+      nervous.update(sim, 1 / 60, ctl);
+    }
+    const n = nervous.end(sim, 15, false)!;
+    expect(n.reversalsPerMin!).toBeGreaterThan(90);
+    expect(stickWord(n.reversalsPerMin!, n.stickRate!)).toBe('chasing');
+    const html = debriefHtml(n, (s) => `${s}s`, (id) => id);
+    expect(html).toContain('chasing');
+    expect(html).toContain('reversals/min');
   });
 });
