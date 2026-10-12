@@ -13,7 +13,10 @@ if (!url) { console.error('usage: drive.mjs <url> [wait:expr|eval:expr]...'); pr
 const CHROME = '/Applications/Google Chrome.app/Contents/MacOS/Google Chrome';
 const port = 9300 + Math.floor(Math.random() * 500);
 const { spawn } = await import('node:child_process');
-const chrome = spawn(CHROME, ['--headless=new', '--disable-gpu-sandbox', '--use-angle=metal', '--hide-scrollbars', '--window-size=900,600', '--autoplay-policy=no-user-gesture-required', `--remote-debugging-port=${port}`, 'about:blank'], { stdio: 'ignore' });
+// DRIVE_SIZE=390x844 DRIVE_MOBILE=1 emulates a phone (touch events, coarse pointer, mobile UA).
+const size = (process.env.DRIVE_SIZE ?? '900x600').split('x').map(Number);
+const mobile = process.env.DRIVE_MOBILE === '1';
+const chrome = spawn(CHROME, ['--headless=new', '--disable-gpu-sandbox', '--use-angle=metal', '--hide-scrollbars', `--window-size=${size[0]},${size[1]}`, '--autoplay-policy=no-user-gesture-required', `--remote-debugging-port=${port}`, 'about:blank'], { stdio: 'ignore' });
 const cleanup = (code) => { try { chrome.kill(); } catch {} process.exit(code); };
 process.on('SIGINT', () => cleanup(130));
 let target;
@@ -48,6 +51,12 @@ const evaluate = async (expression) => {
 };
 await send('Runtime.enable');
 await send('Page.enable');
+if (mobile) {
+  await send('Emulation.setDeviceMetricsOverride', { width: size[0], height: size[1], deviceScaleFactor: 2, mobile: true });
+  await send('Emulation.setTouchEmulationEnabled', { enabled: true, maxTouchPoints: 5 });
+  await send('Emulation.setEmitTouchEventsForMouse', { enabled: true });
+  await send('Emulation.setUserAgentOverride', { userAgent: 'Mozilla/5.0 (iPhone; CPU iPhone OS 17_0 like Mac OS X) AppleWebKit/605.1.15 (KHTML, like Gecko) Version/17.0 Mobile/15E148 Safari/604.1' });
+}
 await send('Page.navigate', { url });
 await new Promise((r) => setTimeout(r, 1500));
 const t0 = Date.now();

@@ -9,25 +9,32 @@ pilot-on-the-field camera are all about model helicopters.
 ## What it does today
 
 - **Physics first.** 1 kHz fixed-step rigid body with a blade-element + momentum-theory main rotor
-  (Glauert inflow solved by Newton iteration), first-order tip-path-plane flapping with hub stiffness,
-  flap-back with airspeed, translational lift, ground effect (Cheeseman–Bennett), tail rotor with its own
-  inflow (so yaw rate and sideways drift change tail thrust the way they really do), torque reaction,
-  rotor inertia with a governor and soft start, autorotation (torque goes negative in descent), fuselage
-  drag, fin/stabiliser weathervaning, skid contacts with friction, blade strike and hard-contact crashes.
-- **Controllers like the real gear.** Flybarless unit in rate mode (PI + feed-forward on body rates) and a
-  heading-hold tail gyro, or a mechanical Bell-Hiller flybar model for the trainer.
-- **Three models:** 450 flybar trainer, 450 flybarless, 700 3D flybarless.
-- **Flight modes:** Normal (throttle curve spools down at low stick), Idle-Up 1/2 (symmetric pitch, fixed
-  head speed), Throttle Hold.
-- **Inputs, all mapped to one `ControlFrame` abstraction:**
-  - **Real transmitter** through a USB simulator dongle/cable (Spektrum WS2000, FrSky, "22-in-1" cables,
-    etc.). They show up as HID joysticks, which the browser reads with the Gamepad API. A mapping wizard
-    assigns and calibrates axes per dongle and remembers them.
-  - **Touch screen** sticks that behave like transmitter gimbals (ratcheted throttle, modes 1–4).
-  - **Keyboard** (arrows = cyclic, W/S = collective, A/D = rudder, 1/2/3 = flight mode, H = hold, R = reset).
-- **Pilot's-eye camera** standing on the field with auto-zoom, exactly like the sims you learned on.
-- **Procedural sound** (Web Audio, no samples): motor whine that follows head speed and power, main-rotor blade chop at the blade-pass frequency, tail-rotor whine, wind and airspeed rush, distance attenuation and Doppler from the pilot's position, crash thump. M mutes.
-- Expo, dual rates, wind with gusts, HUD with head speed / collective / power / ground effect.
+  (Glauert inflow solved by Newton iteration, dynamic-inflow lag), first-order tip-path-plane flapping with
+  hub stiffness, flap-back with airspeed, translational lift, ground effect (Cheeseman–Bennett), blade stall,
+  vortex ring state, the main-rotor wake skewing onto the tail (transition bump, tail-thrust loss band), tail
+  rotor with its own inflow, torque reaction, rotor inertia with a governor and soft start (or an open-loop
+  throttle curve that droops), battery sag and cut-off, autorotation (torque goes negative in descent),
+  fuselage drag, fin/stabiliser weathervaning, directional skid friction, world collisions (houses, trees,
+  platforms), blade strike, boom strike on flybar heads, and skids that fold above about 2.8 m/s of sink.
+- **Controllers like the real gear.** Flybarless unit in rate mode (PI + feed-forward on body rates), a
+  heading-hold tail gyro with the sensor filter, servo slew and delay that make too much gain wag the tail
+  (or a plain rate gyro), a mechanical Bell-Hiller flybar for the trainer, and an attitude assist for beginners.
+- **Models:** 450 flybar trainer, 450 flybarless, 700 3D flybarless, 250 micro, plus **your own helicopter**
+  built from the numbers on the box (blade length, weight, battery, head speeds, flybar or not). Training
+  gear option. Model setup like a radio: pitch curves, head speeds, gyro gain, dual rates, expo, governor.
+- **Inputs, all mapped to one `ControlFrame` abstraction:** a real transmitter through a USB simulator
+  dongle (Gamepad API, with a mapping and calibration wizard and sub-trim), touch-screen gimbals with
+  modes 1–4, phone tilt, and the keyboard.
+- **Training:** 27 challenges on the classic progression with **Show me** (the demo pilot flies it) and
+  **Teach me** (you fly, a ghost helicopter and a ring guide you), a flight **debrief** after every flight
+  (landing grade from the measured sink rate, peaks, time in VRS or stall), full-flight and crash **replays**
+  with your sticks shown, a **logbook** with a progress line, a smoke trail, an orientation arrow,
+  Shift+R hover resets for 3D drills, and rankings (longest clean flight, challenge points) that follow an
+  email across devices.
+- **Pilot's-eye camera** standing on the field with auto-zoom, plus chase, front, top and drone cameras.
+- **Procedural sound** (Web Audio, no samples): motor, blade chop, tail whine with wag flutter, wind,
+  Doppler, slap at high G, VRS roughness, stall buzz, battery alarm, crash sounds, birds and field ambience.
+- Wind with a log boundary layer, obstacle wakes and turbulence; a windsock shows the mean.
 
 ## Versions
 
@@ -48,7 +55,7 @@ node scripts/drive.mjs "http://localhost:5173/?cam=chase" "wait:rcHeli.sim.state
 
 ## Challenges and rankings
 
-Twenty-six challenges following the classic progression (hover in every orientation, elevator, pirouette, figure eight, circuits, five landing targets, landing streak, stall turn, autorotation, roll, loop, inverted hover, funnel, tic-toc, piro flip, endurance), grouped by level,
+Twenty-seven challenges following the classic progression (hover in every orientation, elevator, pirouette, figure eight, circuits, five landing targets, landing streak, stall turn, autorotation, roll, loop, inverted hover, funnel, tic-toc, piro flip, endurance), grouped by level,
 and two rankings: longest clean flight and challenge points. Records live on the device under a pilot name;
 the production build also syncs them to a small rankings server (`server/`, deployed on Quave ONE) and a
 player can verify an email with a 6-digit code to carry the profile across devices.
@@ -85,13 +92,12 @@ helicopters is the main realism lever; see the test file for the quantities that
 
 ## Roadmap
 
-- [ ] Scenery with photo-realistic skybox and a proper flying site; model skins.
+- [ ] A second flying site (indoor gym for the micro, or a parking lot) and model skins.
 - [ ] Sampled sound layer (real nitro / electric recordings) on top of the synth.
-- [ ] Training aids: hover box, orientation drills, nose-in trainer, replay.
-- [ ] Vortex-ring-state model and blade stall at high collective.
-- [ ] Multi-blade heads, collective-pitch coaxial trainers.
+- [ ] Multi-blade heads, collective-pitch coaxial trainers, nitro engines with a clutch.
 - [ ] WebHID path for dongles that are not exposed as gamepads; Bluetooth transmitters.
-- [ ] Optional Rust/wasm physics core in a Worker.
+- [ ] Portuguese (pt-BR) interface.
+- [ ] Optional Rust/wasm physics core in a Worker (the TypeScript core runs 40–57x real time on a laptop).
 
 ## Origins
 
