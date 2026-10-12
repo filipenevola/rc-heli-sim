@@ -121,6 +121,9 @@ const HELP_HTML = `
     <li><b>700 3D</b> — big, powerful and fast. Lots of inertia, lots of thrust.</li>
     <li><b>250 Micro CP</b> — a garden-sized collective-pitch micro: light, quick, nervous, short on battery.</li>
   </ul>
+  <p><b>Training gear</b> (Settings → Helicopter): the cross of rods and balls every instructor fits to a first heli. It
+  makes tip-overs almost impossible on landings, costs some weight and crispness, and the physics includes all of it.
+  Use it for your first hovers, then take it off.</p>
   <p><b>Model setup</b> (Settings → Helicopter): pitch curves per flight mode, head speed, tail gyro gain and cyclic rate,
   exactly the things you would set in your radio. Too much gyro gain wags the tail; too little lets it wander. A lower head
   speed in Normal makes a trainer gentler; a higher pitch range in Idle-Up gives more 3D authority.</p>

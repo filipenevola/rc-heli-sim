@@ -15,7 +15,7 @@ import { SettingsPanel, MODE_HELP, HOLD_HELP } from './ui/settings';
 import { AudioEngine } from './audio/engine';
 import { HelpPanel } from './ui/help';
 import { ChallengeTracker, FlightTimer, CHALLENGES } from './game/challenges';
-import { HELI_450, applySetup, type HeliModel, type ModelSetup } from './sim/heli-model';
+import { HELI_450, applySetup, withTrainingGear, type HeliModel, type ModelSetup } from './sim/heli-model';
 import { loadProfile, RankingClient, fmtTime } from './game/player';
 import { GateMeshes } from './render/gates';
 import { ChallengesPanel } from './ui/challenges-panel';
@@ -56,9 +56,11 @@ let heliMesh = new HeliMesh(sim.model);
 scene.add(heliMesh.root);
 
 let baseModel: HeliModel = HELI_MODELS[0];
+let trainingGear = false;
 function setModel(model: HeliModel): void {
   baseModel = model;
-  const tuned = applySetup(model, (profile.setup?.[model.id] as ModelSetup | undefined) ?? undefined);
+  let tuned = applySetup(model, (profile.setup?.[model.id] as ModelSetup | undefined) ?? undefined);
+  if (trainingGear) tuned = withTrainingGear(tuned);
   scene.remove(heliMesh.root);
   sim.reset(tuned);
   heliMesh = new HeliMesh(tuned);
@@ -158,11 +160,17 @@ const settings = new SettingsPanel(ui, input, wind, audio, {
   onModel(model) {
     setModel(model);
   },
+  onTrainingGear(on) {
+    trainingGear = on;
+    setModel(baseModel);
+    hud.notify(on ? '<b>Training gear fitted</b><br>Nearly tip-proof. A bit heavier and slower; remove it when hovering is boring.' : '<b>Training gear removed</b>', 3500);
+  },
   onSetup(modelId, setup) {
     profile.setup = { ...(profile.setup ?? {}), [modelId]: setup };
     // Re-apply without resetting the flight: patch the live model in place.
     const base = HELI_MODELS.find((m) => m.id === modelId) ?? baseModel;
-    const tuned = applySetup(base, setup);
+    let tuned = applySetup(base, setup);
+    if (trainingGear) tuned = withTrainingGear(tuned);
     sim.model = tuned;
     void challenges.sync();
   },

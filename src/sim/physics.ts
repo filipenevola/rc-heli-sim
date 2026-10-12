@@ -375,7 +375,7 @@ export class HelicopterSim {
       // Side hits on objects at speed break things too (a skid into a wall).
       if (cp.kind === 'skid' && normal.y < 0.5 && !s.crashed && len(vPointW) > 3) this.crash(`Hit ${what}`);
       onGround = true;
-      if (cp.kind === 'skid' && normal.y > 0.5) {
+      if (cp.kind === 'skid' && normal.y > 0.5 && !cp.gear) {
         skidsTouching++;
         skidsOnTarget = skidsOnTarget === undefined ? targetId : skidsOnTarget === targetId ? targetId : null;
       }
@@ -392,7 +392,7 @@ export class HelicopterSim {
     s.onGround = onGround;
 
     // Landing-target detection: every skid on the same target, barely moving, for a moment.
-    const skidCount = m.contacts.filter((c) => c.kind === 'skid').length;
+    const skidCount = m.contacts.filter((c) => c.kind === 'skid' && !c.gear).length;
     // The helipad is ground, not a collider: skids on plain ground near the H count as the 'pad' target.
     if (skidsTouching === skidCount && skidsOnTarget === null && this.world.pad && Math.hypot(s.pos.x - this.world.pad.centre.x, s.pos.z - this.world.pad.centre.z) < 2.2) {
       skidsOnTarget = this.world.pad.id;

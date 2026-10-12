@@ -102,8 +102,10 @@ export class HeliMesh {
     this.tailDisc.visible = false;
     this.root.add(this.tailDisc);
 
-    // Skids.
-    const skidPts = m.contacts.filter((c) => c.kind === 'skid');
+    if (m.trainingGear) this.addTrainingGear(m, metal, ghost);
+
+    // Skids (the real ones; training-gear balls are far out on the x/z axes).
+    const skidPts = m.contacts.filter((c) => c.kind === 'skid' && !c.gear);
     const xs = [...new Set(skidPts.map((c) => c.p.x))];
     const zMin = Math.min(...skidPts.map((c) => c.p.z));
     const zMax = Math.max(...skidPts.map((c) => c.p.z));
@@ -119,6 +121,26 @@ export class HeliMesh {
         strut.position.set(x, (y - sizes.bodyH * 0.3) / 2, z);
         this.root.add(strut);
       }
+    }
+  }
+
+  private addTrainingGear(m: HeliModel, metal: THREE.Material, ghost: boolean): void {
+    const R = m.rotor.radius;
+    const arm = 0.95 * R;
+    const skidY = Math.min(...m.contacts.filter((c) => c.kind === 'skid' && !c.gear).map((c) => c.p.y));
+    const ballMat = new THREE.MeshStandardMaterial({ color: 0xff8a00, roughness: 0.9 });
+    if (ghost) { ballMat.transparent = true; ballMat.opacity = 0.3; }
+    for (const [dx, dz] of [[1, 0], [-1, 0], [0, 1], [0, -1]] as const) {
+      const rod = new THREE.Mesh(new THREE.CylinderGeometry(R * 0.012, R * 0.012, arm, 6), metal);
+      rod.rotation.z = dx !== 0 ? Math.PI / 2 : 0;
+      rod.rotation.x = dz !== 0 ? Math.PI / 2 : 0;
+      rod.position.set((dx * arm) / 2, skidY + R * 0.03, (dz * arm) / 2);
+      rod.castShadow = !ghost;
+      this.root.add(rod);
+      const ball = new THREE.Mesh(new THREE.SphereGeometry(R * 0.1, 10, 8), ballMat);
+      ball.position.set(dx * arm, skidY + R * 0.03, dz * arm);
+      ball.castShadow = !ghost;
+      this.root.add(ball);
     }
   }
 

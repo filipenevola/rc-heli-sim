@@ -3,6 +3,15 @@
 All notable changes to RC Heli Sim. The version shown in the game (Help and Settings) matches the latest
 entry here; the commit hash next to it identifies the exact build.
 
+## 0.17.0
+
+- **Training gear** (Settings → Helicopter): the cross of rods with foam balls every instructor fits to a first
+  heli. Four wide soft contact points make tip-overs nearly impossible, and the physics also carries the extra
+  weight, drag and roll inertia. Landing targets still only count the real skids, so the small platforms stay
+  landable. Saved with your preferences.
+- **Field ambience**: a soft rustle bed that rises with the wind and birds chirping between flights, quieter
+  when the heli is loud nearby.
+
 ## 0.16.0 — 2026-10-12
 
 - Teach me shows a ghost: the demo pilot's flight for the current step, pre-flown in a hidden simulation when

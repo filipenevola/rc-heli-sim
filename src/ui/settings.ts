@@ -20,6 +20,7 @@ export const HOLD_HELP = {
 
 export interface SettingsCallbacks {
   onModel(model: HeliModel): void;
+  onTrainingGear(on: boolean): void;
   /** The pilot changed the model setup (pitch curves, head speeds, gains) for the given base model. */
   onSetup(modelId: string, setup: ModelSetup): void;
   /** Current setup for a model id (from the profile), to prefill the sliders. */
@@ -53,7 +54,7 @@ const AXIS_HINT: Record<AxisName | SwitchName, string> = {
 };
 
 const PREFS_KEY = 'rc-heli-sim.prefs.v1';
-interface Prefs { model?: string; source?: string; stickMode?: number; expo?: number; rate?: number; rexpo?: number; assist?: string; camera?: string; spot?: string; arrow?: boolean; wind?: number; windDir?: number; gust?: number; volume?: number; muted?: boolean; tilt?: number }
+interface Prefs { gear?: boolean; model?: string; source?: string; stickMode?: number; expo?: number; rate?: number; rexpo?: number; assist?: string; camera?: string; spot?: string; arrow?: boolean; wind?: number; windDir?: number; gust?: number; volume?: number; muted?: boolean; tilt?: number }
 function loadPrefs(): Prefs {
   try { return JSON.parse(localStorage.getItem(PREFS_KEY) ?? '{}') as Prefs; } catch { return {}; }
 }
@@ -207,6 +208,7 @@ export class SettingsPanel {
     if (p.camera && (CAMERA_MODES as string[]).includes(p.camera)) this.setCamera(p.camera as CameraMode);
     if (p.spot) { this.spot = p.spot; this.cb.onPilotSpot(p.spot); }
     if (p.arrow !== undefined) { this.arrowOn = p.arrow; this.cb.onArrow(p.arrow); }
+    if (p.gear) { this.gearOn = true; this.cb.onTrainingGear(true); }
     if (p.wind !== undefined) this.wind.speed = p.wind;
     if (p.windDir !== undefined) this.wind.fromDeg = p.windDir;
     if (p.gust !== undefined) this.wind.gustiness = p.gust;
@@ -253,6 +255,7 @@ export class SettingsPanel {
       <section>
         <h4>Helicopter</h4>
         ${sel('model', HELI_MODELS.map((m) => [m.id, m.name]), this.currentModelId)}
+        <label><input type="checkbox" id="gear" ${this.gearOn ? 'checked' : ''}> Training gear (cross of rods with balls: nearly tip-proof, a bit heavier and slower)</label>
         <details class="setup"><summary>Model setup (pitch curves, head speed, gyro) — like your radio's model memory</summary>
           ${this.setupHtml()}
         </details>
@@ -314,6 +317,11 @@ export class SettingsPanel {
       this.render();
     });
     this.bindSetup();
+    q<HTMLInputElement>('#gear').addEventListener('change', (e) => {
+      this.gearOn = (e.target as HTMLInputElement).checked;
+      this.cb.onTrainingGear(this.gearOn);
+      savePrefs({ gear: this.gearOn });
+    });
     q<HTMLSelectElement>('#source').addEventListener('change', (e) => {
       const choice = (e.target as HTMLSelectElement).value as SourceChoice;
       const status = q('#source-status');
@@ -440,6 +448,7 @@ export class SettingsPanel {
   cameraMode: CameraMode = 'pilot';
   spot = 'pad';
   arrowOn = true;
+  gearOn = false;
 
   setCamera(mode: CameraMode): void {
     this.cameraMode = mode;

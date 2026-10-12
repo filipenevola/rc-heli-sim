@@ -55,6 +55,8 @@ export interface HeliModel {
 
   /** Controller defaults: a modern flybarless (FBL) unit, or a mechanical flybar. */
   controller: ControllerParams;
+  /** Training gear fitted (cross of rods with balls): rendered and part of the physics when true. */
+  trainingGear?: boolean;
 }
 
 export interface RotorParams {
@@ -73,6 +75,8 @@ export interface ContactPoint {
   p: V3;
   /** Soft (skid wire) vs hard (canopy, blades) contact. Hard contacts beyond a speed threshold mean a crash. */
   kind: 'skid' | 'hard';
+  /** Training-gear ball: supports the heli like a skid but is not required to sit on a landing target. */
+  gear?: boolean;
 }
 
 export interface ControllerParams {
@@ -277,6 +281,35 @@ export interface ModelSetup {
   gyroGainPct?: number;
   /** Cyclic rate (stick-full roll/pitch rate) percentage. */
   cyclicRatePct?: number;
+}
+
+/**
+ * Training gear: a cross of carbon rods with foam balls, as every instructor fits to a first heli. It makes
+ * tip-overs almost impossible (wide, soft contact points), adds weight and drag, and slows the roll/pitch
+ * response a little. The physics gets all of that, so what you learn with it transfers honestly.
+ */
+export function withTrainingGear(base: HeliModel): HeliModel {
+  const R = base.rotor.radius;
+  const arm = 0.95 * R; // rods reach almost to the disc edge
+  const skidY = Math.min(...base.contacts.filter((c) => c.kind === 'skid').map((c) => c.p.y));
+  const ballY = skidY - 0.02;
+  const balls: ContactPoint[] = [
+    { p: { x: arm, y: ballY, z: 0 }, kind: 'skid', gear: true },
+    { p: { x: -arm, y: ballY, z: 0 }, kind: 'skid', gear: true },
+    { p: { x: 0, y: ballY, z: arm }, kind: 'skid', gear: true },
+    { p: { x: 0, y: ballY, z: -arm }, kind: 'skid', gear: true },
+  ];
+  const extra = 0.12 * base.mass;
+  return {
+    ...base,
+    id: `${base.id}+gear`,
+    name: `${base.name} + training gear`,
+    trainingGear: true,
+    mass: base.mass + extra,
+    inertia: { x: base.inertia.x + extra * arm * arm * 0.5, y: base.inertia.y + extra * arm * arm, z: base.inertia.z + extra * arm * arm * 0.5 },
+    dragArea: { x: base.dragArea.x * 1.3, y: base.dragArea.y * 1.5, z: base.dragArea.z * 1.3 },
+    contacts: [...base.contacts, ...balls],
+  };
 }
 
 /** A model with the pilot's setup applied. The base definitions are never mutated. */

@@ -33,6 +33,8 @@ export class AudioEngine {
   private stallGain!: GainNode;
   private beepGain!: GainNode;
   private nextBeep = 0;
+  private nextChirp = 0;
+  private ambience!: GainNode;
   private crashedBefore = false;
   private started = false;
   muted = false;
@@ -153,6 +155,20 @@ export class AudioEngine {
     beep.connect(this.beepGain).connect(this.master);
     beep.start();
 
+    // Field ambience at the pilot: a soft rustle bed; birds are synthesised on the fly.
+    const amb = ctx.createBufferSource();
+    amb.buffer = this.noiseBuffer;
+    amb.loop = true;
+    amb.playbackRate.value = 0.5;
+    const ambF = ctx.createBiquadFilter();
+    ambF.type = 'bandpass';
+    ambF.frequency.value = 900;
+    ambF.Q.value = 0.4;
+    this.ambience = ctx.createGain();
+    this.ambience.gain.value = 0.012;
+    amb.connect(ambF).connect(this.ambience).connect(this.master);
+    amb.start();
+
     this.motorOsc.start();
     this.motorOsc2.start();
     this.rotorChop.start();
@@ -243,6 +259,30 @@ export class AudioEngine {
     this.windGain.gain.setTargetAtTime(windLevel * gust, t, 0.2);
     this.windFilter.frequency.setTargetAtTime(200 + 500 * windLevel + 150 * Math.sin(t * 0.6), t, 0.2);
 
+    // Birds: a short frequency-swept chirp every few seconds, quieter when the heli is loud nearby.
+    if (t > this.nextChirp) {
+      this.nextChirp = t + 2.5 + Math.random() * 6;
+      const o = ctx.createOscillator();
+      o.type = 'sine';
+      const g = ctx.createGain();
+      const f0 = 2200 + Math.random() * 1800;
+      const n = 2 + Math.floor(Math.random() * 3);
+      o.connect(g).connect(this.master);
+      const loud = Math.min(1, rpmFrac * atten);
+      const vol = 0.05 * (1 - 0.7 * loud);
+      for (let i = 0; i < n; i++) {
+        const ts = t + i * 0.16;
+        o.frequency.setValueAtTime(f0, ts);
+        o.frequency.exponentialRampToValueAtTime(f0 * 1.6, ts + 0.06);
+        o.frequency.exponentialRampToValueAtTime(f0 * 0.9, ts + 0.13);
+        g.gain.setValueAtTime(0, ts);
+        g.gain.linearRampToValueAtTime(vol, ts + 0.02);
+        g.gain.linearRampToValueAtTime(0, ts + 0.14);
+      }
+      o.start(t);
+      o.stop(t + n * 0.16 + 0.05);
+    }
+    this.ambience.gain.setTargetAtTime(0.012 + 0.01 * Math.min(1, windSpeed / 8), t, 0.5);
     // Low battery: double beep every 2 s under 10%, continuous fast beeps at 0% (the radio's timer alarm style).
     if (tel.battery < 0.1 && rpmFrac > 0.1) {
       if (t > this.nextBeep) {
