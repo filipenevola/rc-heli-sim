@@ -2,7 +2,7 @@ import { CHALLENGES, TOTAL_POINTS, LEVELS, type ChallengeTracker, type FlightTim
 import { lessonFor } from '../game/lessons';
 import { importMappings, loadMappings, type GamepadMapping } from '../input/gamepad';
 import { fmtTime, localRankings, saveLocalRanking, saveProfile, type Profile, type RankingClient } from '../game/player';
-import { logbookHtml, type FlightLog } from '../game/flightlog';
+import { logbookCsv, logbookHtml, type FlightLog } from '../game/flightlog';
 import { localizeDom, t } from '../i18n';
 import { homeLabel, unavailableHere } from '../site';
 
@@ -192,6 +192,18 @@ export class ChallengesPanel {
         if (this.tab === 'rankings') void this.refreshOnline();
       });
     }
+    this.el.querySelector('#export-log')?.addEventListener('click', () => {
+      if (!this.log) return;
+      const blob = new Blob([logbookCsv(this.log.entries)], { type: 'text/csv' });
+      const url = URL.createObjectURL(blob);
+      const a = document.createElement('a');
+      a.href = url;
+      a.download = `rc-heli-logbook-${new Date().toISOString().slice(0, 10)}.csv`;
+      document.body.appendChild(a);
+      a.click();
+      a.remove();
+      setTimeout(() => URL.revokeObjectURL(url), 2000);
+    });
     this.el.querySelector('#save-pilot')?.addEventListener('click', () => {
       p.name = (this.el.querySelector('#pilot-name') as HTMLInputElement).value.trim().slice(0, 24);
       if (!p.name) p.name = this.profile.name;

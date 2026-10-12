@@ -16,6 +16,9 @@ pilot-on-the-field camera are all about model helicopters.
   throttle curve that droops), battery sag and cut-off, autorotation (torque goes negative in descent),
   fuselage drag, fin/stabiliser weathervaning, directional skid friction, world collisions (houses, trees,
   platforms), blade strike, boom strike on flybar heads, and skids that fold above about 2.8 m/s of sink.
+  Real terrain on the hillside (contacts follow the slope: slope landings, dynamic rollover named as such,
+  wind upwash on the windward face). The torque reaction follows the one-way bearing (none in autorotation).
+  Emergencies: tail rotor failure on demand or at random; a lean nitro needle overheats and quits.
 - **Controllers like the real gear.** Flybarless unit in rate mode (PI + feed-forward on body rates), a
   heading-hold tail gyro with the sensor filter, servo slew and delay that make too much gain wag the tail
   (or a plain rate gyro), a mechanical Bell-Hiller flybar for the trainer, and an attitude assist for beginners.
@@ -25,23 +28,30 @@ pilot-on-the-field camera are all about model helicopters.
   fuel. Training gear option. Model setup like a radio: pitch curves, head speeds, gyro gain, dual rates, expo,
   governor on/off, heading-hold or rate gyro.
 - **Inputs, all mapped to one `ControlFrame` abstraction:** a real transmitter through a USB simulator
-  dongle (Gamepad API, with a mapping and calibration wizard and sub-trim), touch-screen gimbals with
-  modes 1–4, phone tilt, and the keyboard.
-- **Training:** 27 challenges on the classic progression with **Show me** (the demo pilot flies it) and
+  dongle (Gamepad API, with a mapping and calibration wizard, sub-trim and a rescue switch), touch-screen
+  gimbals with modes 1–4, phone tilt, the keyboard, and **your phone as the transmitter** (pair with a code or
+  QR, WebRTC peer to peer at 50 Hz with telemetry back, auto-reconnect, rescue and reset on the phone).
+- **Rescue (buddy box):** hold Space, the 🛟 button or a transmitter switch and the instructor levels the heli and
+  holds a hover until you let go.
+- **Training:** 35 challenges on the classic progression (hover, orientation drill, circuits, precision and
+  slope landings, slope take-off, autorotation, tail rotor failure, 3D) with **Show me** (the demo pilot flies it) and
   **Teach me** (you fly, a ghost helicopter and a ring guide you), a flight **debrief** after every flight
-  (landing grade from the measured sink rate, peaks, time in VRS or stall), full-flight and crash **replays**
-  with your sticks shown, **saved flights** (.json you can load on any machine), a **logbook** with a progress
-  line and a coach tip that follows your account, a smoke trail, a telemetry strip chart, an orientation arrow,
+  (landing grade from the measured sink rate, peaks, time in VRS or stall, stick work graded calm / busy /
+  chasing), full-flight and crash **replays** with your sticks shown and a transport bar (slow motion, scrub),
+  **saved flights** (.json you can load on any machine, or fly against as a ghost), a **logbook** with a progress
+  chart, the over-control trend and a coach tip that follows your account, a physics report in the manual
+  (hover power, figure of merit, climb, autorotation sink, power bucket) pinned to published numbers by tests, a smoke trail, a telemetry strip chart, an orientation arrow,
   Shift+R hover resets for 3D drills, and rankings (longest clean flight, challenge points) that follow an
   email across devices.
 - **Pilot's-eye camera** standing on the field with auto-zoom, plus chase, front, top and drone cameras.
 - **Procedural sound** (Web Audio, no samples): motor, blade chop, tail whine with wag flutter, wind,
   Doppler, slap at high G, VRS roughness, stall buzz, battery alarm, crash sounds, birds and field ambience.
-- Wind with a log boundary layer, obstacle wakes and turbulence; a windsock shows the mean.
+- Wind with a log boundary layer, obstacle wakes, terrain following and turbulence; the windsock shows the mean
+  and the trees lean and flutter with the local gusts.
 - Interface, challenges, lessons and manual in English and Brazilian Portuguese.
-- Three flying sites: the outdoor field and the club's parking lot (morning, noon or evening light, wind) and an
-  indoor gym (walls, ceiling, bleachers and hoops all solid, no wind, hall echo). Works offline after the first
-  visit and installs to a phone's home screen.
+- Four flying sites: the outdoor field, the club's parking lot and the hillside (morning, noon or evening light,
+  wind) and an indoor gym (walls, ceiling, bleachers and hoops all solid, no wind, hall echo). Works offline after
+  the first visit and installs to a phone's home screen.
 
 ## Versions
 
@@ -99,9 +109,9 @@ helicopters is the main realism lever; see the test file for the quantities that
 
 ## Roadmap
 
-- [ ] A slope site; model skins beyond the canopy colour.
+- [x] A slope site (the hillside). [ ] Model skins beyond the canopy colour.
 - [ ] Sampled sound layer (real nitro / electric recordings) on top of the synth.
-- [ ] Multi-blade heads, collective-pitch coaxial trainers, nitro engines with a clutch.
+- [x] Nitro engines with a clutch and a needle. [ ] Collective-pitch coaxial trainers.
 - [ ] WebHID path for dongles that are not exposed as gamepads; Bluetooth transmitters.
 - [ ] Optional Rust/wasm physics core in a Worker (the TypeScript core runs 40–57x real time on a laptop).
 

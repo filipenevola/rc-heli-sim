@@ -1,5 +1,5 @@
 import { beforeAll, describe, expect, it } from 'vitest';
-import { FlightLog, logbookHtml, fmtAgo, coachTip, progressSvg, calmTrend } from './flightlog';
+import { FlightLog, logbookHtml, fmtAgo, coachTip, progressSvg, calmTrend, logbookCsv } from './flightlog';
 import type { FlightSummary } from './debrief';
 
 // Node 26 exposes a `localStorage` global that is undefined without --localstorage-file, and that shadows the
@@ -90,5 +90,16 @@ describe('logbook', () => {
     expect(trend.earlier).toBeCloseTo(120);
     expect(logbookHtml(log, (s) => `${s}s`)).toContain('calming down');
     expect(progressSvg(log.entries.slice(0, 2))).toBe('');
+  });
+
+  it('exports the logbook as CSV with a header, quoting commas and quotes', () => {
+    localStorage.clear();
+    const log = new FlightLog();
+    const base: FlightSummary = { seconds: 12.34, crashed: true, crashReason: 'Hit "the barn", hard', maxAltitude: 5, maxSpeed: 3, maxG: 1.2, minG: 0.9, vrsSeconds: 0, stallSeconds: 0, batteryUsed: 0.1, touchdown: 0, tricks: ['first-hover', 'hover-box'] };
+    log.add(base, '450 Electric');
+    const csv = logbookCsv(log.entries);
+    const lines = csv.trim().split('\n');
+    expect(lines[0]).toBe('date,model,seconds,crashed,reason,touchdown_m_s,max_altitude_m,max_speed_m_s,max_g,reversals_per_min,challenges');
+    expect(lines[1]).toContain(',450 Electric,12.3,true,"Hit ""the barn"", hard",0.00,5.0,3.0,1.20,,first-hover hover-box');
   });
 });

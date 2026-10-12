@@ -183,6 +183,17 @@ export function calmTrend(entries: LogEntry[]): { recent: number; earlier: numbe
   return recent !== null && earlier !== null ? { recent, earlier } : null;
 }
 
+/** The whole logbook as CSV (newest first), for a spreadsheet or your club's records. */
+export function logbookCsv(entries: LogEntry[]): string {
+  const head = ['date', 'model', 'seconds', 'crashed', 'reason', 'touchdown_m_s', 'max_altitude_m', 'max_speed_m_s', 'max_g', 'reversals_per_min', 'challenges'];
+  const cell = (v: string | number | boolean | undefined) => {
+    const t = v === undefined ? '' : String(v);
+    return /[",\n]/.test(t) ? `"${t.replace(/"/g, '""')}"` : t;
+  };
+  const rows = entries.map((e) => [new Date(e.at).toISOString(), e.model, e.seconds.toFixed(1), e.crashed, e.reason, e.touchdown.toFixed(2), e.maxAltitude.toFixed(1), e.maxSpeed.toFixed(1), e.maxG.toFixed(2), e.reversals, e.tricks.join(' ')].map(cell).join(','));
+  return [head.join(','), ...rows].join('\n') + '\n';
+}
+
 /** The logbook table and its progress line, as HTML. */
 export function logbookHtml(log: FlightLog, fmtTime: (s: number) => string): string {
   const st = log.stats();
@@ -199,7 +210,7 @@ export function logbookHtml(log: FlightLog, fmtTime: (s: number) => string): str
   const calmLine = calm
     ? `<p class="hint">${t('Stick reversals per minute, last 10 flights:')} ${Math.round(calm.recent)} (${t('before:')} ${Math.round(calm.earlier)}). ${calm.recent < calm.earlier * 0.85 ? t('Your hands are calming down.') : calm.recent > calm.earlier * 1.15 ? t('Busier hands lately: slow down, hold each correction longer.') : ''}</p>`
     : '';
-  return `<h5>${t('Logbook')}</h5>
+  return `<h5>${t('Logbook')} <button id="export-log" class="small" title="${t('Download the logbook as CSV')}">⬇ CSV</button></h5>
     <p class="hint">${st.flights} ${t('flights')}, ${st.clean} ${t('clean')} (${Math.round((100 * st.clean) / st.flights)}%), ${fmtTime(st.airtime)} ${t('in the air, landings average')} ${st.avgTouchdown.toFixed(1)} m/s.</p>
     ${progressSvg(log.entries)}
     ${trend}${calmLine}${coachLine}

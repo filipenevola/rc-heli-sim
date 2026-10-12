@@ -3,6 +3,11 @@
 All notable changes to RC Heli Sim. The version shown in the game (Help and Settings) matches the latest
 entry here; the commit hash next to it identifies the exact build.
 
+## 0.71.0
+
+- Logbook: a ⬇ CSV button downloads every logged flight (date, model, time, outcome, landing speed, peaks,
+  reversals per minute, challenges) for a spreadsheet or the club's records. README brought up to date.
+
 ## 0.70.0
 
 - Physics report: the power bucket. Level flight is flown at 4, 8, 12 and 16 m/s and the power drawn is listed; a
