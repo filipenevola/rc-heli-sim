@@ -3,6 +3,14 @@
 All notable changes to RC Heli Sim. The version shown in the game (Help and Settings) matches the latest
 entry here; the commit hash next to it identifies the exact build.
 
+## 0.18.0
+
+- **Flight debrief**: after every flight longer than a few seconds, a card grades the touchdown (greaser / soft / firm /
+  hard from the measured sink rate), and lists peak altitude, speed and G, time in vortex ring state or blade stall,
+  battery used, and the challenges completed on the way.
+- **Dual rates on the mode switch** (Settings → Input): a separate, lower cyclic rate for Normal mode, as on a real
+  radio. Saved with your preferences.
+
 ## 0.17.0
 
 - **Training gear** (Settings → Helicopter): the cross of rods with foam balls every instructor fits to a first

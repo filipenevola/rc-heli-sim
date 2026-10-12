@@ -43,6 +43,8 @@ export interface HeliState {
   restingOn: string | null;
   restingTime: number;
   landed: { target: LandingTarget; offset: number } | null;
+  /** Vertical speed at the last touchdown, m/s downward (0.3 is a greaser, 1+ is a thump). */
+  touchdownSpeed: number;
   onGround: boolean;
   time: number;
 }
@@ -98,6 +100,7 @@ export function initialState(model: HeliModel, yaw = 0): HeliState {
     restingOn: null,
     restingTime: 0,
     landed: null,
+    touchdownSpeed: 0,
     onGround: true,
     time: 0,
   };
@@ -389,6 +392,7 @@ export class HelicopterSim {
       force = add(force, fB);
       moment = add(moment, cross(cp.p, fB));
     }
+    if (onGround && !s.onGround) s.touchdownSpeed = Math.max(0, -s.vel.y);
     s.onGround = onGround;
 
     // Landing-target detection: every skid on the same target, barely moving, for a moment.

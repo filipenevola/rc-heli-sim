@@ -17,6 +17,7 @@ import { HelpPanel } from './ui/help';
 import { ChallengeTracker, FlightTimer, CHALLENGES } from './game/challenges';
 import { HELI_450, applySetup, withTrainingGear, type HeliModel, type ModelSetup } from './sim/heli-model';
 import { loadProfile, RankingClient, fmtTime } from './game/player';
+import { FlightStats, debriefHtml } from './game/debrief';
 import { GateMeshes } from './render/gates';
 import { ChallengesPanel } from './ui/challenges-panel';
 import { installTypingGuard } from './input/typing-guard';
@@ -149,11 +150,17 @@ function stopLesson(resetHeli = true): void {
 }
 lessonOverlay.onStop = () => stopLesson();
 tracker.onComplete = (c) => {
+  stats.trick(c.id);
   hud.notify(`<b>Challenge complete: ${c.title}</b><br>+${c.points} points · ${tracker.points} total`, 5000);
   void challenges.sync();
 };
+const stats = new FlightStats();
 flightTimer.onFlightEnd = (seconds, crashed) => {
-  if (seconds > 20) hud.notify(`<b>${crashed ? 'Flight ended in a crash' : 'Clean flight'}: ${fmtTime(seconds)}</b>${!crashed && seconds >= flightTimer.best ? '<br>Your longest clean flight' : ''}`, 4000);
+  const d = stats.end(sim, seconds, crashed);
+  if (d && seconds > 8) {
+    const extra = !crashed && seconds >= flightTimer.best ? '<br>Your longest clean flight' : '';
+    hud.notify(debriefHtml(d, fmtTime, (id) => CHALLENGES.find((c) => c.id === id)?.title ?? id) + extra, 8000);
+  }
   if (!crashed) void challenges.sync();
 };
 const settings = new SettingsPanel(ui, input, wind, audio, {
@@ -464,7 +471,10 @@ function frame(now: number): void {
   field.pilotMarker.rotation.y = Math.atan2(-(sim.state.pos.x - field.pilotMarker.position.x), -(sim.state.pos.z - field.pilotMarker.position.z));
 
   if (!paused && (!lesson || lesson.mode === 'teach')) {
+    const wasFlying = flightTimer.flying;
     flightTimer.update(sim, dt);
+    if (flightTimer.flying && !wasFlying) stats.begin(sim);
+    if (flightTimer.flying) stats.update(sim, dt);
     tracker.update(sim, dt, flightTimer.flying ? flightTimer.airTime : 0);
   }
   gates.update([tracker.nextGate('circuit'), tracker.nextGate('figure-eight')], [tracker.completed.has('circuit'), tracker.completed.has('figure-eight')]);

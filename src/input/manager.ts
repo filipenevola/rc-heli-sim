@@ -17,6 +17,8 @@ export class InputManager {
   readonly motion: MotionInput;
   choice: SourceChoice = 'auto';
   active: InputSource;
+  /** Extra cyclic rate multiplier in Normal mode only (1 = same as Idle-Up). */
+  normalRate = 1;
   shaping: Record<'aileron' | 'elevator' | 'rudder', StickShaping> = {
     aileron: { expo: 0.3, rate: 1, deadband: 0.02 },
     elevator: { expo: 0.3, rate: 1, deadband: 0.02 },
@@ -74,6 +76,13 @@ export class InputManager {
     o.aileron = applyShaping(raw.aileron, this.shaping.aileron);
     o.elevator = applyShaping(raw.elevator, this.shaping.elevator);
     o.rudder = applyShaping(raw.rudder, this.shaping.rudder);
+    // Dual rates by flight mode, as on a real radio: a lower cyclic rate in Normal for calm hovering, full in Idle-Up.
+    const kbMode = frames.keyboard.flightMode;
+    const mode = this.active === this.gamepad && hasSwitch(this.gamepad.mapping, 'flightMode') ? raw.flightMode : kbMode;
+    if (mode === 0 && this.normalRate < 1) {
+      o.aileron *= this.normalRate;
+      o.elevator *= this.normalRate;
+    }
     o.collective = Math.max(-1, Math.min(1, raw.collective));
     // Mode/hold toggles from the keyboard apply to every source unless the transmitter has them on a switch.
     const kb = frames.keyboard;

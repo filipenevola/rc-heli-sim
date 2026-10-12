@@ -54,7 +54,7 @@ const AXIS_HINT: Record<AxisName | SwitchName, string> = {
 };
 
 const PREFS_KEY = 'rc-heli-sim.prefs.v1';
-interface Prefs { gear?: boolean; model?: string; source?: string; stickMode?: number; expo?: number; rate?: number; rexpo?: number; assist?: string; camera?: string; spot?: string; arrow?: boolean; wind?: number; windDir?: number; gust?: number; volume?: number; muted?: boolean; tilt?: number }
+interface Prefs { gear?: boolean; nrate?: number; model?: string; source?: string; stickMode?: number; expo?: number; rate?: number; rexpo?: number; assist?: string; camera?: string; spot?: string; arrow?: boolean; wind?: number; windDir?: number; gust?: number; volume?: number; muted?: boolean; tilt?: number }
 function loadPrefs(): Prefs {
   try { return JSON.parse(localStorage.getItem(PREFS_KEY) ?? '{}') as Prefs; } catch { return {}; }
 }
@@ -203,6 +203,7 @@ export class SettingsPanel {
     if (p.expo !== undefined) { im.shaping.aileron.expo = p.expo; im.shaping.elevator.expo = p.expo; }
     if (p.rate !== undefined) { im.shaping.aileron.rate = p.rate; im.shaping.elevator.rate = p.rate; }
     if (p.rexpo !== undefined) im.shaping.rudder.expo = p.rexpo;
+    if (p.nrate !== undefined) im.normalRate = p.nrate;
     if (p.tilt !== undefined) im.motion.maxTiltDeg = p.tilt;
     if (p.assist === 'rate' || p.assist === 'attitude') this.setAssist(p.assist);
     if (p.camera && (CAMERA_MODES as string[]).includes(p.camera)) this.setCamera(p.camera as CameraMode);
@@ -269,6 +270,7 @@ export class SettingsPanel {
         <label>Touch stick mode ${sel('stickmode', [['1', 'Mode 1'], ['2', 'Mode 2'], ['3', 'Mode 3'], ['4', 'Mode 4']], String(im.touch.mode))}</label>
         ${slider('expo', 'Cyclic expo', 0, 0.8, 0.05, im.shaping.aileron.expo)}
         ${slider('rate', 'Cyclic dual rate', 0.3, 1, 0.05, im.shaping.aileron.rate)}
+        ${slider('nrate', 'Normal-mode rate (dual rate on the mode switch)', 0.4, 1, 0.05, im.normalRate)}
         ${slider('rexpo', 'Rudder expo', 0, 0.8, 0.05, im.shaping.rudder.expo)}
         <p class="hint">Keyboard: arrows = cyclic, W/S = collective, A/D = rudder, 1/2/3 flight mode, H throttle hold, R reset, P pause.</p>
       </section>
@@ -348,6 +350,7 @@ export class SettingsPanel {
     };
     bind('expo', (v) => { im.shaping.aileron.expo = v; im.shaping.elevator.expo = v; savePrefs({ expo: v }); });
     bind('rate', (v) => { im.shaping.aileron.rate = v; im.shaping.elevator.rate = v; savePrefs({ rate: v }); });
+    bind('nrate', (v) => { im.normalRate = v; savePrefs({ nrate: v }); });
     bind('rexpo', (v) => { im.shaping.rudder.expo = v; savePrefs({ rexpo: v }); });
     bind('tilt', (v) => (im.motion.maxTiltDeg = v));
     q<HTMLSelectElement>('#spot').addEventListener('change', (e) => {

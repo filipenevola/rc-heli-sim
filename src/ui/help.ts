@@ -96,6 +96,11 @@ const HELP_HTML = `
 </section>
 
 <section>
+  <h4>After every flight: the debrief</h4>
+  <p>When you land (or crash) after more than a few seconds in the air, a card shows the flight: how firm the touchdown
+  was (a greaser is under 0.25 m/s; a real heli's skids complain above 1 m/s), the peak altitude, speed and G, time spent
+  in vortex ring state or blade stall, battery used, and any challenges you completed on the way. Chase softer landings
+  and fewer warnings; that is what an instructor would watch.</p>
   <h4>Things the physics will do to you</h4>
   <ul>
     <li><b>Vortex ring state</b> (settling with power): descend nearly vertically at about the rotor's downwash speed and the
@@ -121,6 +126,8 @@ const HELP_HTML = `
     <li><b>700 3D</b> — big, powerful and fast. Lots of inertia, lots of thrust.</li>
     <li><b>250 Micro CP</b> — a garden-sized collective-pitch micro: light, quick, nervous, short on battery.</li>
   </ul>
+  <p><b>Dual rates on the mode switch</b> (Settings → Input): real radios usually fly Normal with a lower cyclic rate
+  and Idle-Up with full rate. The "Normal-mode rate" slider does that: 0.6 makes the hover gentle without touching 3D.</p>
   <p><b>Training gear</b> (Settings → Helicopter): the cross of rods and balls every instructor fits to a first heli. It
   makes tip-overs almost impossible on landings, costs some weight and crispness, and the physics includes all of it.
   Use it for your first hovers, then take it off.</p>
