@@ -42,7 +42,7 @@ const HELP_HTML = `
     <li><b>Right stick</b> — cyclic. Left/right = aileron (roll), forward/back = elevator (pitch).</li>
     <li><b>Left stick</b> — collective/throttle (up/down, no spring) and rudder (left/right, yaw).</li>
     <li><b>Keyboard:</b> arrows = cyclic, W/S = collective, A/D = rudder, 1/2/3 = flight mode, H = throttle hold,
-      R = reset, P = pause, M = mute, U = hide/show UI, F = fullscreen, C = camera, ? = this help.</li>
+      R = reset, P = pause, M = mute, U = hide/show UI, F = fullscreen, C = camera, G = hangar (parts), ? = this help.</li>
     <li><b>Top bar icons:</b> hover for a tooltip on desktop; on a touch screen, <b>long-press</b> any icon for a mini help.
       The eye at the top-left hides or shows everything else; pause with ⏸.</li>
     <li><b>Touch:</b> two on-screen gimbals. Choose Mode 1–4 in Settings. The throttle stick stays where you leave it.</li>
@@ -139,6 +139,16 @@ const HELP_HTML = `
 </section>
 
 <section>
+  <h4>Hangar: know your parts</h4>
+  <p>Press <b>G</b> or the 🔧 button. The helicopter is built from its real parts: blades, grips, feathering shaft, head block,
+  pitch links, flybar and paddles (on the trainer), swashplate, servos and pushrods, main gear, pinion, motor, tail drive belt or
+  torque tube, tail gearbox, pitch slider, battery, ESC, gyro or flybarless unit, frame, canopy, landing gear. Click any part
+  (or pick it from the list) to see what it does, how it usually breaks and what to know when you buy a spare. Move your sticks:
+  it is a bench test, the swashplate and grips follow. <b>Demo the controls</b> walks you through collective, cyclic and rudder;
+  the exploded view and the canopy switch show what is inside.</p>
+</section>
+
+<section>
   <h4>HUD</h4>
   <p><b>Head speed</b> rotor rpm · <b>Collective</b> blade pitch · <b>Power</b> what the motor is delivering ·
   <b>Ground effect</b> extra lift close to the ground (why it floats at knee height) · <b>Distance</b> from where you stand.
@@ -148,12 +158,14 @@ const HELP_HTML = `
 <section>
   <h4>The field and the landing challenges</h4>
   <p>Everything on the field is solid: trees, the fence, houses, the barn, hay bales, cows, sheep, the windsock pole. Blades
-  touching anything is a crash; skids into a wall at speed too. The <b>windsock</b> next to the pad shows the live wind
+  touching anything is a crash; skids into a wall at speed too. The <b>lake</b> on the right is water: touch it and you have
+  ditched (only the pontoon holds you up). Fly low over it and watch the rotor wash ripple the surface; over grass the wash
+  lays the grass flat around the pad. The <b>windsock</b> next to the pad shows the live wind
   direction and droops when it is calm. Four <b>landing targets</b> have a yellow top with a white ring: the picnic table (right of
-  the pad), the pickup truck bed (left), the pontoon on the pond (far right) and the 7 m tower pad (far ahead). Set all four
+  the pad), the pickup truck bed (left), the pontoon on the lake (far right) and the 7 m tower pad (far ahead). Set all four
   skids down inside the ring and hold still for a moment: the sim measures your distance from the centre and remembers your
-  best on this device. Try the table in Normal mode first, then the truck, the pontoon, and the tower last (it is high, small
-  and out of ground effect).</p>
+  best on this device. Try the table in Normal mode first, then the truck, the pontoon, and the tower last (it is high and small: the pad
+  gives you a ground cushion, but drift off its edge and the cushion is gone).</p>
 </section>
 
 <section>

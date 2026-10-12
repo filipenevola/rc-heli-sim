@@ -186,6 +186,52 @@ describe('world collisions and landing targets', () => {
     expect(sim.state.landed!.offset).toBeLessThan(0.3);
   });
 
+  it('settling onto the lake is a ditching, while the pontoon in it holds the heli up', async () => {
+    const { buildField } = await import('./world');
+    const { world, layout } = buildField();
+    const sim = new HelicopterSim(HELI_450, new Wind(), world);
+    const ctl = neutralFrame();
+    sim.state.pos = { x: layout.pond.x + 5, y: 0.2, z: layout.pond.z };
+    run(sim, ctl, 1);
+    expect(sim.state.crashed).toBe(true);
+    expect(sim.state.crashReason).toContain('lake');
+    const pontoon = layout.platforms.find((p) => p.id === 'pontoon')!;
+    const sim2 = new HelicopterSim(HELI_450, new Wind(), world);
+    sim2.state.pos = { x: pontoon.x, y: pontoon.height + 0.2, z: pontoon.z };
+    run(sim2, ctl, 4);
+    expect(sim2.state.crashed).toBe(false);
+    expect(sim2.state.landed?.target.id).toBe('pontoon');
+  });
+
+  it('every tree crown, billboard and the fence stay out of the water', async () => {
+    const { buildField, lakeDistance, FENCE } = await import('./world');
+    const { BILLBOARDS } = await import('./ads');
+    const { layout } = buildField();
+    for (const t of layout.trees) expect(lakeDistance(layout.lake, t.x, t.z)).toBeGreaterThan(1.7 * t.scale);
+    for (const b of BILLBOARDS) expect(lakeDistance(layout.lake, b.x, b.z)).toBeGreaterThan(b.width / 2);
+    expect(lakeDistance(layout.lake, FENCE.x1, FENCE.z)).toBeGreaterThan(1);
+    for (const h of layout.houses) expect(lakeDistance(layout.lake, h.x, h.z)).toBeGreaterThan(Math.hypot(h.w, h.d) / 2);
+  });
+
+  it('ground effect comes from the surface under the rotor: the tower pad cushions, the open air beside it does not', async () => {
+    const { buildField } = await import('./world');
+    const { world, layout } = buildField();
+    const tower = layout.platforms.find((p) => p.id === 'tower')!;
+    const ge = (x: number) => {
+      const sim = new HelicopterSim(HELI_450, new Wind(), world);
+      const ctl = neutralFrame();
+      ctl.flightMode = 1;
+      run(sim, ctl, 6); // spool up on the pad
+      sim.state.pos = { x, y: tower.height + 0.35, z: tower.z };
+      sim.state.vel = { x: 0, y: 0, z: 0 };
+      sim.state.onGround = false;
+      sim.step(ctl);
+      return sim.telemetry.groundEffect;
+    };
+    expect(ge(tower.x)).toBeGreaterThan(1.03);
+    expect(ge(tower.x + 3)).toBeLessThan(1.01);
+  });
+
   it('flying the rotor into a tree is a crash', async () => {
     const { buildField } = await import('./world');
     const { world, layout } = buildField();

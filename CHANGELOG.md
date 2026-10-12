@@ -3,6 +3,31 @@
 All notable changes to RC Heli Sim. The version shown in the game (Help and Settings) matches the latest
 entry here; the commit hash next to it identifies the exact build.
 
+## 0.11.0 — 2026-10-12
+
+- **Hangar (G or 🔧): the helicopter, part by part.** The model is now built from its real parts, about 40 of them, each named
+  the way hobbyists and parts shops name them: main blades with tracking tape, blade grips, blade bolts, feathering shaft and
+  dampers, head block, pitch links, flybar, paddles, flybar control frame, Bell-Hiller mixing arms and washout (trainer),
+  swashplate, anti-rotation guide, 120° CCPM servos and pushrods, main shaft, bearing blocks, main gear with one-way bearing,
+  pinion, outrunner motor, front tail pulley or drive gear, twisted tail belt (trainer) or torque tube (FBL), tail boom and
+  supports, stabiliser, fin, tail servo and rod, tail gearbox, output shaft, pitch slider and lever, tail hub and blades,
+  LiPo, ESC, receiver, gyro or flybarless unit, frame, canopy and mounts, skids and struts. Click a part to see what it does,
+  how it usually breaks and what to know when you buy a spare. Exploded view, canopy off, slow rotor turn.
+- **Bench test in the Hangar:** move the sticks and the swashplate rises and tilts, the servo arms and pushrods follow, each
+  blade grip twists by collective plus cyclic for where it is in the turn, the flybar teeters, the tail slider moves. "Demo
+  the controls" walks through collective, cyclic and rudder. In flight the same parts move from the simulated servos.
+- **New field graphics:** physically based sky with image-based lighting; one sun with two shadow maps (the whole field, plus a
+  sharp one that follows the model, so its shadow, the best height cue when landing, is crisp; the spinning rotor casts a
+  faint disc shadow whose density follows the blade area); mowed stripes, natural grass variation and instanced grass that
+  sways in the wind and is laid flat by the rotor wash in a low hover; nicer trees, houses, barn, pickup, tower, pontoon,
+  pad, windsock and a pilot figure; HDR bloom; time of day (Midday / Golden hour) and a quality setting in Settings.
+- **The lake:** the pond grows into a lake round the right of the field, with mirror reflections (sky, trees, your
+  helicopter), waves driven by the simulated wind, rotor-wash rings, spray and a sandy shore with caustics in the shallows.
+- **Physics and world fixes:** touching the lake is a ditching (it used to behave like grass); ground effect now comes from the
+  surface under the rotor (the tower pad, table, truck bed and roofs cushion like the ground, tree crowns do not), it was
+  always measured from the grass before; a billboard and the end of the fence stood in the pond; tree crowns stuck out of
+  their colliders (blades went through leaves); the rotor wash, grass, spray and water read the sim but never feed back.
+
 ## 0.10.0 — 2026-10-11
 
 - Boom strike on the flybar trainer: big cyclic while pushing negative G folds the blades into the boom (the

@@ -139,7 +139,7 @@ export const CHALLENGES: Challenge[] = [
   },
   landing('table', 'Picnic table landing', 25, 'Land on the picnic table, all four skids inside the ring.', 'Beginner'),
   landing('truck', 'Pickup bed landing', 30, 'Land in the bed of the pickup truck. Mind the cab.'),
-  landing('pontoon', 'Pontoon landing', 35, 'Land on the pontoon in the middle of the pond.'),
+  landing('pontoon', 'Pontoon landing', 35, 'Land on the pontoon floating on the lake.'),
   landing('tower', 'Tower pad landing', 60, 'Land on the 7 m tower pad. Small, high, no ground effect.', 'Advanced'),
   {
     id: 'circuit',

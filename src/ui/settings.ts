@@ -28,6 +28,11 @@ export interface SettingsCallbacks {
   onChallenges(): void;
   onPilot(): void;
   onPause(): void;
+  /** Open or close the Hangar (parts explorer). */
+  onHangar(): void;
+  /** Graphics: quality (reloads) and time of day (live). */
+  onGraphics(g: { quality?: 'high' | 'low'; timeOfDay?: 'day' | 'golden' }): void;
+  getGraphics(): { quality: 'high' | 'low'; timeOfDay: 'day' | 'golden' };
   /** Set a camera mode, or cycle when undefined. Returns the label of the active mode. */
   onCamera(mode?: CameraMode): string;
 }
@@ -64,6 +69,7 @@ export class SettingsPanel {
       <button id="btn-hold" data-tip="Throttle hold (H): motor off, rotor freewheels. Autorotation practice or a safety." title="Throttle hold (H)">✋</button>
       <button id="btn-sound" data-tip="Sound on / off (M)" title="Sound (M)">🔊</button>
       <button id="btn-camera" data-tip="Camera (C): Pilot on the field, Chase, Front, Top, Drone" title="Camera (C)">🎥 Pilot</button>
+      <button id="btn-hangar" data-tip="Hangar (G): every part of your helicopter, named, with what it does, how it breaks and what to know when you buy a spare. Move the sticks to bench-test the swashplate." title="Hangar: parts (G)">🔧</button>
       <button id="btn-challenges" data-tip="Challenges, Show me / Teach me lessons, rankings" title="Challenges & rankings">🏁</button>
       <button id="btn-pilot" data-tip="Your callsign and email sign-in (syncs progress across devices)" title="Pilot">👤</button>
       <button id="btn-recentre" data-tip="Recentre the phone-tilt neutral position" title="Recentre phone tilt" style="display:none">🎯</button>
@@ -88,6 +94,7 @@ export class SettingsPanel {
     attachTips(bar);
     bar.querySelector('#btn-help')!.addEventListener('click', () => cb.onHelp());
     bar.querySelector('#btn-challenges')!.addEventListener('click', () => cb.onChallenges());
+    bar.querySelector('#btn-hangar')!.addEventListener('click', () => cb.onHangar());
     bar.querySelector('#btn-pilot')!.addEventListener('click', () => cb.onPilot());
     bar.querySelector('#btn-camera')!.addEventListener('click', () => this.cycleCamera());
     // The button row wraps on phones; let the HUD and panels sit below whatever height it ends up with.
@@ -194,6 +201,12 @@ export class SettingsPanel {
         <p class="hint">Cam button or C key cycles. "Pilot" is the realistic one: you stand on the field.</p>
       </section>
       <section>
+        <h4>Graphics</h4>
+        <label>Time of day ${sel('tod', [['day', 'Midday'], ['golden', 'Golden hour (long shadows)']], this.cb.getGraphics().timeOfDay)}</label>
+        <label>Quality ${sel('quality', [['high', 'High: lake reflections, dense grass, bloom'], ['low', 'Low: for phones and older laptops']], this.cb.getGraphics().quality)}</label>
+        <p class="hint">Changing quality reloads the page.</p>
+      </section>
+      <section>
         <h4>Sound</h4>
         ${slider('volume', 'Volume', 0, 1, 0.05, this.audio.volume)}
       </section>
@@ -241,6 +254,8 @@ export class SettingsPanel {
       this.cameraMode = (e.target as HTMLSelectElement).value as CameraMode;
       this.applyCamera();
     });
+    q<HTMLSelectElement>('#tod').addEventListener('change', (e) => this.cb.onGraphics({ timeOfDay: (e.target as HTMLSelectElement).value as 'day' | 'golden' }));
+    q<HTMLSelectElement>('#quality').addEventListener('change', (e) => this.cb.onGraphics({ quality: (e.target as HTMLSelectElement).value as 'high' | 'low' }));
     bind('volume', (v) => this.audio.setVolume(v));
     bind('wind', (v) => (this.wind.speed = v));
     bind('winddir', (v) => (this.wind.fromDeg = v));

@@ -120,6 +120,7 @@ export class HelicopterSim {
   private vrsNoise = 0;
   private vrsNoise2 = 0;
   private boomTimer = 0;
+  private surfaces = Array.from({ length: 4 }, () => ({ top: 0, area: 0 }));
   /** Last control frame fed to step(); challenges read switch states from it. */
   lastControls: ControlFrame | null = null;
   /** Max bank/pitch angle at full stick in attitude mode, rad. */
@@ -259,13 +260,23 @@ export class HelicopterSim {
     const vPlane = len(vPlaneVec);
     solveRotor(m.rotor, s.servoCollective, vAlong, vPlane, s.rotorOmega, main);
 
-    // Ground effect (Cheeseman-Bennett) on thrust.
+    // Ground effect (Cheeseman-Bennett) on thrust, from whatever surface is under the rotor: the ground, or a raised
+    // one (tower pad, table, truck bed, roof) weighted by how much of the disc it covers. Take the strongest.
     const hubW = add(s.pos, rotate(s.ori, m.hubOffset));
-    const zh = Math.max(hubW.y, 0.25 * m.rotor.radius);
-    const ratio = m.rotor.radius / (4 * zh);
+    const geAt = (height: number) => {
+      const ratio = m.rotor.radius / (4 * Math.max(height, 0.25 * m.rotor.radius));
+      return clamp(1 / (1 - ratio * ratio), 1, 1.25) - 1;
+    };
+    let geGain = geAt(hubW.y);
+    const discArea = Math.PI * m.rotor.radius * m.rotor.radius;
+    const nSurf = this.world.surfacesBelow(hubW.x, hubW.z, hubW.y, this.surfaces);
+    for (let i = 0; i < nSurf; i++) {
+      const sf = this.surfaces[i];
+      geGain = Math.max(geGain, geAt(hubW.y - sf.top) * Math.min(1, sf.area / discArea));
+    }
     // Ground effect fades with forward speed (the cushion is blown behind the rotor above ~mu 0.1).
     const geSpeed = clamp(1 - main.mu / 0.12, 0, 1);
-    const ge = 1 + (clamp(1 / (1 - ratio * ratio), 1, 1.25) - 1) * geSpeed;
+    const ge = 1 + geGain * geSpeed;
     const thrust = main.thrust * ge;
 
     const spin = m.clockwise ? 1 : -1;
@@ -361,6 +372,11 @@ export class HelicopterSim {
       if (pW.y < 0) {
         normal = v3(0, 1, 0);
         pen = -pW.y;
+        // Water does not hold a helicopter up: any part touching the lake is a ditching.
+        if (this.world.isWater(pW.x, pW.z)) {
+          what = 'the lake';
+          if (!s.crashed) this.crash('Ditched in the lake');
+        }
       } else if (this.world.hit(pW, hit)) {
         normal = hit.normal;
         pen = hit.depth;
@@ -415,7 +431,7 @@ export class HelicopterSim {
       const nW = rotate(s.ori, n);
       const tiltSin = Math.sqrt(Math.max(0, 1 - nW.y * nW.y));
       const discLow = hubW.y - m.rotor.radius * tiltSin;
-      if (discLow < 0.0) this.crash('Blade strike');
+      if (discLow < 0.0) this.crash(this.world.isWater(hubW.x, hubW.z) ? 'Blades hit the water' : 'Blade strike');
       else if (this.world.colliders.length > 0) {
         // Sample the disc edge. Two in-plane axes perpendicular to the rotor normal.
         const ax = norm(cross(nW, Math.abs(nW.y) < 0.9 ? v3(0, 1, 0) : v3(1, 0, 0)));

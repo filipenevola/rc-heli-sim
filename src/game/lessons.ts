@@ -216,7 +216,7 @@ export const LESSONS: Lesson[] = [
     challengeId: 'land-tower',
     title: 'Tower pad landing',
     intro: 'Seven metres up there is no ground effect: the heli needs a bit more collective to hover, and the pad is small. Patience.',
-    steps: [spoolUp(0, 'Spool up.'), liftTo(3, 'Lift off.'), goTo({ x: 22, y: 9, z: -42 }, 'Climb to above the tower; approach from the side so the pole stays clear of the blades.', { vmax: 4 }), ...landOn({ x: 22, y: 7, z: -42 }, 'Hover over the pad: notice it takes slightly more collective up here.')],
+    steps: [spoolUp(0, 'Spool up.'), liftTo(3, 'Lift off.'), goTo({ x: 22, y: 9, z: -42 }, 'Climb to above the tower; approach from the side so the pole stays clear of the blades.', { vmax: 4 }), ...landOn({ x: 22, y: 7, z: -42 }, 'Hover over the pad: it gives a ground cushion like the field does, but drift off its edge and the cushion is gone.')],
   },
   {
     challengeId: 'circuit',

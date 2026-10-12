@@ -25,6 +25,13 @@ pilot-on-the-field camera are all about model helicopters.
     assigns and calibrates axes per dongle and remembers them.
   - **Touch screen** sticks that behave like transmitter gimbals (ratcheted throttle, modes 1–4).
   - **Keyboard** (arrows = cyclic, W/S = collective, A/D = rudder, 1/2/3 = flight mode, H = hold, R = reset).
+- **Hangar (G): learn the parts.** The helicopter is built from ~40 real, named parts (grips, feathering shaft, flybar,
+  mixer, swashplate, CCPM servos, main gear and one-way bearing, belt or torque tube, tail slider, ESC, FBL unit...).
+  Click one for what it does, how it breaks and what to know when buying a spare; exploded view; bench-test the sticks
+  and watch the swashplate and grips move.
+- **Field graphics that help you fly:** sharp contact shadow of the model (with a faint rotor-disc shadow) for judging
+  height, rotor wash flattening the grass and rippling the lake, mirror-reflective lake with wind-driven waves, mowed
+  stripes for depth cues, image-based lighting, golden-hour option, quality setting for phones.
 - **Pilot's-eye camera** standing on the field with auto-zoom, exactly like the sims you learned on.
 - **Procedural sound** (Web Audio, no samples): motor whine that follows head speed and power, main-rotor blade chop at the blade-pass frequency, tail-rotor whine, wind and airspeed rush, distance attenuation and Doppler from the pilot's position, crash thump. M mutes.
 - Expo, dual rates, wind with gusts, HUD with head speed / collective / power / ground effect.
