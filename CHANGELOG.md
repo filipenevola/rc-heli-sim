@@ -3,6 +3,12 @@
 All notable changes to RC Heli Sim. The version shown in the game (Help and Settings) matches the latest
 entry here; the commit hash next to it identifies the exact build.
 
+## 0.44.0
+
+- **Time of day** (Settings → Time of day, field only): morning, noon or evening. Evening puts the sun low with
+  long shadows and the model as a dark silhouette, the hardest light to judge distance in.
+- Lessons that need the field refuse to start in the gym with a note, instead of running without their targets.
+
 ## 0.43.0
 
 - Sound in the gym: a short hall echo on everything the helicopter makes, and no birds or wind indoors.

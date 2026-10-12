@@ -44,6 +44,7 @@ export interface SettingsCallbacks {
   onPilotSpot(spot: string): void;
   onArrow(on: boolean): void;
   onTrail(on: boolean): void;
+  onTimeOfDay(t: 'morning' | 'noon' | 'evening'): void;
   onGraph(on: boolean): void;
 }
 
@@ -61,7 +62,7 @@ const AXIS_HINT: Record<AxisName | SwitchName, string> = {
 };
 
 const PREFS_KEY = 'rc-heli-sim.prefs.v1';
-interface Prefs { graph?: boolean; site?: SiteId; lang?: Lang; welcomed?: boolean; custom?: CustomSpec; trail?: boolean; gear?: boolean; nrate?: number; model?: string; source?: string; stickMode?: number; expo?: number; rate?: number; rexpo?: number; assist?: string; camera?: string; spot?: string; arrow?: boolean; wind?: number; windDir?: number; gust?: number; volume?: number; muted?: boolean; tilt?: number }
+interface Prefs { tod?: 'morning' | 'noon' | 'evening'; graph?: boolean; site?: SiteId; lang?: Lang; welcomed?: boolean; custom?: CustomSpec; trail?: boolean; gear?: boolean; nrate?: number; model?: string; source?: string; stickMode?: number; expo?: number; rate?: number; rexpo?: number; assist?: string; camera?: string; spot?: string; arrow?: boolean; wind?: number; windDir?: number; gust?: number; volume?: number; muted?: boolean; tilt?: number }
 function loadPrefs(): Prefs {
   try { return JSON.parse(localStorage.getItem(PREFS_KEY) ?? '{}') as Prefs; } catch { return {}; }
 }
@@ -300,6 +301,7 @@ export class SettingsPanel {
     if (p.arrow !== undefined) { this.arrowOn = p.arrow; this.cb.onArrow(p.arrow); }
     if (p.trail) this.setTrail(true);
     if (p.graph) this.setGraph(true);
+    if (p.tod === 'morning' || p.tod === 'evening') { this.tod = p.tod; this.cb.onTimeOfDay(p.tod); }
     if (p.gear) { this.gearOn = true; this.cb.onTrainingGear(true); }
     if (p.wind !== undefined) this.wind.speed = p.wind;
     if (p.windDir !== undefined) this.wind.fromDeg = p.windDir;
@@ -399,6 +401,7 @@ export class SettingsPanel {
         ${slider('volume', 'Volume', 0, 1, 0.05, this.audio.volume)}
       </section>
       <section>
+        ${getSite() === 'gym' ? '' : `<label>Time of day ${sel('tod', [['morning', 'Morning'], ['noon', 'Noon (default)'], ['evening', 'Evening: low sun, long shadows, a dark silhouette']], this.tod)}</label>`}
         <h4>Wind</h4>${getSite() === 'gym' ? '<p class="hint">No wind indoors: the sliders are ignored in the gym.</p>' : ''}
         ${slider('wind', 'Speed (m/s)', 0, 10, 0.5, this.wind.speed)}
         ${slider('winddir', 'From (°)', 0, 359, 5, this.wind.fromDeg)}
@@ -469,6 +472,11 @@ export class SettingsPanel {
       this.arrowOn = (e.target as HTMLInputElement).checked;
       this.cb.onArrow(this.arrowOn);
       savePrefs({ arrow: this.arrowOn });
+    });
+    this.panel.querySelector<HTMLSelectElement>('#tod')?.addEventListener('change', (e) => {
+      this.tod = (e.target as HTMLSelectElement).value as 'morning' | 'noon' | 'evening';
+      this.cb.onTimeOfDay(this.tod);
+      savePrefs({ tod: this.tod });
     });
     q<HTMLInputElement>('#graph').addEventListener('change', (e) => {
       this.setGraph((e.target as HTMLInputElement).checked);
@@ -567,6 +575,7 @@ export class SettingsPanel {
   arrowOn = true;
   trailOn = false;
   graphOn = false;
+  tod: 'morning' | 'noon' | 'evening' = 'noon';
   gearOn = false;
 
   /** Telemetry graph on/off (settings checkbox, Y key); persisted. */

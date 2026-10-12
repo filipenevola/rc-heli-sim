@@ -194,7 +194,7 @@ export function createGymScene(layout: FieldLayout): SceneHandles {
   windsock.visible = false;
   scene.add(windsock);
 
-  return { scene, sun, windsock, animate: () => {}, pilotMarker: pilot, arrow };
+  return { scene, sun, setTimeOfDay: () => {}, windsock, animate: () => {}, pilotMarker: pilot, arrow };
 }
 
 function makeWoodTexture(): THREE.Texture {

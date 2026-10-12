@@ -10,7 +10,7 @@ import { HELI_MODELS } from './sim/heli-model';
 import { Wind } from './sim/wind';
 import { buildSite } from './sim/world';
 import { createGymScene } from './render/gym';
-import { getSite, setSite, type SiteId } from './site';
+import { FIELD_ONLY, getSite, setSite, type SiteId } from './site';
 import { InputManager } from './input/manager';
 import { Hud } from './ui/hud';
 import { SettingsPanel, MODE_HELP, HOLD_HELP } from './ui/settings';
@@ -125,6 +125,10 @@ const challenges = new ChallengesPanel(ui, profile, tracker, flightTimer, rankin
 function startLesson(challengeId: string, mode: 'show' | 'teach' = 'show'): void {
   const l = lessonFor(challengeId);
   if (!l) return;
+  if (getSite() === 'gym' && FIELD_ONLY.has(challengeId)) {
+    hud.notify(`<b>${t('Field only')}</b><br>${t('This one needs the outdoor field: altitude, wind or its landing targets. Settings → Flying site → The field.')}`, 5000);
+    return;
+  }
   stopLesson();
   // 3D needs a flybarless head: a flybar trainer boom-strikes under full cyclic at negative G.
   const level = CHALLENGES.find((c) => c.id === challengeId)?.level;
@@ -287,6 +291,9 @@ const settings = new SettingsPanel(ui, input, wind, audio, {
   },
   onGraph(on) {
     hud.graphOn = on;
+  },
+  onTimeOfDay(t) {
+    field.setTimeOfDay(t);
   },
   onCamera(mode) {
     if (mode) pilotCam.mode = mode;
