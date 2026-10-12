@@ -422,7 +422,7 @@ export function createScene(layout: FieldLayout): SceneHandles {
   };
 }
 
-function makeGrassTexture(): THREE.Texture {
+export function makeGrassTexture(): THREE.Texture {
   const c = document.createElement('canvas');
   c.width = c.height = 256;
   const g = c.getContext('2d')!;

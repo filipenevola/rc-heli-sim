@@ -31,6 +31,8 @@ export class PilotCamera {
   private lookAt = new THREE.Vector3(0, 1, -6);
   private pos = new THREE.Vector3(0, 1.7, 0);
   private droneAngle = 0;
+  /** Ground height under a point: the chase, front and drone cameras stay above the terrain. Flat by default. */
+  groundAt: (x: number, z: number) => number = () => 0;
   private tmp = new THREE.Vector3();
   private fwd = new THREE.Vector3();
 
@@ -39,9 +41,9 @@ export class PilotCamera {
     this.camera.position.copy(this.eye);
   }
 
-  /** Move where the pilot stands (eye height stays 1.7 m). */
-  setEye(x: number, z: number): void {
-    this.eye.set(x, 1.7, z);
+  /** Move where the pilot stands (eye height stays 1.7 m above the ground there). */
+  setEye(x: number, z: number, groundY = 0): void {
+    this.eye.set(x, groundY + 1.7, z);
     if (this.mode === 'pilot') this.pos.copy(this.eye);
   }
 
@@ -71,7 +73,7 @@ export class PilotCamera {
       }
       case 'chase': {
         this.tmp.copy(target).addScaledVector(this.fwd, -4).add(new THREE.Vector3(0, 1.4, 0));
-        this.tmp.y = Math.max(this.tmp.y, 0.4);
+        this.tmp.y = Math.max(this.tmp.y, this.groundAt(this.tmp.x, this.tmp.z) + 0.4);
         this.pos.lerp(this.tmp, kPos);
         this.lookAt.lerp(target, k);
         fov = 55;
@@ -79,7 +81,7 @@ export class PilotCamera {
       }
       case 'front': {
         this.tmp.copy(target).addScaledVector(this.fwd, 4).add(new THREE.Vector3(0, 1.0, 0));
-        this.tmp.y = Math.max(this.tmp.y, 0.4);
+        this.tmp.y = Math.max(this.tmp.y, this.groundAt(this.tmp.x, this.tmp.z) + 0.4);
         this.pos.lerp(this.tmp, kPos);
         this.lookAt.lerp(target, k);
         fov = 55;
@@ -96,7 +98,7 @@ export class PilotCamera {
       case 'drone': {
         this.droneAngle += dt * 0.12;
         this.tmp.set(target.x + Math.cos(this.droneAngle) * 9, target.y + 3.5, target.z + Math.sin(this.droneAngle) * 9);
-        this.tmp.y = Math.max(this.tmp.y, 1.5);
+        this.tmp.y = Math.max(this.tmp.y, this.groundAt(this.tmp.x, this.tmp.z) + 1.5);
         this.pos.lerp(this.tmp, kPos);
         this.lookAt.lerp(target, k);
         fov = 32;

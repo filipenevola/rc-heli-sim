@@ -210,6 +210,17 @@ export const HELP_HTML_PT = `
   postes de luz, alguns carros estacionados, dois galpões no fundo e um contêiner cujo teto é um alvo de
   pouso (a 2,6 m, quase sem efeito solo). Céu aberto e vento, como um estacionamento de clube de verdade; os postes são a
   surpresa de sempre. Os desafios da mesa, picape, pontão e torre do campo aparecem como "Só no campo" lá.</p>
+  <h4>A encosta</h4>
+  <p>Configurações → <b>Local de voo</b> → Encosta: um campo inclinado com terreno de verdade. O heliponto fica no plano;
+  à sua frente o chão sobe a 10° até um morrote, e à direita um barranco de 20°. Dois anéis marcam os pontos de pouso
+  em rampa. O pouso em rampa é a habilidade: paire sobre o anel, deixe o <b>esqui de cima</b> tocar primeiro e baixe
+  o coletivo devagar enquanto o cíclico mantém o disco nivelado. No barranco de 20° os esquis precisam ficar
+  <b>atravessados</b> na rampa (nariz ao longo do morro): esquis deslizam no sentido do comprimento muito mais fácil do
+  que de lado, então de nariz para cima ou para baixo o heli escorrega. Empurrar o cíclico contra o morro com um esqui
+  no chão faz o heli pivotar nesse esqui: isso é o capotamento dinâmico, e acontece aqui também. A altitude no HUD é a
+  altura sobre a grama embaixo do heli, não sobre o heliponto, e o vento sobe a face de barlavento (ascendente) e desce
+  do lado de sotavento. A assistência de autonivelamento sai de cena quando os esquis estão no chão com o coletivo no
+  fundo, como fazem os modos de resgate das unidades FBL.</p>
   <h4>Outdoors: o portfólio da Quave Holdings</h4>
   <p>Os outdoors ao redor do campo são as empresas e produtos da <a href="https://quaveholdings.com/portfolio" target="_blank" rel="noopener">Quave Holdings</a>,
   o grupo por trás deste simulador. Toque ou clique num outdoor na cena para abrir o site, ou use os links aqui:</p>

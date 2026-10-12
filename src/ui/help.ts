@@ -257,6 +257,16 @@ const HELP_HTML = `
   light poles, a few parked cars, two warehouses along the back and a shipping container whose roof is a landing
   target (2.6 m up, almost no ground effect). Open sky and wind, like a real club lot; the poles are the usual
   surprise. The field's picnic table, truck, pontoon and tower challenges are marked "Field only" there.</p>
+  <h4>The hillside</h4>
+  <p>Settings → <b>Flying site</b> → Hillside: a sloping meadow with real terrain. The pad sits on the flat; in front
+  of you the ground climbs at 10° to a knoll, and to the right a 20° bank rises. Two rings mark the slope landing
+  spots. Slope landings are the skill: hover over the ring, let the <b>uphill skid</b> touch first, and bring the
+  collective down slowly while the cyclic keeps the disc level. On the 20° bank the skids must lie <b>across</b> the
+  slope (nose along the hill): skids slide along their length far more easily than sideways, so nose-up or nose-down
+  the heli creeps away. Pushing the cyclic into the hill once a skid is down pivots the heli about that skid: that is
+  dynamic rollover, and it happens here too. The altitude on the HUD is height above the grass under the heli, not
+  above the pad, and the wind climbs the windward face (upwash) and sinks on the lee side. Self-level assist steps
+  aside once the skids are down with the collective at the bottom, as the rescue modes on FBL units do.</p>
   <h4>Billboards: the Quave Holdings portfolio</h4>
   <p>The billboards around the field are the companies and products of <a href="https://quaveholdings.com/portfolio" target="_blank" rel="noopener">Quave Holdings</a>,
   the group behind this simulator. Tap or click a billboard in the scene to open its site, or use the links here:</p>

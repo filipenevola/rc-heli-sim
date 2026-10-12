@@ -1,4 +1,5 @@
 import type { HelicopterSim } from '../sim/physics';
+import { HILL_TERRAIN } from '../sim/world';
 import { eulerFromQ, rotate, v3 } from '../sim/math';
 import { Autopilot } from './autopilot';
 import { GATES, EIGHT_GATES } from './challenges';
@@ -38,6 +39,10 @@ export interface Lesson {
 }
 
 /** CG height above the surface when the current model sits on its skids. */
+/** The hillside's two slope marks (world coordinates, y = ground height at the mark). */
+const HILL_SLOPE = { x: 0, y: HILL_TERRAIN.heightAt(0, -34), z: -34 };
+const HILL_BANK = { x: 40, y: HILL_TERRAIN.heightAt(40, -8), z: -8 };
+
 const skidHeight = (sim: HelicopterSim): number => -Math.min(...sim.model.contacts.filter((c) => c.kind === 'skid').map((c) => c.p.y));
 const PAD = { x: 0, z: -6 };
 
@@ -219,6 +224,18 @@ export const LESSONS: Lesson[] = [
     title: 'Vault box landing',
     intro: 'The vault box is a 1.2 m square: the skids only just fit. Centre it from above before you commit.',
     steps: [spoolUp(0, 'Spool up.'), liftTo(3, 'Lift to 3 m.'), ...landOn({ x: -9, y: 1.2, z: -22 }, 'Fly over the vault box and stop above it, about 1.5 m up. Centre it exactly, then sink.')],
+  },
+  {
+    challengeId: 'land-slope',
+    title: 'Slope landing (10°)',
+    intro: 'A slope landing is a hover that ends one skid at a time. Hover over the ring, then sink until the uphill skid touches; the heli pivots on it, so keep flying it: a little cyclic into the hill holds the skid, and the collective comes down slowly until the downhill skid is on the grass too.',
+    steps: [spoolUp(0, 'Spool up.'), liftTo(4, 'Lift to 4 m, higher than the slope ahead.'), goTo({ x: 0, y: HILL_SLOPE.y + 3, z: -24 }, 'Climb toward the hill. The ground rises under you: the altitude you read is height above the grass, not above the pad.', { vmax: 3 }), ...landOn(HILL_SLOPE, 'Stop above the ring, 1.5 m up. The slope is 10°: the heli will sit tilted once it is down.')],
+  },
+  {
+    challengeId: 'land-bank',
+    title: 'Bank landing (20°)',
+    intro: 'Twenty degrees is where slope landings get real. Skids across the fall line: nose along the hill, never up or down it, or the heli slides on its skids. Uphill skid first; then the collective down slowly while the cyclic keeps the disc level. Pushing the cyclic into the hill with a skid down is how a heli rolls over.',
+    steps: [spoolUp(0, 'Spool up.'), liftTo(4, 'Lift to 4 m.'), goTo({ x: 30, y: HILL_BANK.y + 3, z: -8 }, 'Fly to the bank on the right. Nose stays pointing away from you, along the hill.', { vmax: 3 }), ...landOn(HILL_BANK, 'Stop above the ring, 1.5 m up. Nose along the hill: the skids must lie across the slope.')],
   },
   {
     challengeId: 'land-truck',

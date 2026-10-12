@@ -3,6 +3,20 @@
 All notable changes to RC Heli Sim. The version shown in the game (Help and Settings) matches the latest
 entry here; the commit hash next to it identifies the exact build.
 
+## 0.52.0
+
+- New flying site: the **hillside**. Real terrain (a height field shared by physics and renderer): a flat pad, a 10° slope
+  climbing to a knoll in front of the pilot, a 20° bank on the right, boulders, pines, sheep and a fence line.
+- Slope landings: two new challenges and lessons, **Slope landing (10°)** (40 pts) and **Bank landing (20°)** (70 pts),
+  with ground rings as targets. Contacts follow the terrain normal, so the heli sits tilted, pivots on the uphill skid
+  (dynamic rollover is possible) and slides on its skids when parked nose-up on the 20° bank; across the slope it holds.
+- HUD altitude is now height above the ground under the heli; ground effect and blade strikes use the local terrain.
+- Wind follows the terrain: upwash on the windward face, sink on the lee side, fading with height.
+- Ground friction has a much stiffer static core: a parked heli no longer creeps downhill at a few cm/s.
+- Self-level assist steps aside once the skids are down with the collective at the bottom (like FBL rescue modes), so a
+  slope landing is not fought by the swashplate.
+- Pilot spots on the hill: pad, slope mark, bank mark, fence line; the pilot's eye follows the ground height.
+
 ## 0.51.0
 
 - **Fly against a ghost**: the debrief card's Fly against it (or Settings → Load a flight as a ghost) puts a

@@ -144,6 +144,8 @@ export const CHALLENGES: Challenge[] = [
   landing('container', 'Container roof landing', 35, 'Parking lot: land on the shipping container\'s roof, 2.6 m up, narrow, with no ground effect to float on.'),
   landing('mat', 'Mat stack landing', 15, 'Gym: land on the stack of mats, all four skids inside the ring.', 'Beginner'),
   landing('vault', 'Vault box landing', 30, 'Gym: land on the vault box, a 1.2 m square with nothing to spare.'),
+  landing('slope', 'Slope landing (10°)', 40, 'Hillside: set down inside the ring on the 10° slope. Uphill skid first, then ease the collective down; the heli sits tilted, that is fine.'),
+  landing('bank', 'Bank landing (20°)', 70, 'Hillside: the 20° bank. Skids across the fall line (nose along the hill), or it slides; land one skid at a time and never push the cyclic into the slope once a skid is down.', 'Advanced'),
   {
     id: 'circuit',
     level: 'Intermediate',

@@ -11,6 +11,7 @@ import { Wind } from './sim/wind';
 import { buildSite } from './sim/world';
 import { createGymScene } from './render/gym';
 import { createLotScene } from './render/lot';
+import { createHillScene } from './render/hill';
 import { getSite, homeLabel, setSite, unavailableHere, type SiteId } from './site';
 import { InputManager } from './input/manager';
 import { Hud } from './ui/hud';
@@ -52,22 +53,25 @@ app.appendChild(renderer.domElement);
   const fromUrl = new URLSearchParams(location.search).get('site');
   let saved: SiteId | undefined;
   try { saved = (JSON.parse(localStorage.getItem('rc-heli-sim.prefs.v1') ?? '{}') as { site?: SiteId }).site; } catch { /* no prefs */ }
-  const site: SiteId = fromUrl === 'gym' || fromUrl === 'field' || fromUrl === 'lot' ? fromUrl : saved === 'gym' || saved === 'lot' ? saved : 'field';
+  const isSite = (v: string | null | undefined): v is SiteId => v === 'gym' || v === 'field' || v === 'lot' || v === 'hill';
+  const site: SiteId = isSite(fromUrl) ? fromUrl : isSite(saved) ? saved : 'field';
   setSite(site);
 }
 const { layout, world } = buildSite(getSite());
-const field = getSite() === 'gym' ? createGymScene(layout) : getSite() === 'lot' ? createLotScene(layout) : createScene(layout);
+const field = getSite() === 'gym' ? createGymScene(layout) : getSite() === 'lot' ? createLotScene(layout) : getSite() === 'hill' ? createHillScene(layout, world) : createScene(layout);
 const { scene } = field;
 const clouds = createClouds();
-if (getSite() === 'field') scene.add(clouds);
+if (getSite() === 'field' || getSite() === 'hill') scene.add(clouds);
 const billboards = createBillboards();
 if (getSite() === 'field') scene.add(billboards.group);
 const gates = new GateMeshes();
 scene.add(gates.group);
 const pilotCam = new PilotCamera(window.innerWidth / window.innerHeight);
+pilotCam.groundAt = (x, z) => world.groundAt(x, z);
 
 const wind = new Wind();
 wind.obstacles = world.windObstacles();
+wind.terrain = world.terrain;
 if (getSite() === 'gym') wind.speed = 0;
 const sim = new HelicopterSim(HELI_MODELS[0], wind, world);
 let heliMesh = new HeliMesh(sim.model);
@@ -286,7 +290,9 @@ const settings = new SettingsPanel(ui, input, wind, audio, {
       ? { pad: [0, 0], bleachers: [15, -14], end: [0, -34] }
       : getSite() === 'lot'
         ? { pad: [0, 0], cars: [-18, -8], container: [12, -14], fence: [0, 40] }
-        : { pad: [0, 0], barn: [-40, -6], pond: [28, -12], tower: [14, -34], road: [14, 64] };
+        : getSite() === 'hill'
+          ? { pad: [0, 0], slope: [-4, -34], bank: [34, -12], fence: [0, 20] }
+          : { pad: [0, 0], barn: [-40, -6], pond: [28, -12], tower: [14, -34], road: [14, 64] };
     let x: number;
     let z: number;
     if (spot === 'heli') {
@@ -300,8 +306,8 @@ const settings = new SettingsPanel(ui, input, wind, audio, {
       x = hx - (dx / d) * back;
       z = hz - (dz / d) * back;
     } else [x, z] = spots[spot] ?? [0, 0];
-    pilotCam.setEye(x, z);
-    field.pilotMarker.position.set(x, 0, z);
+    pilotCam.setEye(x, z, world.groundAt(x, z));
+    field.pilotMarker.position.set(x, world.groundAt(x, z), z);
     hud.notify(spot === 'heli' ? `<b>${t('Walked to the heli')}</b>` : `<b>${t('Pilot moved')}</b><br>${spot}`, 2000);
   },
   onArrow(on) {
@@ -716,7 +722,7 @@ function frame(now: number): void {
   // Orientation arrow under the model, pointing where the nose points; faces the pilot figure toward the model.
   if (field.arrow.visible) {
     const fwd = new THREE.Vector3(0, 0, -1).applyQuaternion(heliQuat);
-    field.arrow.position.set(sim.state.pos.x, 0.03, sim.state.pos.z);
+    field.arrow.position.set(sim.state.pos.x, world.groundAt(sim.state.pos.x, sim.state.pos.z) + 0.03, sim.state.pos.z);
     field.arrow.rotation.set(-Math.PI / 2, 0, Math.atan2(-fwd.x, -fwd.z));
   }
   field.pilotMarker.rotation.y = Math.atan2(-(sim.state.pos.x - field.pilotMarker.position.x), -(sim.state.pos.z - field.pilotMarker.position.z));

@@ -24,11 +24,48 @@ export interface ContactHit {
   collider: Collider;
 }
 
+/** Ground height field. Flat sites have none (ground is y = 0 everywhere). */
+export interface Terrain {
+  heightAt(x: number, z: number): number;
+}
+
+/** A landing target painted on the ground itself (the helipad, a slope mark): no collider, detected by distance. */
+export interface GroundTarget extends LandingTarget {
+  /** Skids resting within this distance of the centre count as "on it" (the ring you see on the ground). */
+  reach: number;
+}
+
 export class World {
   readonly colliders: Collider[] = [];
   readonly targets: LandingTarget[] = [];
   /** The helipad (flat on the ground, so not a collider). */
   pad: LandingTarget | null = null;
+  /** Marks painted on the ground (slope landing spots): targets without a collider. */
+  readonly groundTargets: GroundTarget[] = [];
+  /** Height field, when the site is not flat. */
+  terrain: Terrain | null = null;
+
+  /** Ground height under a point. */
+  groundAt(x: number, z: number): number {
+    return this.terrain ? this.terrain.heightAt(x, z) : 0;
+  }
+
+  /** Unit ground normal under a point (central differences on the height field). */
+  groundNormal(x: number, z: number, out: V3): V3 {
+    if (!this.terrain) { out.x = 0; out.y = 1; out.z = 0; return out; }
+    const e = 0.25;
+    const gx = (this.terrain.heightAt(x + e, z) - this.terrain.heightAt(x - e, z)) / (2 * e);
+    const gz = (this.terrain.heightAt(x, z + e) - this.terrain.heightAt(x, z - e)) / (2 * e);
+    const l = Math.hypot(gx, 1, gz);
+    out.x = -gx / l; out.y = 1 / l; out.z = -gz / l;
+    return out;
+  }
+
+  /** Ground slope under a point, degrees. */
+  slopeDeg(x: number, z: number): number {
+    const n = this.groundNormal(x, z, { x: 0, y: 1, z: 0 });
+    return (Math.acos(Math.min(1, n.y)) * 180) / Math.PI;
+  }
 
   /** Trees and buildings as wind obstacles (footprint radius + height). */
   windObstacles(): { x: number; z: number; r: number; h: number }[] {
@@ -43,6 +80,11 @@ export class World {
   add(c: Collider): void {
     this.colliders.push(c);
     if (c.target) this.targets.push(c.target);
+  }
+
+  addGroundTarget(t: GroundTarget): void {
+    this.groundTargets.push(t);
+    this.targets.push(t);
   }
 
   /** Deepest penetration of a point into any collider, or null when free. */
@@ -114,11 +156,30 @@ export interface LotSpec {
   warehouses: { x: number; z: number; w: number; d: number; h: number; color: number }[];
 }
 
+export interface SlopeMark {
+  id: string;
+  name: string;
+  x: number;
+  z: number;
+  /** Ring radius drawn on the grass; skids resting inside it count. */
+  r: number;
+  /** Nominal slope at the mark, degrees (for labels). */
+  deg: number;
+}
+
+export interface HillSpec {
+  /** Boulders: position, radius. Solid. */
+  rocks: { x: number; z: number; r: number }[];
+  marks: SlopeMark[];
+}
+
 export interface FieldLayout {
-  /** 'field' (outdoors, default), 'gym' (an indoor sports hall) or 'lot' (the club's parking lot). */
-  site: 'field' | 'gym' | 'lot';
+  /** 'field' (outdoors, default), 'gym' (an indoor sports hall), 'lot' (the club's parking lot) or 'hill' (the hillside). */
+  site: 'field' | 'gym' | 'lot' | 'hill';
   /** Parking-lot furniture (lot only). */
   lot?: LotSpec;
+  /** Hillside furniture (hill only); the height field itself lives on the World. */
+  hill?: HillSpec;
   hall?: HallSpec;
   trees: TreeSpec[];
   houses: HouseSpec[];
@@ -347,6 +408,90 @@ export function buildLot(): { layout: FieldLayout; world: World } {
   return { layout, world };
 }
 
-export function buildSite(site: 'field' | 'gym' | 'lot'): { layout: FieldLayout; world: World } {
-  return site === 'gym' ? buildGym() : site === 'lot' ? buildLot() : buildField();
+/* ------------------------------------------------------------------------------------------------ */
+/* The hillside                                                                                       */
+/* ------------------------------------------------------------------------------------------------ */
+
+/** C1-smooth ramp: 0 for u <= 0, a parabola for the first 4 m, then slope 1 (u - 2). */
+const ramp = (u: number): number => (u <= 0 ? 0 : u < 4 ? (u * u) / 8 : u - 2);
+
+/**
+ * The hillside height field. A flat meadow around the pad; in front of the pilot (-z) the ground climbs at
+ * 10° for 60 m and rounds off into a knoll; to the right (+x) a steeper 20° bank. Gentle undulation away
+ * from the pad so the ground is never a plane. Deterministic and cheap: called per contact point per step.
+ */
+export const HILL_TERRAIN: Terrain = {
+  heightAt(x: number, z: number): number {
+    // 10° slope rising toward -z from z = -14 (tan 10° = 0.176), rolling off toward 20 m.
+    const h1 = 20 * Math.tanh((0.1763 * ramp(-14 - z)) / 20);
+    // 20° bank rising toward +x from x = 26 (tan 20° = 0.364), rolling off toward 24 m.
+    const h2 = 24 * Math.tanh((0.364 * ramp(x - 26)) / 24);
+    // Undulation, faded out near the pad (flat start and hover drills) and near the two marks (true slopes there).
+    const fade = (cx: number, cz: number, r0: number, r1: number): number => {
+      const d = Math.hypot(x - cx, z - cz);
+      return d < r0 ? 0 : d < r1 ? (d - r0) / (r1 - r0) : 1;
+    };
+    const bumps = 0.18 * fade(0, -6, 14, 30) * fade(0, -34, 6, 14) * fade(40, -8, 6, 14) * Math.sin(x * 0.31 + 1) * Math.sin(z * 0.27);
+    return h1 + h2 + bumps;
+  },
+};
+
+/**
+ * The hillside: a sloping meadow with two marked slope landing spots (10° in front, 20° on the right bank),
+ * boulders, a few pines and a fence line. Open sky, wind, and terrain the wind has to climb: the upwash on
+ * the windward face is real.
+ */
+export function buildHill(): { layout: FieldLayout; world: World } {
+  const world = new World();
+  world.terrain = HILL_TERRAIN;
+  const hill: HillSpec = {
+    rocks: [
+      { x: -18, z: -36, r: 1.4 }, { x: -22, z: -40, r: 0.9 }, { x: 20, z: -48, r: 1.8 }, { x: 44, z: -30, r: 1.2 },
+      { x: -34, z: -18, r: 1.1 }, { x: 8, z: -70, r: 2.2 }, { x: -6, z: -78, r: 1.0 }, { x: 52, z: 8, r: 1.3 },
+    ],
+    marks: [
+      { id: 'slope', name: 'Slope mark (10°)', x: 0, z: -34, r: 2.0, deg: 10 },
+      { id: 'bank', name: 'Bank mark (20°)', x: 40, z: -8, r: 2.0, deg: 20 },
+    ],
+  };
+  let seed = 23;
+  const rnd = () => ((seed = (seed * 16807) % 2147483647) / 2147483647);
+  const trees: TreeSpec[] = [];
+  // Pines along the left edge and scattered up the slope, never on the marks or the pad.
+  for (let i = 0; i < 26; i++) {
+    const x = -24 - rnd() * 30;
+    const z = 20 - rnd() * 100;
+    trees.push({ x, z, scale: 0.8 + rnd() * 0.6 });
+  }
+  for (let i = 0; i < 10; i++) {
+    const x = -10 + rnd() * 50;
+    const z = -56 - rnd() * 34;
+    trees.push({ x, z, scale: 0.7 + rnd() * 0.5 });
+  }
+  const layout: FieldLayout = {
+    site: 'hill',
+    hill,
+    trees,
+    houses: [],
+    animals: [
+      { x: -14, z: -24, kind: 'sheep', rot: 0.4 }, { x: -11, z: -27, kind: 'sheep', rot: 2.1 }, { x: -16, z: -29, kind: 'sheep', rot: 1.2 },
+      { x: 30, z: -40, kind: 'sheep', rot: 3.0 }, { x: 33, z: -44, kind: 'sheep', rot: 0.2 },
+    ],
+    bales: [],
+    pond: { x: 0, z: 0, r: 0 },
+    road: { x: 0, z: 0, length: 0, width: 0, rot: 0 },
+    windsock: { x: -6, z: -3, height: 3.5 },
+    platforms: [],
+  };
+  world.pad = { id: 'pad', name: 'helipad', centre: { x: 0, y: 0, z: -6 }, radius: 0.5 };
+  for (const m of hill.marks) world.addGroundTarget({ id: m.id, name: m.name, centre: { x: m.x, y: HILL_TERRAIN.heightAt(m.x, m.z), z: m.z }, radius: 0.6, reach: m.r });
+  for (const r of hill.rocks) world.add({ kind: 'cylinder', name: 'a boulder', x: r.x, z: r.z, r: r.r, y0: HILL_TERRAIN.heightAt(r.x, r.z) - 1, y1: HILL_TERRAIN.heightAt(r.x, r.z) + r.r * 0.9 });
+  for (const t of trees) world.add({ kind: 'cylinder', name: 'a tree', x: t.x, z: t.z, r: 1.6 * t.scale, y0: HILL_TERRAIN.heightAt(t.x, t.z), y1: HILL_TERRAIN.heightAt(t.x, t.z) + 9 * t.scale });
+  // Fence posts along the bottom edge (behind the pilot) so the meadow has a boundary to read distance from.
+  for (let x = -40; x <= 40; x += 4) world.add({ kind: 'cylinder', name: 'a fence post', x, z: 22, r: 0.08, y0: HILL_TERRAIN.heightAt(x, 22), y1: HILL_TERRAIN.heightAt(x, 22) + 1.2 });
+  return { layout, world };
+}
+
+export function buildSite(site: 'field' | 'gym' | 'lot' | 'hill'): { layout: FieldLayout; world: World } {
+  return site === 'gym' ? buildGym() : site === 'lot' ? buildLot() : site === 'hill' ? buildHill() : buildField();
 }

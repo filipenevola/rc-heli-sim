@@ -219,7 +219,9 @@ export class HelicopterSim {
       // Electronic 3-axis stabiliser, rate mode: stick commands a rate, PI + feed-forward tracks it.
       let pitchDes = -ctl.elevator * c.cyclicRate; // stick forward = nose down
       let rollDes = ctl.aileron * c.cyclicRate;
-      if (this.assist === 'attitude') {
+      // Self-level only flies the heli: once the skids are down and the collective is at the bottom it steps aside
+      // (as the "rescue"/level modes on FBL units do), or a slope landing would have the swashplate fighting the hill.
+      if (this.assist === 'attitude' && !(s.onGround && ctl.collective < -0.7)) {
         // Outer loop: stick -> target attitude, attitude error -> rate command for the inner loop.
         const e = eulerFromQ(s.ori);
         const pitchTarget = -ctl.elevator * this.attitudeMaxAngle;
@@ -362,7 +364,7 @@ export class HelicopterSim {
 
     // Ground effect (Cheeseman-Bennett) on thrust.
     const hubW = add(s.pos, rotate(s.ori, m.hubOffset));
-    const zh = Math.max(hubW.y, 0.25 * m.rotor.radius);
+    const zh = Math.max(hubW.y - this.world.groundAt(hubW.x, hubW.z), 0.25 * m.rotor.radius);
     const ratio = m.rotor.radius / (4 * zh);
     // Ground effect fades with forward speed (the cushion is blown behind the rotor above ~mu 0.1).
     const geSpeed = clamp(1 - main.mu / 0.12, 0, 1);
@@ -494,9 +496,11 @@ export class HelicopterSim {
       let pen: number;
       let what = 'the ground';
       let targetId: string | null = null;
-      if (pW.y < 0) {
-        normal = v3(0, 1, 0);
-        pen = -pW.y;
+      const gy = this.world.groundAt(pW.x, pW.z);
+      if (pW.y < gy) {
+        // Terrain: the normal follows the slope; penetration measured along it.
+        normal = this.world.groundNormal(pW.x, pW.z, v3());
+        pen = (gy - pW.y) * normal.y;
       } else if (this.world.hit(pW, hit)) {
         normal = hit.normal;
         pen = hit.depth;
@@ -531,7 +535,8 @@ export class HelicopterSim {
         const alongFrac = vtl > 1e-4 ? Math.abs(dot(vt, zW)) / vtl : 0;
         muF = 0.6 - 0.3 * alongFrac;
       }
-      const ft = vtl > 1e-4 ? scale(vt, -Math.min(muF * fn, vtl * 40 * m.mass) / vtl) : v3();
+      // Coulomb friction with a stiff viscous core (300 m/s per m/s of creep): a parked heli on a 20° bank must not creep.
+      const ft = vtl > 1e-4 ? scale(vt, -Math.min(muF * fn, vtl * 300 * m.mass) / vtl) : v3();
       const fW = add(scale(normal, fn), ft);
       const fB = rotateInv(s.ori, fW);
       force = add(force, fB);
@@ -545,6 +550,12 @@ export class HelicopterSim {
     // The helipad is ground, not a collider: skids on plain ground near the H count as the 'pad' target.
     if (skidsTouching === skidCount && skidsOnTarget === null && this.world.pad && Math.hypot(s.pos.x - this.world.pad.centre.x, s.pos.z - this.world.pad.centre.z) < 2.2) {
       skidsOnTarget = this.world.pad.id;
+    }
+    // Marks painted on the ground (slope spots) work the same way: all skids on plain ground inside the ring.
+    if (skidsTouching === skidCount && skidsOnTarget === null) {
+      for (const g of this.world.groundTargets) {
+        if (Math.hypot(s.pos.x - g.centre.x, s.pos.z - g.centre.z) < g.reach) { skidsOnTarget = g.id; break; }
+      }
     }
     if (skidsTouching === skidCount && skidsOnTarget && len(s.vel) < 0.25 && !s.crashed) {
       if (s.restingOn !== skidsOnTarget) { s.restingOn = skidsOnTarget; s.restingTime = 0; }
@@ -564,14 +575,18 @@ export class HelicopterSim {
       const nW = rotate(s.ori, n);
       const tiltSin = Math.sqrt(Math.max(0, 1 - nW.y * nW.y));
       const discLow = hubW.y - m.rotor.radius * tiltSin;
-      if (discLow < 0.0) this.crash('Blade strike');
-      else if (this.world.colliders.length > 0) {
+      if (discLow < this.world.groundAt(hubW.x, hubW.z) - (this.world.terrain ? m.rotor.radius * 0.5 : 0)) this.crash('Blade strike');
+      else if (this.world.colliders.length > 0 || this.world.terrain) {
         // Sample the disc edge. Two in-plane axes perpendicular to the rotor normal.
         const ax = norm(cross(nW, Math.abs(nW.y) < 0.9 ? v3(0, 1, 0) : v3(1, 0, 0)));
         const az = cross(nW, ax);
         for (let i = 0; i < 16; i++) {
           const a = (i / 16) * Math.PI * 2;
           const pt = add(hubW, add(scale(ax, Math.cos(a) * m.rotor.radius), scale(az, Math.sin(a) * m.rotor.radius)));
+          if (this.world.terrain && pt.y < this.world.groundAt(pt.x, pt.z)) {
+            this.crash('Blade strike');
+            break;
+          }
           if (this.world.hit(pt, hit)) {
             this.crash(`Blades hit ${hit.collider.name}`);
             break;
@@ -610,7 +625,8 @@ export class HelicopterSim {
     t.collectiveDeg = (s.servoCollective * 180) / Math.PI;
     t.headspeedRpm = (s.rotorOmega * 60) / (2 * Math.PI);
     t.motorPower = motorTorque * s.rotorOmega;
-    t.altitude = s.pos.y;
+    // Height above the ground under the heli (what a pilot judges), not above sea level.
+    t.altitude = s.pos.y - this.world.groundAt(s.pos.x, s.pos.z);
     t.groundSpeed = Math.hypot(s.vel.x, s.vel.z);
     t.verticalSpeed = s.vel.y;
     t.groundEffect = ge;

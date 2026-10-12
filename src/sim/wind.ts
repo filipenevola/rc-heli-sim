@@ -20,6 +20,8 @@ export class Wind {
   private t0 = 0;
   /** Trees and buildings: their wakes are slower and rougher downwind. */
   obstacles: WindObstacle[] = [];
+  /** Ground height field, when the site has one: wind follows the terrain (upwash on the windward face). */
+  terrain: { heightAt(x: number, z: number): number } | null = null;
 
   constructor(private seed = 1) {}
 
@@ -38,8 +40,9 @@ export class Wind {
     // Unit vector the wind blows toward.
     const dx = -Math.sin(rad0);
     const dz = Math.cos(rad0);
-    // Log boundary layer, roughness length 0.05 m (grass), referenced to 10 m.
-    const z = Math.max(0.3, pos.y);
+    // Log boundary layer, roughness length 0.05 m (grass), referenced to 10 m above the local ground.
+    const ground = this.terrain ? this.terrain.heightAt(pos.x, pos.z) : 0;
+    const z = Math.max(0.3, pos.y - ground);
     const profile = Math.log(z / 0.05) / Math.log(10 / 0.05);
     // Wakes: for each obstacle, how far downwind (along the wind) and how far across the point is.
     let shelter = 0;
@@ -72,7 +75,15 @@ export class Wind {
     // Wind FROM direction d blows toward d + 180.
     const vx = -Math.sin(rad) * speed + tx;
     const vz = Math.cos(rad) * speed + tz;
-    const vy = 0.15 * this.gustiness * speed * Math.sin(t * 1.7 + 3) + ty;
+    let vy = 0.15 * this.gustiness * speed * Math.sin(t * 1.7 + 3) + ty;
+    // Terrain following: the flow climbs the windward face and sinks on the lee side, fading with height
+    // (about one slope length). Slope soaring in a nutshell.
+    if (this.terrain) {
+      const e = 1;
+      const gx = (this.terrain.heightAt(pos.x + e, pos.z) - this.terrain.heightAt(pos.x - e, pos.z)) / (2 * e);
+      const gz = (this.terrain.heightAt(pos.x, pos.z + e) - this.terrain.heightAt(pos.x, pos.z - e)) / (2 * e);
+      vy += (vx * gx + vz * gz) * Math.exp(-(pos.y - ground) / 25);
+    }
     return v3(vx, vy, vz);
   }
 }
