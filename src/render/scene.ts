@@ -20,27 +20,27 @@ export interface SceneHandles {
 
 const isMobile = typeof navigator !== 'undefined' && navigator.maxTouchPoints > 0 && window.innerWidth < 1100;
 
-/** Flying field built from the shared layout so visuals and collisions agree. */
-export function createScene(layout: FieldLayout): SceneHandles {
-  const scene = new THREE.Scene();
+/**
+ * Outdoor lighting shared by the open-air sites: hemisphere + sun with one big shadow frustum, a gradient sky
+ * dome, a sun disc, fog, and the time-of-day presets that move and recolour all of it.
+ */
+export function outdoorLighting(scene: THREE.Scene, shadowExtent: number): { sun: THREE.DirectionalLight; hemi: THREE.HemisphereLight; setTimeOfDay(t: TimeOfDay): void } {
   scene.background = new THREE.Color(0x9fc5e8);
   scene.fog = new THREE.Fog(0xbfd8ec, 140, 750);
-
   const hemi = new THREE.HemisphereLight(0xcfe6ff, 0x4e6b2c, 0.9);
   scene.add(hemi);
   const sun = new THREE.DirectionalLight(0xfff3dc, 2.2);
   sun.position.set(-40, 70, -30);
   sun.castShadow = true;
-  // One big orthographic shadow frustum covering the whole field so every tree and house casts a shadow,
-  // not only things near the model. Resolution scaled for phones.
+  // One big orthographic shadow frustum covering the whole site so every object casts a shadow, not only things
+  // near the model. Resolution scaled for phones.
   sun.shadow.mapSize.set(isMobile ? 2048 : 4096, isMobile ? 2048 : 4096);
   sun.shadow.camera.near = 1;
   sun.shadow.camera.far = 400;
-  const s = 130;
-  sun.shadow.camera.left = -s;
-  sun.shadow.camera.right = s;
-  sun.shadow.camera.top = s;
-  sun.shadow.camera.bottom = -s;
+  sun.shadow.camera.left = -shadowExtent;
+  sun.shadow.camera.right = shadowExtent;
+  sun.shadow.camera.top = shadowExtent;
+  sun.shadow.camera.bottom = -shadowExtent;
   sun.shadow.bias = -0.0006;
   sun.shadow.normalBias = 0.05;
   scene.add(sun);
@@ -56,6 +56,40 @@ export function createScene(layout: FieldLayout): SceneHandles {
     fragmentShader: `uniform vec3 top; uniform vec3 horizon; varying vec3 vW; void main(){ float h = normalize(vW).y; float t = pow(clamp(h, 0.0, 1.0), 0.45); gl_FragColor = vec4(mix(horizon, top, t), 1.0); }`,
   });
   scene.add(new THREE.Mesh(skyGeo, skyMat));
+  // The sun: a bright disc where the light comes from.
+  const sunDisc = new THREE.Mesh(new THREE.SphereGeometry(22, 16, 8), new THREE.MeshBasicMaterial({ color: 0xfff6d5, fog: false }));
+  sunDisc.position.copy(sun.position).normalize().multiplyScalar(860);
+  scene.add(sunDisc);
+
+  // Time of day: sun elevation and colour, sky gradient, fog and ambient. Evening is the one that teaches you to
+  // judge distance with the model as a dark silhouette.
+  const setTimeOfDay = (t: TimeOfDay): void => {
+    const presets: Record<TimeOfDay, { sun: [number, number, number]; sunColor: number; sunI: number; hemiSky: number; hemiGround: number; hemiI: number; top: number; horizon: number; fog: number; disc: number }> = {
+      morning: { sun: [60, 35, -40], sunColor: 0xffe7c4, sunI: 1.9, hemiSky: 0xd8e8ff, hemiGround: 0x4e6b2c, hemiI: 0.85, top: 0x4f8ad6, horizon: 0xe8ecf0, fog: 0xd2dde8, disc: 0xfff1d0 },
+      noon: { sun: [-40, 70, -30], sunColor: 0xfff3dc, sunI: 2.2, hemiSky: 0xcfe6ff, hemiGround: 0x4e6b2c, hemiI: 0.9, top: 0x3f7fd0, horizon: 0xd6e8f7, fog: 0xbfd8ec, disc: 0xfff6d5 },
+      evening: { sun: [-85, 14, 25], sunColor: 0xffb070, sunI: 1.3, hemiSky: 0xe0b8a0, hemiGround: 0x3a3426, hemiI: 0.55, top: 0x2d4f8a, horizon: 0xf2b57a, fog: 0xd9a884, disc: 0xffc080 },
+    };
+    const p = presets[t];
+    sun.position.set(p.sun[0], p.sun[1], p.sun[2]);
+    sun.color.set(p.sunColor);
+    sun.intensity = p.sunI;
+    hemi.color.set(p.hemiSky);
+    hemi.groundColor.set(p.hemiGround);
+    hemi.intensity = p.hemiI;
+    (skyMat.uniforms.top.value as THREE.Color).set(p.top);
+    (skyMat.uniforms.horizon.value as THREE.Color).set(p.horizon);
+    (scene.fog as THREE.Fog).color.set(p.fog);
+    (scene.background as THREE.Color).set(p.fog);
+    (sunDisc.material as THREE.MeshBasicMaterial).color.set(p.disc);
+    sunDisc.position.copy(sun.position).normalize().multiplyScalar(860);
+  };
+  return { sun, hemi, setTimeOfDay };
+}
+
+/** Flying field built from the shared layout so visuals and collisions agree. */
+export function createScene(layout: FieldLayout): SceneHandles {
+  const scene = new THREE.Scene();
+  const { sun, setTimeOfDay } = outdoorLighting(scene, 130);
 
   const mats = {
     trunk: new THREE.MeshStandardMaterial({ color: 0x6b4a2b }),
@@ -194,33 +228,7 @@ export function createScene(layout: FieldLayout): SceneHandles {
     hill.position.set(Math.cos(ang) * dist, 0, Math.sin(ang) * dist);
     scene.add(hill);
   }
-  // The sun: a bright disc where the light comes from.
-  const sunDisc = new THREE.Mesh(new THREE.SphereGeometry(22, 16, 8), new THREE.MeshBasicMaterial({ color: 0xfff6d5, fog: false }));
-  sunDisc.position.copy(sun.position).normalize().multiplyScalar(860);
-  scene.add(sunDisc);
 
-  // Time of day: sun elevation and colour, sky gradient, fog and ambient. Evening is the one that teaches you to
-  // judge distance with the model as a dark silhouette.
-  const setTimeOfDay = (t: TimeOfDay): void => {
-    const presets: Record<TimeOfDay, { sun: [number, number, number]; sunColor: number; sunI: number; hemiSky: number; hemiGround: number; hemiI: number; top: number; horizon: number; fog: number; disc: number }> = {
-      morning: { sun: [60, 35, -40], sunColor: 0xffe7c4, sunI: 1.9, hemiSky: 0xd8e8ff, hemiGround: 0x4e6b2c, hemiI: 0.85, top: 0x4f8ad6, horizon: 0xe8ecf0, fog: 0xd2dde8, disc: 0xfff1d0 },
-      noon: { sun: [-40, 70, -30], sunColor: 0xfff3dc, sunI: 2.2, hemiSky: 0xcfe6ff, hemiGround: 0x4e6b2c, hemiI: 0.9, top: 0x3f7fd0, horizon: 0xd6e8f7, fog: 0xbfd8ec, disc: 0xfff6d5 },
-      evening: { sun: [-85, 14, 25], sunColor: 0xffb070, sunI: 1.3, hemiSky: 0xe0b8a0, hemiGround: 0x3a3426, hemiI: 0.55, top: 0x2d4f8a, horizon: 0xf2b57a, fog: 0xd9a884, disc: 0xffc080 },
-    };
-    const p = presets[t];
-    sun.position.set(p.sun[0], p.sun[1], p.sun[2]);
-    sun.color.set(p.sunColor);
-    sun.intensity = p.sunI;
-    hemi.color.set(p.hemiSky);
-    hemi.groundColor.set(p.hemiGround);
-    hemi.intensity = p.hemiI;
-    (skyMat.uniforms.top.value as THREE.Color).set(p.top);
-    (skyMat.uniforms.horizon.value as THREE.Color).set(p.horizon);
-    (scene.fog as THREE.Fog).color.set(p.fog);
-    (scene.background as THREE.Color).set(p.fog);
-    (sunDisc.material as THREE.MeshBasicMaterial).color.set(p.disc);
-    sunDisc.position.copy(sun.position).normalize().multiplyScalar(860);
-  };
 
   // Fence along the back.
   const posts = new THREE.InstancedMesh(new THREE.BoxGeometry(0.1, 1.2, 0.1), mats.metal, 61);

@@ -250,6 +250,11 @@ const HELP_HTML = `
   ceiling, bleachers, two hoops, a stack of mats and a vault box to land on, and no wind. It is the place for the
   250 micro and for tight hover work; walls, ceiling, hoops and bleachers all bite. The circuits and hover
   challenges work in here; the ones that need altitude, wind or the field's targets are marked "Field only".</p>
+  <h4>The parking lot</h4>
+  <p>Settings → <b>Flying site</b> → Parking lot: the club's car park, 110 × 90 m of asphalt with painted bays,
+  light poles, a few parked cars, two warehouses along the back and a shipping container whose roof is a landing
+  target (2.6 m up, almost no ground effect). Open sky and wind, like a real club lot; the poles are the usual
+  surprise. The field's picnic table, truck, pontoon and tower challenges are marked "Field only" there.</p>
   <h4>Billboards: the Quave Holdings portfolio</h4>
   <p>The billboards around the field are the companies and products of <a href="https://quaveholdings.com/portfolio" target="_blank" rel="noopener">Quave Holdings</a>,
   the group behind this simulator. Tap or click a billboard in the scene to open its site, or use the links here:</p>

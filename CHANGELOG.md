@@ -3,6 +3,13 @@
 All notable changes to RC Heli Sim. The version shown in the game (Help and Settings) matches the latest
 entry here; the commit hash next to it identifies the exact build.
 
+## 0.47.0
+
+- **Parking lot**, a third flying site (Settings → Flying site): the club's car park, asphalt with painted bays,
+  light poles, parked cars, two warehouses and a shipping container whose roof is a landing target. Open sky,
+  wind and time of day like the field; the field's four landing challenges are marked "Field only" there.
+- The field's lighting, sky and time-of-day code is shared by the outdoor sites.
+
 ## 0.46.0
 
 - **Works offline at the field**: a service worker caches the build after the first visit, and a web manifest

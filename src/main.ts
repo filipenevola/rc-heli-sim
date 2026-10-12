@@ -10,7 +10,8 @@ import { HELI_MODELS } from './sim/heli-model';
 import { Wind } from './sim/wind';
 import { buildSite } from './sim/world';
 import { createGymScene } from './render/gym';
-import { FIELD_ONLY, getSite, setSite, type SiteId } from './site';
+import { createLotScene } from './render/lot';
+import { getSite, setSite, unavailableHere, type SiteId } from './site';
 import { InputManager } from './input/manager';
 import { Hud } from './ui/hud';
 import { SettingsPanel, MODE_HELP, HOLD_HELP } from './ui/settings';
@@ -51,11 +52,11 @@ app.appendChild(renderer.domElement);
   const fromUrl = new URLSearchParams(location.search).get('site');
   let saved: SiteId | undefined;
   try { saved = (JSON.parse(localStorage.getItem('rc-heli-sim.prefs.v1') ?? '{}') as { site?: SiteId }).site; } catch { /* no prefs */ }
-  const site = fromUrl === 'gym' || fromUrl === 'field' ? fromUrl : saved === 'gym' ? 'gym' : 'field';
+  const site: SiteId = fromUrl === 'gym' || fromUrl === 'field' || fromUrl === 'lot' ? fromUrl : saved === 'gym' || saved === 'lot' ? saved : 'field';
   setSite(site);
 }
 const { layout, world } = buildSite(getSite());
-const field = getSite() === 'gym' ? createGymScene(layout) : createScene(layout);
+const field = getSite() === 'gym' ? createGymScene(layout) : getSite() === 'lot' ? createLotScene(layout) : createScene(layout);
 const { scene } = field;
 const clouds = createClouds();
 if (getSite() === 'field') scene.add(clouds);
@@ -126,7 +127,7 @@ const challenges = new ChallengesPanel(ui, profile, tracker, flightTimer, rankin
 function startLesson(challengeId: string, mode: 'show' | 'teach' = 'show'): void {
   const l = lessonFor(challengeId);
   if (!l) return;
-  if (getSite() === 'gym' && FIELD_ONLY.has(challengeId)) {
+  if (unavailableHere(challengeId)) {
     hud.notify(`<b>${t('Field only')}</b><br>${t('This one needs the outdoor field: altitude, wind or its landing targets. Settings → Flying site → The field.')}`, 5000);
     return;
   }
@@ -266,7 +267,9 @@ const settings = new SettingsPanel(ui, input, wind, audio, {
     // The road spot stands beside the cerradoX billboard (x = 0, z = 56), not behind it.
     const spots: Record<string, [number, number]> = getSite() === 'gym'
       ? { pad: [0, 0], bleachers: [15, -14], end: [0, -34] }
-      : { pad: [0, 0], barn: [-40, -6], pond: [28, -12], tower: [14, -34], road: [14, 64] };
+      : getSite() === 'lot'
+        ? { pad: [0, 0], cars: [-18, -8], container: [12, -14], fence: [0, 40] }
+        : { pad: [0, 0], barn: [-40, -6], pond: [28, -12], tower: [14, -34], road: [14, 64] };
     let x: number;
     let z: number;
     if (spot === 'heli') {

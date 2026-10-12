@@ -203,6 +203,11 @@ export const HELP_HTML_PT = `
   teto, arquibancada, duas cestas, uma pilha de colchões e um plinto para pousar, e sem vento. É o lugar do
   micro 250 e do trabalho de pairado apertado; paredes, teto, cestas e arquibancada mordem. Os circuitos e os desafios de
   pairado funcionam aqui dentro; os que precisam de altura, vento ou dos alvos do campo aparecem como "Só no campo".</p>
+  <h4>O estacionamento</h4>
+  <p>Configurações → <b>Local de voo</b> → Estacionamento: o estacionamento do clube, 110 × 90 m de asfalto com vagas pintadas,
+  postes de luz, alguns carros estacionados, dois galpões no fundo e um contêiner cujo teto é um alvo de
+  pouso (a 2,6 m, quase sem efeito solo). Céu aberto e vento, como um estacionamento de clube de verdade; os postes são a
+  surpresa de sempre. Os desafios da mesa, picape, pontão e torre do campo aparecem como "Só no campo" lá.</p>
   <h4>Outdoors: o portfólio da Quave Holdings</h4>
   <p>Os outdoors ao redor do campo são as empresas e produtos da <a href="https://quaveholdings.com/portfolio" target="_blank" rel="noopener">Quave Holdings</a>,
   o grupo por trás deste simulador. Toque ou clique num outdoor na cena para abrir o site, ou use os links aqui:</p>

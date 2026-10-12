@@ -348,7 +348,7 @@ export class SettingsPanel {
     this.panel.innerHTML = `
       <h3>Settings <button id="close">×</button></h3>
       <label>Language ${sel('lang', [['en', 'English'], ['pt-BR', 'Português (Brasil)']], getLang())}</label>
-      <label>Flying site ${sel('site', [['field', 'The field (default)'], ['gym', 'Indoor gym (micro-sized hall, no wind)']], getSite())}</label>
+      <label>Flying site ${sel('site', [['field', 'The field (default)'], ['gym', 'Indoor gym (micro-sized hall, no wind)'], ['lot', 'Parking lot (asphalt, poles, cars, a container to land on)']], getSite())}</label>
       <p class="hint">v${__VERSION__} · build <code>${__COMMIT__}</code> (${__BUILD__.split(' ').slice(1).join(' ')}) · <a href="https://github.com/filipenevola/rc-heli-sim/blob/main/CHANGELOG.md" target="_blank" rel="noopener">Release log</a></p>
       <section>
         <h4>Helicopter</h4>
@@ -392,7 +392,7 @@ export class SettingsPanel {
         <h4>Camera</h4>
         ${sel('camera', CAMERA_MODES.map((m) => [m, CAMERA_LABELS[m]]), this.cameraMode)}
         <p class="hint">Cam button or C key cycles. "Pilot" is the realistic one: you stand on the field.</p>
-        <label>Pilot stands at ${sel('spot', getSite() === 'gym' ? [['pad', 'The helipad (default)'], ['bleachers', 'On the bleachers'], ['end', 'At the far end']] : [['pad', 'The helipad (default)'], ['barn', 'By the barn'], ['pond', 'By the pond'], ['tower', 'By the tower'], ['road', 'On the road']], this.spot)}</label>
+        <label>Pilot stands at ${sel('spot', getSite() === 'gym' ? [['pad', 'The helipad (default)'], ['bleachers', 'On the bleachers'], ['end', 'At the far end']] : getSite() === 'lot' ? [['pad', 'The helipad (default)'], ['cars', 'By the parked cars'], ['container', 'By the container'], ['fence', 'At the fence']] : [['pad', 'The helipad (default)'], ['barn', 'By the barn'], ['pond', 'By the pond'], ['tower', 'By the tower'], ['road', 'On the road']], this.spot)}</label>
         <button id="walk">Walk to the heli (G)</button>
         <label><input type="checkbox" id="arrow" ${this.arrowOn ? 'checked' : ''}> Orientation arrow under the heli (beginner aid)</label>
         <label><input type="checkbox" id="trail" ${this.trailOn ? 'checked' : ''}> Smoke trail: fading path of the last 12 s (T)</label>

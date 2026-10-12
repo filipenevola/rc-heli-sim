@@ -2,13 +2,41 @@ import { describe, expect, it } from 'vitest';
 import { HelicopterSim, PHYSICS_DT } from './physics';
 import { HELI_250, HELI_450 } from './heli-model';
 import { Wind } from './wind';
-import { buildGym, buildSite } from './world';
+import { buildGym, buildLot, buildSite } from './world';
 import { neutralFrame } from '../input/types';
 
 function run(sim: HelicopterSim, ctl: ReturnType<typeof neutralFrame>, seconds: number) {
   const n = Math.round(seconds / PHYSICS_DT);
   for (let i = 0; i < n; i++) sim.step(ctl);
 }
+
+describe('parking lot', () => {
+  it('has poles, cars, warehouses, a fence and the container roof as a landing target', () => {
+    const { layout, world } = buildLot();
+    expect(layout.site).toBe('lot');
+    expect(layout.platforms[0].id).toBe('container');
+    expect(world.windObstacles().length).toBeGreaterThan(5);
+    expect(buildSite('lot').layout.site).toBe('lot');
+  });
+
+  it('a heli flying into a light pole crashes', () => {
+    const { world } = buildLot();
+    const sim = new HelicopterSim(HELI_450, new Wind(), world);
+    const ctl = neutralFrame();
+    ctl.flightMode = 1;
+    ctl.collective = -0.05;
+    run(sim, ctl, 25);
+    sim.state.pos.x = -6;
+    sim.state.pos.y = 4;
+    sim.state.pos.z = -30;
+    sim.state.onGround = false;
+    sim.state.vel.x = 5;
+    ctl.collective = 0.4;
+    run(sim, ctl, 3);
+    expect(sim.state.crashed).toBe(true);
+    expect(sim.state.crashReason).toMatch(/pole/);
+  });
+});
 
 describe('indoor gym', () => {
   it('has walls, a ceiling, bleachers, hoops and two landing targets', () => {

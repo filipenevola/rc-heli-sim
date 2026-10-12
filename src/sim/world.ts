@@ -105,9 +105,20 @@ export interface HallSpec {
   height: number;
 }
 
+export interface LotSpec {
+  /** Half extents of the asphalt. */
+  halfW: number;
+  halfD: number;
+  poles: { x: number; z: number }[];
+  cars: { x: number; z: number; rot: number; color: number }[];
+  warehouses: { x: number; z: number; w: number; d: number; h: number; color: number }[];
+}
+
 export interface FieldLayout {
-  /** 'field' (outdoors, default) or 'gym' (an indoor sports hall for micro practice). */
-  site: 'field' | 'gym';
+  /** 'field' (outdoors, default), 'gym' (an indoor sports hall) or 'lot' (the club's parking lot). */
+  site: 'field' | 'gym' | 'lot';
+  /** Parking-lot furniture (lot only). */
+  lot?: LotSpec;
   hall?: HallSpec;
   trees: TreeSpec[];
   houses: HouseSpec[];
@@ -275,6 +286,67 @@ export function buildGym(): { layout: FieldLayout; world: World } {
   return { layout, world };
 }
 
-export function buildSite(site: 'field' | 'gym'): { layout: FieldLayout; world: World } {
-  return site === 'gym' ? buildGym() : buildField();
+/**
+ * The club's parking lot: a big slab of asphalt with bays, light poles, a few parked cars, a shipping container
+ * with a flat roof to land on (2.6 m, no ground effect to speak of) and warehouses along the back. Open and
+ * windy; the poles and the container are what bite.
+ */
+export function buildLot(): { layout: FieldLayout; world: World } {
+  const world = new World();
+  const lot: LotSpec = {
+    halfW: 55,
+    halfD: 45,
+    poles: [
+      { x: -30, z: -30 }, { x: 0, z: -30 }, { x: 30, z: -30 },
+      { x: -30, z: 10 }, { x: 30, z: 10 },
+      { x: -45, z: -10 }, { x: 45, z: -10 },
+    ],
+    cars: [
+      { x: -22, z: -16, rot: 0, color: 0xc8d0d8 }, { x: -18, z: -16, rot: 0, color: 0x3a3f47 }, { x: -14, z: -16, rot: 0, color: 0x8b1e1e },
+      { x: 24, z: 6, rot: Math.PI / 2, color: 0x1f5fd6 }, { x: 24, z: 12, rot: Math.PI / 2, color: 0xf2f2f2 },
+      { x: 36, z: -22, rot: 0.2, color: 0x2a8f4a },
+    ],
+    warehouses: [
+      { x: -25, z: -60, w: 40, d: 18, h: 7, color: 0x9aa3ad }, { x: 25, z: -60, w: 36, d: 18, h: 6, color: 0xb8a98a },
+    ],
+  };
+  const layout: FieldLayout = {
+    site: 'lot',
+    lot,
+    trees: [],
+    houses: [],
+    animals: [],
+    bales: [],
+    pond: { x: 0, z: 0, r: 0 },
+    road: { x: 0, z: 0, length: 0, width: 0, rot: 0 },
+    windsock: { x: -6, z: -3, height: 3.5 },
+    platforms: [{ id: 'container', name: 'Container roof', x: 12, z: -24, height: 2.6, size: 2.4, style: 'table', radius: 0.6 }],
+  };
+  for (const p of layout.platforms) {
+    const half = p.size / 2;
+    const target: LandingTarget = { id: p.id, name: p.name, centre: { x: p.x, y: p.height, z: p.z }, radius: p.radius };
+    // A 6 m container: the roof is the target, the box below is solid.
+    world.add({ kind: 'box', name: p.name, target, min: { x: p.x - half, y: p.height - 0.08, z: p.z - 3 }, max: { x: p.x + half, y: p.height, z: p.z + 3 } });
+    world.add({ kind: 'box', name: 'the container', min: { x: p.x - half, y: 0, z: p.z - 3 }, max: { x: p.x + half, y: p.height - 0.08, z: p.z + 3 } });
+  }
+  world.pad = { id: 'pad', name: 'helipad', centre: { x: 0, y: 0, z: -6 }, radius: 0.5 };
+  for (const pole of lot.poles) world.add({ kind: 'cylinder', name: 'a light pole', x: pole.x, z: pole.z, r: 0.18, y0: 0, y1: 9 });
+  for (const c of lot.cars) {
+    const cs = Math.abs(Math.cos(c.rot));
+    const sn = Math.abs(Math.sin(c.rot));
+    const hx = 2.2 * cs + 0.9 * sn;
+    const hz = 2.2 * sn + 0.9 * cs;
+    world.add({ kind: 'box', name: 'a parked car', min: { x: c.x - hx, y: 0, z: c.z - hz }, max: { x: c.x + hx, y: 1.5, z: c.z + hz } });
+  }
+  for (const w of lot.warehouses) world.add({ kind: 'box', name: 'a warehouse', min: { x: w.x - w.w / 2, y: 0, z: w.z - w.d / 2 }, max: { x: w.x + w.w / 2, y: w.h, z: w.z + w.d / 2 } });
+  // Fence around the lot.
+  const f = 0.15;
+  world.add({ kind: 'box', name: 'the fence', min: { x: -lot.halfW - f, y: 0, z: -lot.halfD }, max: { x: -lot.halfW, y: 2, z: lot.halfD } });
+  world.add({ kind: 'box', name: 'the fence', min: { x: lot.halfW, y: 0, z: -lot.halfD }, max: { x: lot.halfW + f, y: 2, z: lot.halfD } });
+  world.add({ kind: 'box', name: 'the fence', min: { x: -lot.halfW, y: 0, z: lot.halfD }, max: { x: lot.halfW, y: 2, z: lot.halfD + f } });
+  return { layout, world };
+}
+
+export function buildSite(site: 'field' | 'gym' | 'lot'): { layout: FieldLayout; world: World } {
+  return site === 'gym' ? buildGym() : site === 'lot' ? buildLot() : buildField();
 }
