@@ -56,6 +56,7 @@ function renderPair(message = ''): void {
 }
 
 function connect(code: string): void {
+  userClosed = false;
   link?.close();
   link = joinLink(api, code);
   const status = root.querySelector('#pair-status');
@@ -82,9 +83,20 @@ function connect(code: string): void {
   };
 }
 
+let userClosed = false;
+let retries = 0;
+
 function onState(s: LinkState, code: string): void {
-  if (s === 'connected') renderSticks(code);
-  else if (s === 'failed') { stopStreaming(); renderPair(t('Could not connect. Check the code (it changes every time you press Pair) and that both devices are online.')); }
+  if (s === 'connected') { retries = 0; renderSticks(code); }
+  else if (s === 'failed') {
+    stopStreaming();
+    if (!userClosed && retries < 30) {
+      // Dropped mid-flight (screen lock, Wi-Fi hiccup): the sim re-offers under the same code; keep knocking.
+      retries++;
+      renderPair(`${t('Link lost, reconnecting…')} (${retries})`);
+      setTimeout(() => { if (!userClosed) connect(code); }, 2000);
+    } else renderPair(t('Could not connect. Check the code (it changes every time you press Pair) and that both devices are online.'));
+  }
   else if (s === 'closed') { stopStreaming(); renderPair(t('Disconnected.')); }
   else {
     const status = root.querySelector('#pair-status');
@@ -139,7 +151,7 @@ function renderSticks(code: string): void {
   });
   tiltBtn.addEventListener('dblclick', () => motion?.recentre());
   root.querySelector<HTMLSelectElement>('#stickmode')!.addEventListener('change', (e) => touch!.setMode(Number((e.target as HTMLSelectElement).value) as StickMode));
-  root.querySelector('#disconnect')!.addEventListener('click', () => { link?.close(); });
+  root.querySelector('#disconnect')!.addEventListener('click', () => { userClosed = true; link?.close(); });
   startStreaming();
 }
 

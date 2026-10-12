@@ -1,7 +1,12 @@
 /**
  * Phone radio link: the sim (desk) and a phone pair through a 4-letter code and then talk WebRTC peer to peer.
- * The rankings API only relays one offer and one answer (no trickle: each side waits for ICE gathering to finish
- * and ships the complete description), so on the same Wi-Fi the sticks travel straight from phone to laptop.
+ * The rankings API only relays one offer and one answer per attempt (no trickle: each side waits for ICE
+ * gathering to finish and ships the complete description), so on the same Wi-Fi the sticks travel straight from
+ * phone to laptop.
+ *
+ * The PHONE makes the offer. Every attempt is a fresh offer, and the desk answers whatever the newest offer is, so
+ * a phone that comes back (or a second phone) always wins over a stale one: the answer carries the id of the offer
+ * it belongs to and a phone ignores answers meant for another offer.
  */
 import { CODE_ALPHABET } from './code';
 
@@ -10,6 +15,7 @@ export type LinkState = 'idle' | 'waiting' | 'connecting' | 'connected' | 'close
 export interface RadioLink {
   readonly code: string;
   readonly channel: RTCDataChannel | null;
+  readonly pc: RTCPeerConnection;
   state: LinkState;
   onState: ((s: LinkState) => void) | null;
   onMessage: ((text: string) => void) | null;
@@ -42,18 +48,36 @@ function gathered(pc: RTCPeerConnection, graceMs = 1500): Promise<void> {
   });
 }
 
+/** Short id of an offer so an answer can say which offer it belongs to. */
+function offerId(sdp: string): string {
+  let h = 0;
+  for (let i = 0; i < sdp.length; i++) h = (h * 31 + sdp.charCodeAt(i)) | 0;
+  return (h >>> 0).toString(36);
+}
+
+const sleep = (ms: number) => new Promise((r) => setTimeout(r, ms));
+
 class Link implements RadioLink {
   state: LinkState = 'idle';
   onState: ((s: LinkState) => void) | null = null;
   onMessage: ((text: string) => void) | null = null;
   channel: RTCDataChannel | null = null;
+  pc: RTCPeerConnection;
   private stopped = false;
-  constructor(readonly code: string, readonly pc: RTCPeerConnection) {
+  constructor(readonly code: string) {
+    this.pc = this.newPc();
+  }
+  /** A fresh peer connection (the desk makes one per offer it answers). */
+  newPc(): RTCPeerConnection {
+    const pc = new RTCPeerConnection(ICE);
     pc.addEventListener('connectionstatechange', () => {
+      if (this.pc !== pc) return;
       if (pc.connectionState === 'connected') this.set('connected');
-      else if (pc.connectionState === 'failed') this.set('failed');
-      else if (pc.connectionState === 'disconnected' || pc.connectionState === 'closed') this.set(this.stopped ? 'closed' : 'failed');
+      else if (pc.connectionState === 'failed' || pc.connectionState === 'disconnected' || pc.connectionState === 'closed') this.set(this.stopped ? 'closed' : 'failed');
     });
+    pc.addEventListener('datachannel', (e) => { if (this.pc === pc) this.attach(e.channel); });
+    this.pc = pc;
+    return pc;
   }
   set(s: LinkState): void {
     if (this.state === s) return;
@@ -64,7 +88,7 @@ class Link implements RadioLink {
     this.channel = ch;
     ch.addEventListener('message', (e) => this.onMessage?.(String(e.data)));
     ch.addEventListener('open', () => this.set('connected'));
-    ch.addEventListener('close', () => this.set(this.stopped ? 'closed' : 'failed'));
+    ch.addEventListener('close', () => { if (this.channel === ch) this.set(this.stopped ? 'closed' : 'failed'); });
   }
   send(text: string): void {
     if (this.channel?.readyState === 'open') this.channel.send(text);
@@ -78,25 +102,26 @@ class Link implements RadioLink {
   get stopping(): boolean { return this.stopped; }
 }
 
-/** The sim side: open a room with the code, publish an offer, poll for the phone's answer. */
+/** The sim side: open the room, answer the newest phone offer with a fresh connection, keep listening until connected. */
 export function hostLink(api: string, code: string): RadioLink {
-  const pc = new RTCPeerConnection(ICE);
-  const link = new Link(code, pc);
-  // Unordered, no retransmits: a stale stick frame is worse than a lost one.
-  link.attach(pc.createDataChannel('sticks', { ordered: false, maxRetransmits: 0 }));
+  const link = new Link(code);
   void (async () => {
     try {
       link.set('waiting');
-      await pc.setLocalDescription(await pc.createOffer());
-      await gathered(pc);
-      await signal(api, code, 'desk', JSON.stringify(pc.localDescription));
-      while (!link.stopping && link.state === 'waiting') {
-        await new Promise((r) => setTimeout(r, 1000));
-        const peer = await signal(api, code, 'desk');
-        if (peer) {
+      await signal(api, code, 'desk'); // opens the room
+      let answered: string | null = null;
+      while (!link.stopping && link.state !== 'connected') {
+        const offer = await signal(api, code, 'desk');
+        if (offer && offer !== answered) {
+          answered = offer;
           link.set('connecting');
-          await pc.setRemoteDescription(JSON.parse(peer) as RTCSessionDescriptionInit);
+          const pc = link.newPc();
+          await pc.setRemoteDescription(JSON.parse(offer) as RTCSessionDescriptionInit);
+          await pc.setLocalDescription(await pc.createAnswer());
+          await gathered(pc);
+          await signal(api, code, 'desk', JSON.stringify({ for: offerId(offer), sdp: pc.localDescription }));
         }
+        await sleep(1000);
       }
     } catch (e) {
       console.warn('phone radio host', e);
@@ -106,25 +131,31 @@ export function hostLink(api: string, code: string): RadioLink {
   return link;
 }
 
-/** The phone side: fetch the offer for the code, answer it. */
+/** The phone side: offer, then wait for the desk's answer to this very offer. */
 export function joinLink(api: string, code: string): RadioLink {
-  const pc = new RTCPeerConnection(ICE);
-  const link = new Link(code, pc);
-  pc.addEventListener('datachannel', (e) => link.attach(e.channel));
+  const link = new Link(code);
   void (async () => {
     try {
       link.set('waiting');
-      let offer: string | null = null;
-      for (let i = 0; i < 20 && !offer && !link.stopping; i++) {
-        offer = await signal(api, code, 'phone');
-        if (!offer) await new Promise((r) => setTimeout(r, 1000));
-      }
-      if (!offer) throw new Error('No offer for this code');
-      link.set('connecting');
-      await pc.setRemoteDescription(JSON.parse(offer) as RTCSessionDescriptionInit);
-      await pc.setLocalDescription(await pc.createAnswer());
+      const pc = link.pc;
+      // Unordered, no retransmits: a stale stick frame is worse than a lost one.
+      link.attach(pc.createDataChannel('sticks', { ordered: false, maxRetransmits: 0 }));
+      await pc.setLocalDescription(await pc.createOffer());
       await gathered(pc);
-      await signal(api, code, 'phone', JSON.stringify(pc.localDescription));
+      const offer = JSON.stringify(pc.localDescription);
+      const mine = offerId(offer);
+      await signal(api, code, 'phone', offer);
+      for (let i = 0; i < 25 && !link.stopping && link.state === 'waiting'; i++) {
+        await sleep(1000);
+        const peer = await signal(api, code, 'phone');
+        if (!peer) continue;
+        let parsed: { for?: string; sdp?: RTCSessionDescriptionInit } = {};
+        try { parsed = JSON.parse(peer) as typeof parsed; } catch { continue; }
+        if (parsed.for !== mine || !parsed.sdp) continue; // an answer to someone else's (or an older) offer
+        link.set('connecting');
+        await pc.setRemoteDescription(parsed.sdp);
+      }
+      if (link.state === 'waiting') throw new Error('No answer from the sim');
     } catch (e) {
       console.warn('phone radio join', e);
       link.set('failed');

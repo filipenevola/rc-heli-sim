@@ -3,6 +3,13 @@
 All notable changes to RC Heli Sim. The version shown in the game (Help and Settings) matches the latest
 entry here; the commit hash next to it identifies the exact build.
 
+## 0.64.0
+
+- Phone radio reconnects by itself: when the link drops (screen lock, Wi-Fi hiccup) the phone offers again under the
+  same code and the sim answers the newest offer with a fresh connection, so a returning phone (or a second one)
+  always wins over a stale link. The HUD input line shows the link latency. Signalling roles are reversed (the phone
+  offers), which the rankings server's pairing relay now reflects.
+
 ## 0.63.0
 
 - **Tail rotor failure**: Settings → Emergencies fails the tail on demand or at random once per flight above 15 m.

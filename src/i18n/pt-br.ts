@@ -109,6 +109,8 @@ export const PT_BR: Record<string, string> = {
   'Looking for the sim…': 'Procurando o simulador…',
   'Could not connect. Check the code (it changes every time you press Pair) and that both devices are online.': 'Não foi possível conectar. Confira o código (ele muda toda vez que você aperta Parear) e se os dois aparelhos estão online.',
   'Disconnected.': 'Desconectado.',
+  'Link lost, reconnecting…': 'Link perdido, reconectando…',
+  'Phone dropped: re-offering under the same code, it reconnects by itself. Or press Pair for a new code.': 'O celular caiu: oferecendo de novo com o mesmo código, ele reconecta sozinho. Ou aperte Parear para um código novo.',
   'Phone tilt for the cyclic': 'Inclinação do celular para o cíclico',
   'Tilt': 'Inclinar',
   'Tilt refused': 'Inclinação recusada',

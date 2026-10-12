@@ -13,8 +13,8 @@ export function createRooms({ ttlMs = 10 * 60 * 1000, maxRooms = 500, maxSdp = 3
   const validCode = (c) => typeof c === 'string' && c.length === 4 && [...c].every((ch) => CODE_ALPHABET.includes(ch));
   return {
     /**
-     * Store this side's description (when given) and return the other side's. role is 'desk' (offers) or 'phone'
-     * (answers). Returns null for a bad code, an unknown room (phone side) or when the room table is full.
+     * Store this side's description (when given) and return the other side's. The desk opens the room; the phone
+     * posts offers and the desk posts answers. Returns null for a bad code, an unknown room (phone side) or when the room table is full.
      */
     signal(code, role, sdp) {
       sweep();
@@ -29,8 +29,8 @@ export function createRooms({ ttlMs = 10 * 60 * 1000, maxRooms = 500, maxSdp = 3
       if (typeof sdp === 'string' && sdp.length > 0 && sdp.length <= maxSdp) {
         room[role] = sdp;
         room.at = now();
-        // A fresh offer invalidates any stale answer from a previous pairing with the same code.
-        if (role === 'desk') room.phone = null;
+        // The phone offers; a fresh offer invalidates the desk's answer to the previous one.
+        if (role === 'phone') room.desk = null;
       }
       return { peer: role === 'desk' ? room.phone : room.desk };
     },

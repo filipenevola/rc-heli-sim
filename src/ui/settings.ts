@@ -497,7 +497,7 @@ export class SettingsPanel {
         if (s === 'waiting') show(`${t('Code')}: <b class="radio-code">${code}</b><br>${t('On the phone open')} <b>${url}</b> ${t('(or /radio.html and type the code). Waiting for the phone…')}<div class="radio-qr" title="${t('Scan with the phone camera')}">${qrSvg(url, 150)}</div>`);
         else if (s === 'connecting') show(`<b>${code}</b> · ${t('Phone found, connecting…')}`);
         else if (s === 'connected') show(`<b>${code}</b> · <b>${t('Phone connected.')}</b> ${t('Move a stick on the phone and it takes over; the HUD shows "Phone radio".')}`);
-        else if (s === 'failed') show(im.remote.apiBase ? t('Pairing failed or the phone dropped. Press Pair again for a new code.') : t('Pairing needs the online rankings server, which this build does not have.'));
+        else if (s === 'failed') show(im.remote.apiBase ? `<b>${code}</b> · ${t('Phone dropped: re-offering under the same code, it reconnects by itself. Or press Pair for a new code.')}` : t('Pairing needs the online rankings server, which this build does not have.'));
         else if (s === 'closed') show(t('Phone disconnected.'));
       };
       q('#radio-pair').addEventListener('click', () => { im.remote.pair(); });

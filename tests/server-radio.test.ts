@@ -7,16 +7,17 @@ describe('phone radio signalling rooms', () => {
     expect(CODE_ALPHABET).toBe(CLIENT_ALPHABET);
   });
 
-  it('lets the desk open a room, the phone answer, and each side read the other', () => {
+  it('lets the desk open a room, the phone offer, the desk answer, and each side read the other', () => {
     const rooms = createRooms();
-    expect(rooms.signal('ABCD', 'phone')).toBeNull(); // no room yet: a phone cannot create one
-    expect(rooms.signal('ABCD', 'desk', 'offer-sdp')).toEqual({ peer: null });
-    expect(rooms.signal('ABCD', 'phone')).toEqual({ peer: 'offer-sdp' });
-    expect(rooms.signal('ABCD', 'phone', 'answer-sdp')).toEqual({ peer: 'offer-sdp' });
-    expect(rooms.signal('ABCD', 'desk')).toEqual({ peer: 'answer-sdp' });
+    expect(rooms.signal('ABCD', 'phone', 'offer-sdp')).toBeNull(); // no room yet: a phone cannot create one
+    expect(rooms.signal('ABCD', 'desk')).toEqual({ peer: null }); // the desk opens it
+    expect(rooms.signal('ABCD', 'phone', 'offer-sdp')).toEqual({ peer: null });
+    expect(rooms.signal('ABCD', 'desk')).toEqual({ peer: 'offer-sdp' });
+    expect(rooms.signal('ABCD', 'desk', 'answer-sdp')).toEqual({ peer: 'offer-sdp' });
+    expect(rooms.signal('ABCD', 'phone')).toEqual({ peer: 'answer-sdp' });
     // A new offer on the same code drops the stale answer.
-    expect(rooms.signal('ABCD', 'desk', 'offer-2')).toEqual({ peer: null });
-    expect(rooms.signal('ABCD', 'phone')).toEqual({ peer: 'offer-2' });
+    expect(rooms.signal('ABCD', 'phone', 'offer-2')).toEqual({ peer: null });
+    expect(rooms.signal('ABCD', 'desk')).toEqual({ peer: 'offer-2' });
   });
 
   it('rejects bad codes, bad roles and oversized blobs, and expires rooms', () => {
@@ -25,9 +26,10 @@ describe('phone radio signalling rooms', () => {
     expect(rooms.signal('abcd', 'desk', 'x')).toBeNull(); // lowercase / ambiguous letters are not in the alphabet
     expect(rooms.signal('AB', 'desk', 'x')).toBeNull();
     expect(rooms.signal('ABCD', 'judge' as never, 'x')).toBeNull();
-    expect(rooms.signal('ABCD', 'desk', 'this is far too long')).toEqual({ peer: null });
-    expect(rooms.signal('ABCD', 'phone')).toEqual({ peer: null }); // oversized offer was not stored
-    expect(rooms.signal('ABCD', 'desk', 'offer')).toEqual({ peer: null });
+    expect(rooms.signal('ABCD', 'desk')).toEqual({ peer: null });
+    expect(rooms.signal('ABCD', 'phone', 'this is far too long')).toEqual({ peer: null });
+    expect(rooms.signal('ABCD', 'desk')).toEqual({ peer: null }); // oversized offer was not stored
+    expect(rooms.signal('ABCD', 'phone', 'offer')).toEqual({ peer: null });
     expect(rooms.size).toBe(1);
     t = 2000;
     expect(rooms.size).toBe(0);

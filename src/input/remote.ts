@@ -11,7 +11,11 @@ export interface RemoteFrame { a: number; e: number; r: number; c: number; m: 0 
  */
 export class RemoteInput implements InputSource {
   readonly id = 'remote' as const;
-  readonly label = 'Phone radio';
+  get label(): string { return this.latencyMs > 0 ? `Phone radio · ${this.latencyMs} ms` : 'Phone radio'; }
+  /** The code of the current pairing, kept so a dropped link can be re-offered under the same code. */
+  code: string | null = null;
+  private reconnectTimer = 0;
+  private wantLink = false;
   /** Rankings API base; the link uses it only to swap the pairing offer/answer. */
   apiBase: string | null = null;
   link: RadioLink | null = null;
@@ -55,13 +59,23 @@ export class RemoteInput implements InputSource {
   /** Start a pairing: returns the code to type on the phone (a fresh random one unless given). */
   pair(code = makeCode()): string {
     this.link?.close();
+    clearTimeout(this.reconnectTimer);
+    this.code = code;
+    this.wantLink = true;
     if (!this.apiBase) {
       this.onState?.('failed', code);
       return code;
     }
     const link = hostLink(this.apiBase, code);
     this.link = link;
-    link.onState = (s) => this.onState?.(s, code);
+    link.onState = (s) => {
+      this.onState?.(s, code);
+      // The phone dropped (screen lock, Wi-Fi hiccup): re-offer under the same code so it can come straight back.
+      if (s === 'failed' && this.wantLink && this.link === link) {
+        clearTimeout(this.reconnectTimer);
+        this.reconnectTimer = window.setTimeout(() => { if (this.wantLink && this.link === link) this.pair(code); }, 1500);
+      }
+    };
     // The link may already have moved on (it sets 'waiting' synchronously): replay the current state.
     if (link.state !== 'idle') this.onState?.(link.state, code);
     link.onMessage = (text) => {
@@ -81,8 +95,12 @@ export class RemoteInput implements InputSource {
   }
 
   unpair(): void {
+    this.wantLink = false;
+    clearTimeout(this.reconnectTimer);
     this.link?.close();
     this.link = null;
+    this.code = null;
+    this.latencyMs = 0;
     this.lastFrameAt = -Infinity;
   }
 
