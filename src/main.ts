@@ -84,6 +84,7 @@ function allModels(): HeliModel[] {
 }
 function setModel(model: HeliModel): void {
   baseModel = model;
+  if (flightGhost) setFlightGhost(null);
   let tuned = applySetup(model, (profile.setup?.[model.id] as ModelSetup | undefined) ?? undefined);
   if (trainingGear) tuned = withTrainingGear(tuned);
   scene.remove(heliMesh.root);
@@ -119,6 +120,22 @@ let lessonEndTimer: number | null = null;
 let modelBeforeLesson: HeliModel | null = null;
 let ghostFrames: GhostFrame[][] | null = null;
 let ghostMesh: HeliMesh | null = null;
+/** A previous flight (yours or a loaded one) flying alongside as a translucent ghost, looping, outside lessons. */
+let flightGhost: { frames: GhostFrame[]; mesh: HeliMesh; clock: number } | null = null;
+function setFlightGhost(frames: { pos: GhostFrame['pos']; ori: GhostFrame['ori']; a1: number; b1: number; rotorOmega: number }[] | null): void {
+  if (flightGhost) {
+    scene.remove(flightGhost.mesh.root);
+    flightGhost = null;
+  }
+  if (!frames || frames.length < 30) return;
+  // Recorded at 60 Hz; the ghost plays at 20 Hz like the lesson ghost.
+  const sampled: GhostFrame[] = [];
+  for (let i = 0; i < frames.length; i += 3) sampled.push({ pos: { ...frames[i].pos }, ori: { ...frames[i].ori }, a1: frames[i].a1, b1: frames[i].b1, rotorOmega: frames[i].rotorOmega });
+  const mesh = new HeliMesh(sim.model, true);
+  scene.add(mesh.root);
+  flightGhost = { frames: sampled, mesh, clock: 0 };
+  hud.notify(`<b>${t('Ghost on')}</b><br>${t('A translucent copy flies the recorded flight on a loop. Match it, beat it, or ignore it.')}<br><button data-action="ghost-off">${t('Stop ghost')}</button>`, 6000);
+}
 let ghostClock = 0;
 const lessonOverlay = new LessonOverlay(ui);
 const challenges = new ChallengesPanel(ui, profile, tracker, flightTimer, rankingClient, startLesson, flightLog);
@@ -205,7 +222,7 @@ flightTimer.onFlightEnd = (seconds, crashed) => {
   if (d && seconds > 8) {
     flightLog.add(d, sim.model.name);
     const extra = !crashed && seconds >= flightTimer.best ? `<br>${t('Your longest clean flight')}` : '';
-    hud.notify(debriefHtml(d, fmtTime, (id) => t(CHALLENGES.find((c) => c.id === id)?.title ?? id)) + extra + `<br><button data-action="replay-flight">${t('▶ Replay flight')}</button> <button data-action="save-flight">${t('Save flight')}</button>`, 12000);
+    hud.notify(debriefHtml(d, fmtTime, (id) => t(CHALLENGES.find((c) => c.id === id)?.title ?? id)) + extra + `<br><button data-action="replay-flight">${t('▶ Replay flight')}</button> <button data-action="save-flight">${t('Save flight')}</button> <button data-action="ghost-flight">${t('Fly against it')}</button>`, 12000);
   }
   if (!crashed) void challenges.sync();
 };
@@ -299,14 +316,18 @@ const settings = new SettingsPanel(ui, input, wind, audio, {
   onTimeOfDay(t) {
     field.setTimeOfDay(t);
   },
-  onLoadFlight(file) {
+  onLoadFlight(file, asGhost) {
     file.text().then((text) => {
       try {
-        loadFlightText(text);
+        if (asGhost) loadFlightGhostText(text);
+        else loadFlightText(text);
       } catch (e) {
         hud.notify(`<b>${t('That file is not a saved flight.')}</b><br>${(e as Error).message}`, 4000);
       }
     });
+  },
+  onClearGhost() {
+    setFlightGhost(null);
   },
   onCamera(mode) {
     if (mode) pilotCam.mode = mode;
@@ -391,7 +412,7 @@ challenges.onProfileChange = () => settings.setPilotLabel(profile.name, profile.
 }
 
 // Exposed for automated checks and tinkering from the devtools console.
-(window as unknown as { rcHeli: unknown }).rcHeli = { sim, input, wind, audio, camera: pilotCam, clouds, scene, world, layout, loadFlightText, exportFlight, tracker, flightTimer, profile, flightLog, challengesList: CHALLENGES };
+(window as unknown as { rcHeli: unknown }).rcHeli = { sim, input, wind, audio, camera: pilotCam, clouds, scene, world, layout, loadFlightText, loadFlightGhostText, exportFlight, setFlightGhost, tracker, flightTimer, profile, flightLog, challengesList: CHALLENGES };
 
 function reset(): void {
   if (replay) stopReplay();
@@ -524,8 +545,16 @@ function loadFlightText(text: string): string {
 hud.onAction = (id) => {
   if (id === 'replay-flight') startReplay('flight');
   if (id === 'save-flight') exportFlight();
+  if (id === 'ghost-flight') setFlightGhost(lastFlight);
+  if (id === 'ghost-off') setFlightGhost(null);
   // 'welcome-ok' just closes the card.
 };
+/** A saved flight as a ghost instead of a replay. Returns the model it was flown on. */
+function loadFlightGhostText(text: string): string {
+  const file = parseFlight(text);
+  setFlightGhost(file.frames);
+  return file.model;
+}
 function stopReplay(): void {
   replay = null;
   trail.clear();
@@ -667,6 +696,14 @@ function frame(now: number): void {
 
   heliMesh.update(sim.state, paused ? 0 : dt);
   if (!paused) trail.update(sim.state.pos, dt);
+  if (flightGhost && !lesson) {
+    if (!paused) flightGhost.clock += dt;
+    const fr = flightGhost.frames;
+    const idx = Math.floor(flightGhost.clock * 20) % fr.length;
+    const f = fr[idx] ?? fr[0];
+    flightGhost.mesh.root.visible = true;
+    flightGhost.mesh.update({ ...sim.state, pos: f.pos, ori: f.ori, a1: f.a1, b1: f.b1, rotorOmega: f.rotorOmega, crashed: false }, paused ? 0 : dt);
+  } else if (flightGhost) flightGhost.mesh.root.visible = false;
   target.set(sim.state.pos.x, sim.state.pos.y, sim.state.pos.z);
   heliQuat.set(sim.state.ori.x, sim.state.ori.y, sim.state.ori.z, sim.state.ori.w);
   pilotCam.update(target, heliQuat, dt);

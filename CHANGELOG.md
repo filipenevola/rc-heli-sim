@@ -3,6 +3,12 @@
 All notable changes to RC Heli Sim. The version shown in the game (Help and Settings) matches the latest
 entry here; the commit hash next to it identifies the exact build.
 
+## 0.51.0
+
+- **Fly against a ghost**: the debrief card's Fly against it (or Settings → Load a flight as a ghost) puts a
+  translucent copy of a recorded flight in the air on a loop while you fly, so you can hover beside your own best
+  hover and see where you drift, or follow an instructor's line. Stop ghost ends it.
+
 ## 0.50.0
 
 - Phones buzz on a crash and tap once on a firm touchdown (where the browser allows vibration).

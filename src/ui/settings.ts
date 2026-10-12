@@ -45,8 +45,9 @@ export interface SettingsCallbacks {
   onArrow(on: boolean): void;
   onTrail(on: boolean): void;
   onTimeOfDay(t: 'morning' | 'noon' | 'evening'): void;
-  /** A saved flight (.json from the debrief's Save flight) to replay. */
-  onLoadFlight(file: File): void;
+  /** A saved flight (.json from the debrief's Save flight) to replay, or to fly alongside as a ghost. */
+  onLoadFlight(file: File, asGhost: boolean): void;
+  onClearGhost(): void;
   onGraph(on: boolean): void;
 }
 
@@ -405,6 +406,8 @@ export class SettingsPanel {
       <section>
         <label>Load a saved flight (.json) <input type="file" id="load-flight" accept="application/json,.json"></label>
         <p class="hint">Save flight on the debrief card writes the file; load it here, on any machine, to watch it with the sticks shown.</p>
+        <label>Load a flight as a ghost (.json) <input type="file" id="load-ghost" accept="application/json,.json"></label>
+        <p class="hint">The ghost flies the saved flight on a loop while you fly: match your own best hover, or an instructor's. <button id="clear-ghost" class="inline">Stop ghost</button></p>
         <h4>Sound</h4>
         ${slider('volume', 'Volume', 0, 1, 0.05, this.audio.volume)}
       </section>
@@ -488,10 +491,17 @@ export class SettingsPanel {
     });
     q<HTMLInputElement>('#load-flight').addEventListener('change', (e) => {
       const f = (e.target as HTMLInputElement).files?.[0];
-      if (f) this.cb.onLoadFlight(f);
+      if (f) this.cb.onLoadFlight(f, false);
       (e.target as HTMLInputElement).value = '';
       this.toggle();
     });
+    q<HTMLInputElement>('#load-ghost').addEventListener('change', (e) => {
+      const f = (e.target as HTMLInputElement).files?.[0];
+      if (f) this.cb.onLoadFlight(f, true);
+      (e.target as HTMLInputElement).value = '';
+      this.toggle();
+    });
+    q('#clear-ghost').addEventListener('click', () => this.cb.onClearGhost());
     q<HTMLInputElement>('#graph').addEventListener('change', (e) => {
       this.setGraph((e.target as HTMLInputElement).checked);
     });

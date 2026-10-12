@@ -130,7 +130,9 @@ const HELP_HTML = `
   and fewer warnings; that is what an instructor would watch. <b>Replay flight</b> on the card plays the whole flight
   back with your sticks shown; switch cameras while it runs to see your hover from the side or from above.
   <b>Save flight</b> writes the flight to a .json file; Settings → Load a saved flight replays it on any machine,
-  so you can send a flight to an instructor or keep a good one.</p>
+  so you can send a flight to an instructor or keep a good one. <b>Fly against it</b> (or Settings → Load a flight
+  as a ghost) puts a translucent copy of that flight in the air on a loop while you fly: hover next to your own
+  best hover and see where you drift, or follow an instructor's circuit line.</p>
   <p><b>Logbook</b> (Pilot tab): the last sixty flights on this device with duration, landing grade, peak
   altitude and G, and a line that compares your last ten flights with the ten before: clean-flight rate and
   landing softness. That is the number to watch from week to week.</p>
