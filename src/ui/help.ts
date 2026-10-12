@@ -150,7 +150,8 @@ const HELP_HTML = `
   Use it for your first hovers, then take it off.</p>
   <p><b>Model setup</b> (Settings → Helicopter): pitch curves per flight mode, head speed, tail gyro gain and cyclic rate,
   exactly the things you would set in your radio. Too much gyro gain wags the tail (the gyro's filter, the servo's
-  speed and a few milliseconds of delay are all modelled, so the wag starts around 250% on a 450, 200% on a micro); too little lets it wander. A lower head
+  speed and a few milliseconds of delay are all modelled, so the wag starts around 250% on a 450, 200% on a micro; the HUD warns and you hear the tail flutter); too
+  little lets it wander. A lower head
   speed in Normal makes a trainer gentler; a higher pitch range in Idle-Up gives more 3D authority.</p>
   <ul>
   </ul>

@@ -25,15 +25,17 @@ function residual(model: HeliModel) {
   ctl.rudder = 0;
   let yaw = 0;
   let roll = 0;
+  let wag = 0;
   const n = Math.round(3 / PHYSICS_DT);
   for (let i = 0; i < n; i++) {
     sim.step(ctl);
     if (i > n / 2) {
       yaw = Math.max(yaw, Math.abs(sim.state.omega.y));
       roll = Math.max(roll, Math.abs(sim.state.omega.z));
+      wag = Math.max(wag, sim.telemetry.wag);
     }
   }
-  return { yaw, roll, crashed: sim.state.crashed };
+  return { yaw, roll, wag, crashed: sim.state.crashed };
 }
 
 describe('controller gains with sensor filter, servo slew and delay', () => {
@@ -42,10 +44,13 @@ describe('controller gains with sensor filter, servo slew and delay', () => {
     expect(r.crashed).toBe(false);
     expect(r.yaw).toBeLessThan(0.15);
     expect(r.roll).toBeLessThan(0.15);
+    expect(r.wag).toBeLessThan(0.3);
   });
 
   it('too much tail gyro gain wags the tail (450 at 300%), a sensible increase does not (160%)', () => {
-    expect(residual(applySetup(HELI_450, { gyroGainPct: 300 })).yaw).toBeGreaterThan(1);
+    const wagging = residual(applySetup(HELI_450, { gyroGainPct: 300 }));
+    expect(wagging.yaw).toBeGreaterThan(1);
+    expect(wagging.wag).toBeGreaterThan(0.5); // the HUD warning and the tail flutter key off this
     expect(residual(applySetup(HELI_450, { gyroGainPct: 160 })).yaw).toBeLessThan(0.15);
   });
 });

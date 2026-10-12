@@ -77,6 +77,8 @@ export interface Telemetry {
   gLoad: number;
   /** Main-rotor wake interference at the tail, 0..1 (the transition bump / tail-thrust loss band). */
   wake: number;
+  /** Tail wag 0..1: fast yaw oscillation from too much gyro gain (or a slack tail). */
+  wag: number;
 }
 
 export function initialState(model: HeliModel, yaw = 0): HeliState {
@@ -138,6 +140,8 @@ export class HelicopterSim {
   attitudeMaxAngle = (35 * Math.PI) / 180;
   /** Outer-loop gain: rate commanded per radian of attitude error, 1/s. */
   attitudeGain = 7;
+  private yawSlow = 0;
+  private wagLevel = 0;
   /** Ring buffer for the tail gyro/servo-frame transport delay. */
   private cmdDelay: number[] = [];
   private delayCommands(ms: number, cmd: number): number {
@@ -150,7 +154,7 @@ export class HelicopterSim {
 
   telemetry: Telemetry = {
     thrust: 0, torque: 0, tailThrust: 0, collectiveDeg: 0, headspeedRpm: 0, motorPower: 0,
-    altitude: 0, groundSpeed: 0, verticalSpeed: 0, groundEffect: 1, lambda: 0, battery: 1, vrs: 0, stall: 0, flightSeconds: 0, gLoad: 1, wake: 0,
+    altitude: 0, groundSpeed: 0, verticalSpeed: 0, groundEffect: 1, lambda: 0, battery: 1, vrs: 0, stall: 0, flightSeconds: 0, gLoad: 1, wake: 0, wag: 0,
   };
 
   constructor(public model: HeliModel, public wind: Wind, public world: World = new World()) {
@@ -579,6 +583,12 @@ export class HelicopterSim {
     t.battery = soc;
     t.gLoad = thrust / (m.mass * G);
     t.vrs = rotorAlive ? main.vrs : 0;
+    // Wag detector: the fast component of the yaw rate (above ~3 Hz), smoothed. A wagging tail swings at 5-10 Hz
+    // with a few rad/s of amplitude; normal flying has almost nothing up there.
+    this.yawSlow += (yawRightRateRaw - this.yawSlow) * Math.min(1, dt / 0.05);
+    const fast = Math.abs(yawRightRateRaw - this.yawSlow);
+    this.wagLevel += (Math.min(1, fast / 1.5) - this.wagLevel) * Math.min(1, dt / 0.3);
+    t.wag = rotorAlive ? this.wagLevel : 0;
     t.stall = rotorAlive ? main.stall : 0;
     if (motorTorque > 0.05) t.flightSeconds += dt;
   }

@@ -117,7 +117,7 @@ export class Hud {
     // The on-screen gimbals already show stick position; the mini display would only cover them.
     this.sticks.style.display = sourceId === 'touch' || sourceId === 'motion' ? 'none' : '';
     this.drawSticks(ctl);
-    this.warn(t.vrs > 0.3 ? 'VORTEX RING: descending into your own downwash. Forward cyclic or less collective.' : t.stall > 0.2 ? 'BLADE STALL: too much collective for this head speed. Ease it off.' : t.battery <= 0 ? 'BATTERY FLAT: motor off. Autorotate!' : t.battery < 0.1 ? 'Battery low: land soon.' : '');
+    this.warn(t.vrs > 0.3 ? 'VORTEX RING: descending into your own downwash. Forward cyclic or less collective.' : t.stall > 0.2 ? 'BLADE STALL: too much collective for this head speed. Ease it off.' : t.wag > 0.5 ? 'TAIL WAG: tail gyro gain too high. Lower it in Settings → Model setup.' : t.battery <= 0 ? 'BATTERY FLAT: motor off. Autorotate!' : t.battery < 0.1 ? 'Battery low: land soon.' : '');
     if (!s.onGround && s.pos.y > 0.3) this.airborne = true;
     if (s.landed && s.landed !== this.lastLanding) {
       this.lastLanding = s.landed;

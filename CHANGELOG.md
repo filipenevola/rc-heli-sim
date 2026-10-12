@@ -3,6 +3,11 @@
 All notable changes to RC Heli Sim. The version shown in the game (Help and Settings) matches the latest
 entry here; the commit hash next to it identifies the exact build.
 
+## 0.26.0
+
+- **Tail wag is detected, warned and heard**: a fast yaw oscillation now raises a HUD warning ("tail gyro gain too
+  high") and puts a 7 Hz flutter in the tail rotor's whine, the way you would notice it at the field.
+
 ## 0.25.0
 
 - **Physics: dynamic inflow.** The air column through the main rotor has mass, so the induced velocity takes a
