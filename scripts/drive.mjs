@@ -4,6 +4,7 @@
 //   wait:<js expression>      poll (1 Hz) until truthy, up to --timeout seconds (default 120)
 //   eval:<js expression>      run once and print the result
 //   shot:<file.png>           save a screenshot
+//   offline:on|off            emulate no network (service-worker / offline checks)
 //   touch:<x>,<y>,<dx>,<dy>[,<ms>]  press at (x,y) CSS px, drag by (dx,dy) over ms (default 600), hold; touchend:<x>,<y> lifts
 // Exits 1 on any uncaught exception in the page, a timeout, or a step that throws.
 const args = process.argv.slice(2);
@@ -79,6 +80,11 @@ try {
     } else if (kind === 'touchend') {
       await send('Input.dispatchTouchEvent', { type: 'touchEnd', touchPoints: [] });
       console.log('touch released');
+    } else if (kind === 'offline') {
+      await send('Network.enable');
+      const off = expr === 'on';
+      await send('Network.emulateNetworkConditions', { offline: off, latency: 0, downloadThroughput: -1, uploadThroughput: -1 });
+      console.log('network', off ? 'offline' : 'online');
     } else if (kind === 'shot') {
       const r = await send('Page.captureScreenshot', { format: 'png' });
       const { writeFileSync } = await import('node:fs');

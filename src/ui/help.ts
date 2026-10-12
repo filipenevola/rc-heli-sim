@@ -295,6 +295,9 @@ const HELP_HTML = `
 </section>
 
 <section>
+  <h4>Offline at the field</h4>
+  <p>After the first visit the sim is cached and runs without signal; on a phone, use the browser's <b>Add to Home
+  Screen</b> for a full-screen app. Rankings and sign-in need the network; everything else works offline.</p>
   <h4>Learning path</h4>
   <p>The challenges follow the progression every RC heli instructor teaches, grouped by level:</p>
   <ol>

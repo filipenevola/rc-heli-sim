@@ -1,0 +1,15 @@
+{
+  "name": "RC Heli Sim",
+  "short_name": "Heli Sim",
+  "description": "RC helicopter flight simulator: physics-first, real transmitter support, lessons and challenges.",
+  "start_url": "/",
+  "scope": "/",
+  "display": "standalone",
+  "orientation": "landscape",
+  "background_color": "#9fc5e8",
+  "theme_color": "#1b1b1b",
+  "icons": [
+    { "src": "/icon.svg", "sizes": "any", "type": "image/svg+xml", "purpose": "any" },
+    { "src": "/icon-maskable.svg", "sizes": "any", "type": "image/svg+xml", "purpose": "maskable" }
+  ]
+}

@@ -248,6 +248,9 @@ export const HELP_HTML_PT = `
 </section>
 
 <section>
+  <h4>Sem sinal no campo</h4>
+  <p>Depois da primeira visita o simulador fica em cache e roda sem sinal; no celular, use <b>Adicionar à tela
+  inicial</b> do navegador para um app em tela cheia. Rankings e login precisam de rede; todo o resto funciona offline.</p>
   <h4>Trilha de aprendizado</h4>
   <p>Os desafios seguem a progressão que todo instrutor de helimodelo ensina, agrupados por nível:</p>
   <ol>

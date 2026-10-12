@@ -323,6 +323,12 @@ if (accountSpec && typeof accountSpec === 'object') {
   settings.setCustom(spec, customModel);
 }
 settings.restore();
+// Offline at the field: the service worker caches the build after the first visit (production builds only).
+if (import.meta.env.PROD && 'serviceWorker' in navigator) {
+  window.addEventListener('load', () => {
+    navigator.serviceWorker.register('/sw.js').catch(() => undefined);
+  });
+}
 onLangChange(() => {
   challenges.refresh();
   help.setLanguage();

@@ -3,6 +3,12 @@
 All notable changes to RC Heli Sim. The version shown in the game (Help and Settings) matches the latest
 entry here; the commit hash next to it identifies the exact build.
 
+## 0.46.0
+
+- **Works offline at the field**: a service worker caches the build after the first visit, and a web manifest
+  lets phones add the sim to the home screen as a full-screen, landscape app. Rankings and sign-in still need
+  the network.
+
 ## 0.45.0
 
 - **Save and load flights**: the debrief card's Save flight writes the whole flight (pose and sticks at 60 Hz) to a
