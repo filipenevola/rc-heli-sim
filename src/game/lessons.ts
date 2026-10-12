@@ -306,7 +306,7 @@ export const LESSONS: Lesson[] = [
           ap.ctl.collective = -0.3;
           return ap.ctl;
         },
-        done: ({ sim }) => Math.hypot(sim.state.vel.x, sim.state.vel.z) < 1.5 || sim.state.pos.y < 2.0,
+        done: ({ sim }) => Math.hypot(sim.state.vel.x, sim.state.vel.z) < 1.0 || sim.state.pos.y < 2.0,
         timeout: 8,
       },
       {
@@ -320,7 +320,7 @@ export const LESSONS: Lesson[] = [
           const h = Math.max(0, sim.state.pos.y - skidHeight(sim));
           const vTarget = -Math.max(0.35, Math.min(6, 0.8 * h));
           const err = vTarget - sim.state.vel.y;
-          ap.ctl.collective = Math.max(-0.4, Math.min(1, 0.4 + 1.0 * err));
+          ap.ctl.collective = Math.max(-0.4, Math.min(1, 0.3 + 1.0 * err));
           return ap.ctl;
         },
         done: ({ sim, t }) => sim.state.onGround && t > 1.0,

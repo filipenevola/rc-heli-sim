@@ -70,10 +70,10 @@ describe('hard landings', () => {
     return sim.state;
   }
   it('folds the skids above a couple of metres per second, survives a gentle drop', () => {
-    expect(drop(false, 0.08).crashed).toBe(false); // ~1.2 m/s
-    const hard = drop(false, 0.5); // ~3 m/s
+    expect(drop(false, 0.15).crashed).toBe(false); // ~1.7 m/s
+    const hard = drop(false, 0.7); // ~3.7 m/s
     expect(hard.crashed).toBe(true);
     expect(hard.crashReason).toContain('Hard landing');
-    expect(drop(true, 0.35).crashed).toBe(false); // foam balls take ~2.6 m/s
+    expect(drop(true, 0.5).crashed).toBe(false); // foam balls take ~3.1 m/s
   });
 });

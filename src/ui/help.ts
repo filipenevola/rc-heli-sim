@@ -109,7 +109,7 @@ const HELP_HTML = `
       Escape with forward cyclic (fly out of it) or less collective; prevent it by descending with some forward speed.</li>
     <li><b>Blade stall</b>: too much collective for the head speed. The rotor bogs (rpm droops, torque spikes) and lift does
       not come. Ease the collective off and let the head speed recover.</li>
-    <li><b>Hard landings</b> fold the skids: above about 2.2 m/s of sink at touchdown the flight is over (the
+    <li><b>Hard landings</b> fold the skids: above about 2.8 m/s of sink at touchdown the flight is over (the
       training gear's foam balls take a little more). The debrief grades every touchdown.</li>
     <li><b>Autorotation</b> is flown with airspeed: collective to the bottom in throttle hold, nose a little down to
       keep 8–9 m/s, a nose-up flare around 12 m that bleeds the speed and raises the head speed, level the skids, then one

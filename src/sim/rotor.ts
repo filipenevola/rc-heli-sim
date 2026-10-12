@@ -19,6 +19,8 @@ export interface RotorResult {
   vrs: number;
   /** 0..1 how much of the blade is stalled (collective too high for the head speed). */
   stall: number;
+  /** Dynamic-inflow state: the induced inflow ratio actually present at the disc (lags the quasi-steady value). */
+  lambdaIState: number;
 }
 
 /**
@@ -32,7 +34,7 @@ export interface RotorResult {
  * @param vPlane  in-plane airspeed magnitude, m/s
  * @param omega   rotor angular speed, rad/s
  */
-export function solveRotor(r: RotorParams, theta: number, vAlong: number, vPlane: number, omega: number, out: RotorResult): RotorResult {
+export function solveRotor(r: RotorParams, theta: number, vAlong: number, vPlane: number, omega: number, out: RotorResult, dt = 0, tauInflow = 0): RotorResult {
   // Floor the tip speed at 1 m/s: a stopped rotor then yields negligible forces and finite inflow ratios,
   // instead of dividing airspeed by ~zero and feeding nonsense into the flapping equations.
   const tip = Math.max(omega * r.radius, 1.0);
@@ -62,6 +64,14 @@ export function solveRotor(r: RotorParams, theta: number, vAlong: number, vPlane
     // Vortex-ring region: momentum theory breaks down; keep things bounded.
     if (lambdaI > 0.3) lambdaI = 0.3;
     if (lambdaI < -0.3) lambdaI = -0.3;
+  }
+  // Dynamic inflow (Pitt-Peters in one line): the air column through the disc has mass, so the induced
+  // velocity takes a few tens of milliseconds to follow a collective change. The thrust therefore overshoots on
+  // a quick pull (the "pop" you feel) and lags on a quick dump. The time constant scales with rotor radius.
+  if (dt > 0 && tauInflow > 0) {
+    if (!Number.isFinite(out.lambdaIState)) out.lambdaIState = lambdaI;
+    out.lambdaIState += (lambdaI - out.lambdaIState) * Math.min(1, dt / tauInflow);
+    lambdaI = out.lambdaIState;
   }
   let ct = ctTheta - (ke * (lambdaI + lambdaC)) / 2;
   const lambda = lambdaI + lambdaC;
@@ -106,4 +116,4 @@ export function solveRotor(r: RotorParams, theta: number, vAlong: number, vPlane
   return out;
 }
 
-export const emptyRotorResult = (): RotorResult => ({ thrust: 0, torque: 0, hForce: 0, lambda: 0, mu: 0, vi: 0, vrs: 0, stall: 0 });
+export const emptyRotorResult = (): RotorResult => ({ thrust: 0, torque: 0, hForce: 0, lambda: 0, mu: 0, vi: 0, vrs: 0, stall: 0, lambdaIState: Number.NaN });

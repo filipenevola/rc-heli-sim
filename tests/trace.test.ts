@@ -25,5 +25,5 @@ it('trace', () => {
     if (runner.stepIndex !== lastStep) { console.log('t', elapsed.toFixed(1), 'step', runner.stepIndex); lastStep = runner.stepIndex; }
     if (runner.stepIndex >= from && elapsed - lastPrint > 0.25) { lastPrint = elapsed; const s = sim.state; const fwd = rotate(s.ori, v3(0,0,-1)); const up = rotate(s.ori, v3(0,1,0)); console.log('  t', elapsed.toFixed(2), 'y', s.pos.y.toFixed(1), 'vxz', Math.hypot(s.vel.x, s.vel.z).toFixed(1), 'vy', s.vel.y.toFixed(1), 'fwd.y', fwd.y.toFixed(2), 'up.y', up.y.toFixed(2), 'yaw', eulerFromQ(s.ori).yaw.toFixed(2), 'col', ctl.collective.toFixed(2), 'ele', ctl.elevator.toFixed(2), 'ail', ctl.aileron.toFixed(2), 'rud', ctl.rudder.toFixed(2), 'rpm', sim.telemetry.headspeedRpm.toFixed(0), 'prog', (tracker.progress[id] ?? 0).toFixed(2), 'mem', JSON.stringify((tracker as any).mem[id])); }
   }
-  console.log('completed', [...tracker.completed], 'failed', runner.failed, 'crashed', sim.state.crashed, sim.state.crashReason);
+  console.log('completed', [...tracker.completed], 'failed', runner.failed, 'crashed', sim.state.crashed, sim.state.crashReason, 'touchdown', sim.state.touchdownSpeed.toFixed(2));
 });

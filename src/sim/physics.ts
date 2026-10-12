@@ -160,6 +160,8 @@ export class HelicopterSim {
   reset(model = this.model): void {
     this.model = model;
     this.cmdDelay = [];
+    main.lambdaIState = Number.NaN;
+    tail.lambdaIState = Number.NaN;
     this.state = initialState(model);
     this.telemetry.flightSeconds = 0;
   }
@@ -316,7 +318,8 @@ export class HelicopterSim {
     const vAlong = dot(hubVelB, n);
     const vPlaneVec = sub(hubVelB, scale(n, vAlong));
     const vPlane = len(vPlaneVec);
-    solveRotor(m.rotor, s.servoCollective, vAlong, vPlane, s.rotorOmega, main);
+    // Inflow time constant ~ (8/3pi) R / (2 vi) ~ 0.16 R for these rotors (about 60 ms on a 450, 125 ms on a 700).
+    solveRotor(m.rotor, s.servoCollective, vAlong, vPlane, s.rotorOmega, main, dt, 0.16 * m.rotor.radius);
 
     // Ground effect (Cheeseman-Bennett) on thrust.
     const hubW = add(s.pos, rotate(s.ori, m.hubOffset));
@@ -339,8 +342,11 @@ export class HelicopterSim {
     // Vortex ring state is rough: the disc sheds asymmetric lift, felt as random pitch/roll kicks.
     if (main.vrs > 0.05) {
       const kick = main.vrs * m.hubStiffness * 0.15;
-      this.vrsNoise = this.vrsNoise * 0.98 + (Math.random() - 0.5) * 0.4;
-      this.vrsNoise2 = this.vrsNoise2 * 0.98 + (Math.random() - 0.5) * 0.4;
+      // Deterministic "random" (a hash of the step count) so replays and tests reproduce exactly.
+      const h1 = Math.sin(s.time * 977.13) * 43758.5453;
+      const h2 = Math.sin(s.time * 611.71 + 1.3) * 43758.5453;
+      this.vrsNoise = this.vrsNoise * 0.98 + (h1 - Math.floor(h1) - 0.5) * 0.4;
+      this.vrsNoise2 = this.vrsNoise2 * 0.98 + (h2 - Math.floor(h2) - 0.5) * 0.4;
       moment = add(moment, v3(kick * this.vrsNoise, 0, kick * this.vrsNoise2));
     }
 
@@ -467,7 +473,7 @@ export class HelicopterSim {
       if (cp.kind === 'skid' && normal.y < 0.5 && !s.crashed && len(vPointW) > 3) this.crash(`Hit ${what}`);
       // Slamming the skids down: carbon or plastic skids fold at a couple of metres per second; the training
       // gear's foam balls take a bit more.
-      if (cp.kind === 'skid' && normal.y >= 0.5 && !s.crashed && vn < -(cp.gear ? 3.0 : 2.2)) {
+      if (cp.kind === 'skid' && normal.y >= 0.5 && !s.crashed && vn < -(cp.gear ? 3.5 : 2.8)) {
         this.crash(`Hard landing: ${(-vn).toFixed(1)} m/s onto ${what}. The skids folded.`);
       }
       onGround = true;

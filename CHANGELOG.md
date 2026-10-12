@@ -3,6 +3,16 @@
 All notable changes to RC Heli Sim. The version shown in the game (Help and Settings) matches the latest
 entry here; the commit hash next to it identifies the exact build.
 
+## 0.25.0
+
+- **Physics: dynamic inflow.** The air column through the main rotor has mass, so the induced velocity takes a
+  few tens of milliseconds to follow a collective change (about 60 ms on a 450, 125 ms on a 700). Thrust now
+  overshoots on a quick pull, the "pop" you feel on a real heli, and lags on a quick dump.
+- Skids now fold above about 2.8 m/s of sink (was 2.2): plastic skids and landing gear flex more than that
+  first guess allowed. The training gear's foam balls take about 3.5 m/s.
+- Vortex-ring roughness is now deterministic (a hash of time), so replays and tests reproduce exactly.
+- Autorotation demo retuned for the new inflow dynamics (lands the 450 at about 1.4 m/s, the 700 at 0.6).
+
 ## 0.24.0
 
 - **Governor off** (Settings → Helicopter → Model setup → ESC): an open-loop throttle curve instead of the

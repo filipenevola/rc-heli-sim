@@ -42,7 +42,7 @@ describe('flight debrief', () => {
     expect(sim.state.touchdownSpeed).toBeGreaterThan(0.2);
     expect(sim.state.touchdownSpeed).toBeLessThan(6);
     // Above ~2.2 m/s the skids fold; below, it is just a firm landing.
-    expect(sim.state.crashed).toBe(sim.state.touchdownSpeed > 2.2);
+    expect(sim.state.crashed).toBe(sim.state.touchdownSpeed > 2.8);
     stats.trick('hover-30');
     const d = stats.end(sim, 12, false)!;
     expect(d.maxAltitude).toBeGreaterThan(5.5);
