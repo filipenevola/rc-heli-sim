@@ -174,6 +174,10 @@ const HELP_HTML = `
   battery and head speeds from your real model, choose flybar or flybarless, and fly that. Everything the box does
   not tell you (inertias, rotor and tail geometry, drag, motor) is scaled between the 450 and 700 references, so a
   550 feels like a 550. It is saved on this device and with your account.</p>
+  <p><b>Nitro</b> (My helicopter → Power): a glow engine behind a centrifugal clutch and a fuel tank instead of a
+  battery. Torque peaks near the Idle-Up head speed and falls off above and below it; below about 10% throttle the
+  clutch lets go and the rotor freewheels while the engine idles, which is why hold and autorotations work the way
+  they do on nitro. Fuel burns with load; the engine quits dry. The sound is the engine's exhaust pulse, not a motor whine.</p>
   <p><b>Governor off / rate gyro</b> (Settings → Helicopter → Model setup): switch the ESC governor off and the
   head speed droops when you pull collective, as with a plain throttle curve; set the Idle-Up throttle to match your
   pitch. Switch the tail gyro to rate mode and the tail no longer holds its heading: every collective change

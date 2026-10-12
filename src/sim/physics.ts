@@ -295,10 +295,24 @@ export class HelicopterSim {
     let motorTorque = 0;
     // Battery: voltage sags as the pack empties, so the motor's torque ceiling (and the governor's headroom)
     // shrinks. Under 10% a hard-worked rotor bogs; at 0% the motor quits and you are in an autorotation.
+    const nitro = m.power === 'nitro';
     const soc = clamp(s.batteryWh / m.batteryWh, 0, 1);
-    const voltageFactor = soc <= 0 ? 0 : 0.85 + 0.15 * Math.min(1, soc / 0.3) - (soc < 0.1 ? (0.1 - soc) * 3 : 0);
-    const torqueCeiling = m.maxMotorTorque * Math.max(0, voltageFactor);
-    if (s.governorTarget > 1 && torqueCeiling > 0 && m.governor === false) {
+    // A glow engine runs the same until the tank is dry; a LiPo sags.
+    const voltageFactor = soc <= 0 ? 0 : nitro ? 1 : 0.85 + 0.15 * Math.min(1, soc / 0.3) - (soc < 0.1 ? (0.1 - soc) * 3 : 0);
+    let torqueCeiling = m.maxMotorTorque * Math.max(0, voltageFactor);
+    // Nitro: torque available depends on where the head speed sits on the engine's curve, and nothing gets through
+    // the clutch at idle throttle. Throttle: Normal follows the stick, Idle-Up is the flat curve, hold is idle.
+    let nitroThr = 1;
+    if (nitro) {
+      const thrCurve = ctl.throttleHold || s.governorTarget <= 1 ? 0 : mode === 0 ? clamp((ctl.collective + 1) / 0.5, 0, 1) * 0.95 : (m.idleUpThrottle ?? 0.9);
+      nitroThr = m.governor === false ? thrCurve : thrCurve > 0 ? 1 : 0;
+      const peak = ((m.nitroPeakHeadRpm ?? 1800) * 2 * Math.PI) / 60;
+      const x = (s.rotorOmega - peak) / peak;
+      const curve = Math.max(0.15, 1 - 1.6 * x * x); // falls off either side of the peak, never quite dead
+      const clutch = clamp((thrCurve - 0.08) / 0.1, 0, 1); // centrifugal clutch lets go below ~10% throttle
+      torqueCeiling *= curve * clutch;
+    }
+    if (s.governorTarget > 1 && torqueCeiling > 0 && (m.governor === false || (nitro && nitroThr < 1))) {
       // Governor off: an open-loop throttle. The motor behaves like a brushless motor on a fixed voltage: torque
       // falls with speed and is gone at the no-load speed, so the head droops as the load comes on (and the
       // pitch curve has to be matched to it, as every throttle-curve pilot knows).
@@ -320,9 +334,15 @@ export class HelicopterSim {
     } else {
       s.governorI = 0;
     }
-    // Energy drawn (motor + ESC losses ~ 85% efficient).
+    // Energy drawn (motor + ESC losses ~ 85% efficient); a nitro burns ml of fuel: idle plus load.
     const electricalW = (motorTorque * s.rotorOmega) / 0.85;
-    s.batteryWh = Math.max(0, s.batteryWh - (electricalW * dt) / 3600);
+    if (nitro) {
+      const running = s.governorTarget > 1 || ctl.throttleHold ? 1 : 0; // the engine idles through hold
+      const load = clamp((motorTorque * s.rotorOmega) / (m.maxMotorTorque * m.headspeeds[2] * 0.6), 0, 1);
+      s.batteryWh = Math.max(0, s.batteryWh - running * (0.08 + 0.55 * load) * dt);
+    } else {
+      s.batteryWh = Math.max(0, s.batteryWh - (electricalW * dt) / 3600);
+    }
 
     // ---------- Airflow ----------
     const windW = this.wind.at(s.pos, s.time);

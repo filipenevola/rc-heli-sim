@@ -16,6 +16,8 @@ export interface FlightSummary {
   stallSeconds: number;
   /** Battery used during the flight, fraction of the pack. */
   batteryUsed: number;
+  /** True when the model burns fuel rather than a battery (changes the wording). */
+  nitro?: boolean;
   /** Touchdown sink rate, m/s (0 when crashed). */
   touchdown: number;
   /** Challenge ids completed during the flight. */
@@ -40,7 +42,7 @@ export class FlightStats {
 
   begin(sim: HelicopterSim): void {
     this.battery0 = sim.telemetry.battery;
-    this.cur = { seconds: 0, crashed: false, crashReason: '', maxAltitude: 0, maxSpeed: 0, maxG: 1, minG: 1, vrsSeconds: 0, stallSeconds: 0, batteryUsed: 0, touchdown: 0, tricks: [] };
+    this.cur = { seconds: 0, crashed: false, crashReason: '', maxAltitude: 0, maxSpeed: 0, maxG: 1, minG: 1, vrsSeconds: 0, stallSeconds: 0, batteryUsed: 0, touchdown: 0, tricks: [], nitro: sim.model.power === 'nitro' };
   }
 
   trick(id: string): void {
@@ -87,7 +89,7 @@ export function debriefHtml(d: FlightSummary, fmtTime: (s: number) => string, tr
   if (d.vrsSeconds > 0.5) warnings.push(`${f1(d.vrsSeconds)} s ${t('in vortex ring state')}`);
   if (d.stallSeconds > 0.5) warnings.push(`${f1(d.stallSeconds)} s ${t('of blade stall')}`);
   if (warnings.length) rows.push(warnings.join(' · '));
-  if (d.batteryUsed > 0.005) rows.push(`${t('Battery used:')} ${Math.round(d.batteryUsed * 100)}%`);
+  if (d.batteryUsed > 0.005) rows.push(`${d.nitro ? t('Fuel used:') : t('Battery used:')} ${Math.round(d.batteryUsed * 100)}%`);
   if (d.tricks.length) rows.push(`${t('Done:')} ${d.tricks.map(trickTitle).join(', ')}`);
   return `<b>${head}</b><br>${rows.join('<br>')}`;
 }

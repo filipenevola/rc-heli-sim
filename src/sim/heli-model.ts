@@ -57,6 +57,13 @@ export interface HeliModel {
   controller: ControllerParams;
   /** ESC governor (true) or open-loop throttle curves. */
   governor?: boolean;
+  /**
+   * Power plant. 'nitro': a glow engine behind a centrifugal clutch; `batteryWh` then holds the fuel tank in ml and
+   * the battery telemetry reads fuel. Torque peaks near `nitroPeakHeadRpm` and falls off either side; below about
+   * 10% throttle the clutch lets go and the rotor freewheels (engine idles), which is how hold and autos work on nitro.
+   */
+  power?: 'electric' | 'nitro';
+  nitroPeakHeadRpm?: number;
   /** Idle-Up throttle with the governor off, 0..1. */
   idleUpThrottle?: number;
   /** Tail gyro mode. */

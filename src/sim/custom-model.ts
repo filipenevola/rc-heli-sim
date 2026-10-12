@@ -20,9 +20,13 @@ export interface CustomSpec {
   flybar: boolean;
   /** Main blades: 2 (most helis) or 3 (many 3D machines and scale models). More solidity, more thrust at the same pitch. */
   blades?: 2 | 3;
+  /** Electric (default) or a nitro/glow engine with a clutch and a fuel tank. */
+  power?: 'electric' | 'nitro';
+  /** Fuel tank, ml (nitro only). */
+  tankMl?: number;
 }
 
-export const DEFAULT_CUSTOM: CustomSpec = { name: 'My heli', bladeMm: 500, massG: 1900, cells: 6, mah: 3300, headspeedRpm: [1900, 2100, 2300], flybar: false };
+export const DEFAULT_CUSTOM: CustomSpec = { name: 'My heli', bladeMm: 500, massG: 1900, cells: 6, mah: 3300, headspeedRpm: [1900, 2100, 2300], flybar: false, blades: 2, power: 'electric', tankMl: 300 };
 
 const R450 = HELI_450.rotor.radius;
 const R700 = HELI_700.rotor.radius;
@@ -82,7 +86,10 @@ export function buildCustomModel(spec: CustomSpec): HeliModel {
     tailGearRatio: law(HELI_450.tailGearRatio, HELI_700.tailGearRatio, R),
     maxTailPitch: base.maxTailPitch,
     maxMotorTorque: law(HELI_450.maxMotorTorque, HELI_700.maxMotorTorque, R) * Math.pow(mk, 1.5),
-    batteryWh: Math.max(1, (spec.cells * 3.7 * spec.mah) / 1000) * 0.8,
+    batteryWh: spec.power === 'nitro' ? Math.max(50, spec.tankMl ?? 300) : Math.max(1, (spec.cells * 3.7 * spec.mah) / 1000) * 0.8,
+    power: spec.power === 'nitro' ? 'nitro' : 'electric',
+    // Glow engines peak a little above the Idle-Up 1 head speed, so the pilot's chosen head speeds sit on the fat part of the curve.
+    nitroPeakHeadRpm: spec.power === 'nitro' ? spec.headspeedRpm[1] * 1.08 : undefined,
     headspeeds: [rpm(spec.headspeedRpm[0]), rpm(spec.headspeedRpm[1]), rpm(spec.headspeedRpm[2])],
     spoolRate: law(HELI_450.spoolRate, HELI_700.spoolRate, R),
     pitchCurves: base.pitchCurves.map((c) => [...c]) as [number[], number[], number[]],
@@ -115,5 +122,7 @@ export function normalizeSpec(s: Partial<CustomSpec>): CustomSpec {
     headspeedRpm: [n(hs[0], 1900, 600, 4500), n(hs[1], 2100, 600, 4500), n(hs[2], 2300, 600, 4500)],
     flybar: Boolean(s.flybar),
     blades: Number(s.blades) === 3 ? 3 : 2,
+    power: s.power === 'nitro' ? 'nitro' : 'electric',
+    tankMl: n(s.tankMl, 300, 50, 2000),
   };
 }

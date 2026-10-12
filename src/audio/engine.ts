@@ -223,14 +223,30 @@ export class AudioEngine {
     const rpm = tel.headspeedRpm;
     const rpmFrac = Math.min(1, rpm / ((m.headspeeds[1] * 60) / (2 * Math.PI)));
 
-    // Motor: assume ~10 pole-pair outrunner on a 10:1 (450) or 8:1 (700) pinion ratio. The exact value only sets the pitch.
-    const gear = m.rotor.radius > 0.6 ? 8.5 : 11;
-    const motorHz = Math.max(1, (rpm * gear * 7) / 60) * doppler;
-    this.motorOsc.frequency.setTargetAtTime(Math.min(motorHz, 6000), t, tau);
-    this.motorOsc2.frequency.setTargetAtTime(Math.min(motorHz * 0.5, 3000), t, tau);
     const powerFrac = Math.min(1, tel.motorPower / (m.maxMotorTorque * m.headspeeds[2] * 0.5));
-    this.motorFilter.frequency.setTargetAtTime(600 + 2500 * powerFrac + 1500 * rpmFrac, t, tau);
-    this.motorGain.gain.setTargetAtTime(rpmFrac > 0.02 ? 0.06 + 0.14 * powerFrac : 0, t, tau);
+    if (m.power === 'nitro') {
+      // Glow engine: one exhaust pulse per rev at engine rpm (about 9x the head), a raspy low buzz that gets
+      // harder with load; the engine idles through hold instead of going silent.
+      const idling = rpmFrac < 0.05 && tel.battery > 0;
+      const engineRpm = idling ? 2500 : Math.max(2500, rpm * 9);
+      const f = (engineRpm / 60) * doppler;
+      this.motorOsc.type = 'square';
+      this.motorOsc2.type = 'sawtooth';
+      this.motorOsc.frequency.setTargetAtTime(Math.min(f, 1200), t, tau);
+      this.motorOsc2.frequency.setTargetAtTime(Math.min(f * 2, 2400), t, tau);
+      this.motorFilter.frequency.setTargetAtTime(250 + 900 * powerFrac + 300 * rpmFrac, t, tau);
+      this.motorGain.gain.setTargetAtTime(tel.battery > 0 ? (idling ? 0.05 : 0.09 + 0.16 * powerFrac) : 0, t, tau);
+    } else {
+      // Motor: assume ~10 pole-pair outrunner on a 10:1 (450) or 8:1 (700) pinion ratio. The exact value only sets the pitch.
+      const gear = m.rotor.radius > 0.6 ? 8.5 : 11;
+      const motorHz = Math.max(1, (rpm * gear * 7) / 60) * doppler;
+      this.motorOsc.type = 'sawtooth';
+      this.motorOsc2.type = 'square';
+      this.motorOsc.frequency.setTargetAtTime(Math.min(motorHz, 6000), t, tau);
+      this.motorOsc2.frequency.setTargetAtTime(Math.min(motorHz * 0.5, 3000), t, tau);
+      this.motorFilter.frequency.setTargetAtTime(600 + 2500 * powerFrac + 1500 * rpmFrac, t, tau);
+      this.motorGain.gain.setTargetAtTime(rpmFrac > 0.02 ? 0.06 + 0.14 * powerFrac : 0, t, tau);
+    }
 
     // Main rotor chop: blade-pass frequency; depth and level grow with thrust (loaded blades slap harder).
     // High G (pulling hard, aerobatics) and vortex ring state make the chop harsher and rougher.

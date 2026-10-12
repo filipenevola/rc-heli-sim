@@ -127,6 +127,10 @@ export const HELP_HTML_PT = `
   a bateria e as rotações do seu modelo real, escolha flybar ou flybarless, e voe ele. Tudo o que a caixa não
   diz (inércias, geometria de rotor e cauda, arrasto, motor) é escalado entre as referências 450 e 700, então um
   550 se comporta como um 550. Fica salvo neste aparelho e na sua conta.</p>
+  <p><b>Nitro</b> (Meu helicóptero → Motorização): um motor glow atrás de uma embreagem centrífuga e um tanque de
+  combustível em vez de bateria. O torque tem pico perto da rotação do Idle-Up e cai acima e abaixo dela; abaixo de uns 10% de
+  acelerador a embreagem solta e o rotor gira livre enquanto o motor fica em marcha lenta, por isso o hold e as autorrotações
+  funcionam do jeito que funcionam no nitro. O combustível queima com a carga; o motor apaga quando seca. O som é o pulso do escapamento, não o zumbido de um motor elétrico.</p>
   <p><b>Governor desligado / giro em rate</b> (Configurações → Helicóptero → Ajustes do modelo): desligue o governor do ESC e a
   rotação cai quando você puxa coletivo, como numa curva de acelerador comum; ajuste o acelerador do Idle-Up ao seu
   passo. Mude o giro de cauda para rate e a cauda deixa de segurar o rumo: toda mudança de coletivo

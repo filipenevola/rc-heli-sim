@@ -133,6 +133,8 @@ export class SettingsPanel {
       ${num('hs1', 'Head speed Idle-Up 1 (rpm)', c.headspeedRpm[1], 600, 4500, 50)}
       ${num('hs2', 'Head speed Idle-Up 2 (rpm)', c.headspeedRpm[2], 600, 4500, 50)}
       <label><input type="checkbox" data-custom="flybar" ${c.flybar ? 'checked' : ''}> Mechanical flybar head</label>
+      <label class="setup-row"><span>Power plant</span><select data-custom="power"><option value="electric" ${(c.power ?? 'electric') === 'electric' ? 'selected' : ''}>Electric</option><option value="nitro" ${c.power === 'nitro' ? 'selected' : ''}>Nitro (glow engine, clutch, fuel tank)</option></select></label>
+      ${num('tankMl', 'Fuel tank (ml, nitro)', c.tankMl ?? 300, 50, 2000, 10)}
       <label class="setup-row"><span>Main blades</span><select data-custom="blades"><option value="2" ${(c.blades ?? 2) === 2 ? 'selected' : ''}>2</option><option value="3" ${c.blades === 3 ? 'selected' : ''}>3</option></select></label>
       <button id="custom-fly">Build it and fly it</button>`;
   }
@@ -148,6 +150,8 @@ export class SettingsPanel {
       headspeedRpm: [Number(g('hs0')), Number(g('hs1')), Number(g('hs2'))],
       flybar: (this.panel.querySelector('[data-custom="flybar"]') as HTMLInputElement).checked,
       blades: Number((this.panel.querySelector('[data-custom="blades"]') as HTMLSelectElement).value) === 3 ? 3 : 2,
+      power: (this.panel.querySelector('[data-custom="power"]') as HTMLSelectElement).value === 'nitro' ? 'nitro' : 'electric',
+      tankMl: Number(g('tankMl')),
     });
   }
 

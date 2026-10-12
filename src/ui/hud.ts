@@ -105,11 +105,11 @@ export class Hud {
       [tr('Power'), `${t.motorPower.toFixed(0)} W`],
       [tr('G load'), `${t.gLoad.toFixed(1)} g`],
       [tr('Ground effect'), `${((t.groundEffect - 1) * 100).toFixed(0)}%`],
-      [tr('Battery'), `${(t.battery * 100).toFixed(0)}%${t.battery < 0.1 ? ' ⚠' : ''}`],
+      [sim.model.power === 'nitro' ? tr('Fuel') : tr('Battery'), `${(t.battery * 100).toFixed(0)}%${t.battery < 0.1 ? ' ⚠' : ''}`],
       ['FPS', this.fps.toFixed(0)],
     ];
     const html = this.compact
-      ? `<div class="strip"><b>${t.headspeedRpm.toFixed(0)}</b> rpm · <b>${t.collectiveDeg.toFixed(1)}°</b> · <b>${t.altitude.toFixed(1)}</b> m · 🔋${(t.battery * 100).toFixed(0)}% · ${ctl.throttleHold ? 'HOLD' : MODE_NAMES[ctl.flightMode]}</div>`
+      ? `<div class="strip"><b>${t.headspeedRpm.toFixed(0)}</b> rpm · <b>${t.collectiveDeg.toFixed(1)}°</b> · <b>${t.altitude.toFixed(1)}</b> m · ${sim.model.power === 'nitro' ? '⛽' : '🔋'}${(t.battery * 100).toFixed(0)}% · ${ctl.throttleHold ? 'HOLD' : MODE_NAMES[ctl.flightMode]}</div>`
       : rows.map(([k, v]) => `<div><span>${k}</span><b>${v}</b></div>`).join('');
     if (html !== this.lastHtml) {
       this.el.innerHTML = html;
@@ -118,7 +118,7 @@ export class Hud {
     // The on-screen gimbals already show stick position; the mini display would only cover them.
     this.sticks.style.display = sourceId === 'touch' || sourceId === 'motion' ? 'none' : '';
     this.drawSticks(ctl);
-    this.warn(t.vrs > 0.3 ? tr('VORTEX RING: descending into your own downwash. Forward cyclic or less collective.') : t.stall > 0.2 ? tr('BLADE STALL: too much collective for this head speed. Ease it off.') : t.wag > 0.5 ? tr('TAIL WAG: tail gyro gain too high. Lower it in Settings → Model setup.') : t.battery <= 0 ? tr('BATTERY FLAT: motor off. Autorotate!') : t.battery < 0.1 ? tr('Battery low: land soon.') : '');
+    this.warn(t.vrs > 0.3 ? tr('VORTEX RING: descending into your own downwash. Forward cyclic or less collective.') : t.stall > 0.2 ? tr('BLADE STALL: too much collective for this head speed. Ease it off.') : t.wag > 0.5 ? tr('TAIL WAG: tail gyro gain too high. Lower it in Settings → Model setup.') : t.battery <= 0 ? (sim.model.power === 'nitro' ? tr('FUEL OUT: engine quit. Autorotate!') : tr('BATTERY FLAT: motor off. Autorotate!')) : t.battery < 0.1 ? (sim.model.power === 'nitro' ? tr('Fuel low: land soon.') : tr('Battery low: land soon.')) : '');
     if (!s.onGround && s.pos.y > 0.3) this.airborne = true;
     if (s.landed && s.landed !== this.lastLanding) {
       this.lastLanding = s.landed;

@@ -3,6 +3,14 @@
 All notable changes to RC Heli Sim. The version shown in the game (Help and Settings) matches the latest
 entry here; the commit hash next to it identifies the exact build.
 
+## 0.37.0
+
+- **Nitro helicopters** (My helicopter → Power → Nitro): a glow engine behind a centrifugal clutch with a fuel
+  tank instead of a battery. Torque follows an engine curve that peaks near the Idle-Up head speed; below about
+  10% throttle the clutch lets go and the rotor freewheels while the engine idles (hold and autorotations behave
+  like nitro, not like a motor switching off); fuel burns with load and the engine quits dry. The HUD shows fuel,
+  the debrief reports fuel used, and the engine sounds like an exhaust pulse rather than a motor whine.
+
 ## 0.36.0
 
 - **Three-blade heads** for your own helicopter (Settings → My helicopter → Main blades): more solidity, so more
