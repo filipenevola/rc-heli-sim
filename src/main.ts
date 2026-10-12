@@ -239,7 +239,8 @@ const settings = new SettingsPanel(ui, input, wind, audio, {
     setPaused(!paused);
   },
   onPilotSpot(spot) {
-    const spots: Record<string, [number, number]> = { pad: [0, 0], barn: [-40, -6], pond: [28, -12], tower: [14, -34], road: [0, 64] };
+    // The road spot stands beside the cerradoX billboard (x = 0, z = 56), not behind it.
+    const spots: Record<string, [number, number]> = { pad: [0, 0], barn: [-40, -6], pond: [28, -12], tower: [14, -34], road: [14, 64] };
     let x: number;
     let z: number;
     if (spot === 'heli') {

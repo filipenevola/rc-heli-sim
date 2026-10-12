@@ -3,6 +3,12 @@
 All notable changes to RC Heli Sim. The version shown in the game (Help and Settings) matches the latest
 entry here; the commit hash next to it identifies the exact build.
 
+## 0.33.0
+
+- The distant hills are gentler and haze-coloured (0.32.0 made them too tall and dark from some angles).
+- Fix: the "road" pilot spot stood right behind the cerradoX billboard, which blacked out the view; it now stands
+  beside it.
+
 ## 0.32.0
 
 - **Scenery**: pines are three stacked cones and every third tree is a broadleaf with a lumpy crown, each with

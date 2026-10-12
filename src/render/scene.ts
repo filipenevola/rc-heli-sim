@@ -177,16 +177,17 @@ export function createScene(layout: FieldLayout): SceneHandles {
     scene.add(crown);
   }
 
-  // Distant hills: flattened spheres around the horizon, inside the fog so they fade with distance.
-  const hillMat = new THREE.MeshStandardMaterial({ color: 0x5f8a5a, roughness: 1 });
-  for (let i = 0; i < 14; i++) {
-    const ang = (i / 14) * Math.PI * 2 + 0.3 * Math.sin(i * 7.3);
-    const dist = 620 + 160 * Math.abs(Math.sin(i * 2.9));
-    const w = 260 + 220 * Math.abs(Math.sin(i * 1.7));
-    const h = 45 + 70 * Math.abs(Math.sin(i * 4.1));
+  // Distant hills: gentle flattened domes around the horizon, flat-shaded and mostly haze at that distance, so
+  // they read as a skyline rather than as walls.
+  const hillMat = new THREE.MeshBasicMaterial({ color: 0x6f9a6a });
+  for (let i = 0; i < 16; i++) {
+    const ang = (i / 16) * Math.PI * 2 + 0.25 * Math.sin(i * 7.3);
+    const dist = 640 + 150 * Math.abs(Math.sin(i * 2.9));
+    const w = 110 + 120 * Math.abs(Math.sin(i * 1.7)); // half-width
+    const h = 18 + 30 * Math.abs(Math.sin(i * 4.1)); // height above the ground
     const hill = new THREE.Mesh(new THREE.SphereGeometry(1, 20, 10), hillMat);
-    hill.scale.set(w, h, w * 0.6);
-    hill.position.set(Math.cos(ang) * dist, -h * 0.25, Math.sin(ang) * dist);
+    hill.scale.set(w, h, w * 0.7);
+    hill.position.set(Math.cos(ang) * dist, 0, Math.sin(ang) * dist);
     scene.add(hill);
   }
   // The sun: a bright disc where the light comes from.
