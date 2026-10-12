@@ -62,6 +62,8 @@ export class RemoteInput implements InputSource {
     const link = hostLink(this.apiBase, code);
     this.link = link;
     link.onState = (s) => this.onState?.(s, code);
+    // The link may already have moved on (it sets 'waiting' synchronously): replay the current state.
+    if (link.state !== 'idle') this.onState?.(link.state, code);
     link.onMessage = (text) => {
       try {
         const msg = JSON.parse(text) as RemoteFrame & { ping?: number; lat?: number };

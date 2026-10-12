@@ -49,6 +49,7 @@ export const PT_BR: Record<string, string> = {
   'Pairing failed or the phone dropped. Press Pair again for a new code.': 'O pareamento falhou ou o celular caiu. Aperte Parear de novo para um código novo.',
   'Pairing needs the online rankings server, which this build does not have.': 'O pareamento precisa do servidor de rankings online, que esta build não tem.',
   'Phone disconnected.': 'Celular desconectado.',
+  'Scan with the phone camera': 'Escaneie com a câmera do celular',
   'Use this phone as the transmitter for RC Heli Sim on another screen. In the sim open Settings → Input → Phone radio → Pair a phone, then type the code here.': 'Use este celular como rádio para o RC Heli Sim em outra tela. No simulador abra Configurações → Entrada → Rádio no celular → Parear um celular, depois digite o código aqui.',
   'Connect': 'Conectar',
   'This build has no API configured; pairing needs the online rankings server.': 'Esta build não tem API configurada; o pareamento precisa do servidor de rankings online.',

@@ -60,6 +60,7 @@ function connect(code: string): void {
   const status = root.querySelector('#pair-status');
   if (status) status.textContent = t('Connecting…');
   link.onState = (s) => onState(s, code);
+  if (link.state !== 'idle') onState(link.state, code);
   link.onMessage = (text) => {
     try {
       const msg = JSON.parse(text) as { pong?: number };

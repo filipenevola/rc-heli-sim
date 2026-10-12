@@ -171,6 +171,10 @@ table.channels button { padding: 2px 8px; font-size: 12px; }
 .hud-graph { position: absolute; right: 10px; bottom: 10px; border-radius: 8px; pointer-events: none; }
 @media (pointer: coarse) { .hud-graph { bottom: 215px; width: 220px; height: 88px; } }
 
+/* Phone radio: the pairing QR in the settings panel. */
+.radio-qr { margin: 8px 0 4px; }
+.radio-qr svg { display: block; background: #fff; border-radius: 8px; padding: 4px; }
+
 /* Phone radio page (/radio.html): the phone as a transmitter. */
 body.radio-page { background: #141618; }
 .radio-pair { max-width: 420px; margin: 12vh auto 0; padding: 20px; text-align: center; }

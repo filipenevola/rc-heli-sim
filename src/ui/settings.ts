@@ -2,6 +2,7 @@ import { HELI_MODELS, type HeliModel, type ModelSetup } from '../sim/heli-model'
 import { DEFAULT_CUSTOM, normalizeSpec, type CustomSpec } from '../sim/custom-model';
 import { getLang, localizeDom, setLang, t, type Lang } from '../i18n';
 import { getSite, type SiteId } from '../site';
+import { qrSvg } from '../net/qr';
 import type { InputManager, SourceChoice } from '../input/manager';
 import { saveMapping, builtinName, readAxis, type AxisMapping, type GamepadMapping, type SwitchMapping } from '../input/gamepad';
 import type { StickMode } from '../input/types';
@@ -467,7 +468,7 @@ export class SettingsPanel {
       const show = (html: string) => { status.innerHTML = html; };
       im.remote.onState = (s, code) => {
         const url = `${location.origin}/radio.html?c=${code}`;
-        if (s === 'waiting') show(`${t('Code')}: <b class="radio-code">${code}</b><br>${t('On the phone open')} <b>${url}</b> ${t('(or /radio.html and type the code). Waiting for the phone…')}`);
+        if (s === 'waiting') show(`${t('Code')}: <b class="radio-code">${code}</b><br>${t('On the phone open')} <b>${url}</b> ${t('(or /radio.html and type the code). Waiting for the phone…')}<div class="radio-qr" title="${t('Scan with the phone camera')}">${qrSvg(url, 150)}</div>`);
         else if (s === 'connecting') show(`<b>${code}</b> · ${t('Phone found, connecting…')}`);
         else if (s === 'connected') show(`<b>${code}</b> · <b>${t('Phone connected.')}</b> ${t('Move a stick on the phone and it takes over; the HUD shows "Phone radio".')}`);
         else if (s === 'failed') show(im.remote.apiBase ? t('Pairing failed or the phone dropped. Press Pair again for a new code.') : t('Pairing needs the online rankings server, which this build does not have.'));

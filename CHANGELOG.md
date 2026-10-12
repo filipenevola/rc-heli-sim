@@ -3,6 +3,12 @@
 All notable changes to RC Heli Sim. The version shown in the game (Help and Settings) matches the latest
 entry here; the commit hash next to it identifies the exact build.
 
+## 0.54.0
+
+- Phone radio pairing shows a **QR code** of the phone link next to the code: point the phone camera at the screen
+  instead of typing the address. Built-in encoder (byte mode, level L, versions 1–9, proper Reed–Solomon and mask
+  selection), verified by decoding the rendered codes with the macOS Vision framework.
+
 ## 0.53.0
 
 - **Phone radio**: use a phone as the transmitter for the sim on another screen. Settings → Input → Pair a phone
