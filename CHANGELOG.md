@@ -3,6 +3,13 @@
 All notable changes to RC Heli Sim. The version shown in the game (Help and Settings) matches the latest
 entry here; the commit hash next to it identifies the exact build.
 
+## 0.14.0 — 2026-10-12
+
+- Walk around the field: Settings → Camera lets the pilot stand at the helipad, the barn, the pond, the tower or the
+  road, and G (or "Walk to the heli") walks to wherever the model is, like you would at the field. The pilot figure
+  turns to follow the model.
+- Orientation arrow on the grass under the model showing where the nose points (beginner aid, can be switched off).
+
 ## 0.13.0 — 2026-10-12
 
 - New helicopter: 250 Micro CP (flybarless), a 210 g collective-pitch micro with 4,000 rpm head speed and a

@@ -143,7 +143,10 @@ const HELP_HTML = `
   <p>The <b>Cam</b> button (or C) cycles: <b>Pilot</b> — you stand on the field and the view zooms with distance, the
   realistic way and the one that transfers to the real model; <b>Chase</b> — behind the tail, turning with the heading;
   <b>Front</b> — ahead of the nose looking back, for nose-in practice; <b>Top</b> — straight above, north up, to see drift;
-  <b>Drone</b> — a camera drone circling the model. Switch any time, even mid-flight.</p>
+  <b>Drone</b> — a camera drone circling the model. Switch any time, even mid-flight. In Settings → Camera you can also
+  choose where the pilot stands (helipad, barn, pond, tower, road) or press <b>G</b> to walk to wherever the heli is, like you
+  would at the field. The <b>orientation arrow</b> under the model shows where the nose points; switch it off once nose-in
+  stops confusing you.</p>
 </section>
 
 <section>

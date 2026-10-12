@@ -8,6 +8,10 @@ export interface SceneHandles {
   windsock: THREE.Object3D;
   /** Animated bits (animal heads) updated per frame. */
   animate(dt: number, time: number): void;
+  /** The pilot figure; moved when the pilot walks. */
+  pilotMarker: THREE.Object3D;
+  /** Flat arrow on the ground under the heli showing where the nose points (beginner aid). */
+  arrow: THREE.Object3D;
 }
 
 const isMobile = typeof navigator !== 'undefined' && navigator.maxTouchPoints > 0 && window.innerWidth < 1100;
@@ -101,10 +105,32 @@ export function createScene(layout: FieldLayout): SceneHandles {
   pad.receiveShadow = true;
   scene.add(pad);
 
-  // Pilot marker.
-  const pilot = shadowed(new THREE.Mesh(new THREE.CylinderGeometry(0.18, 0.18, 1.7, 12), new THREE.MeshStandardMaterial({ color: 0x334466 })));
-  pilot.position.set(0, 0.85, 0);
+  // Pilot figure: body, head, and a transmitter held in front.
+  const pilot = new THREE.Group();
+  const body = new THREE.Mesh(new THREE.CylinderGeometry(0.16, 0.2, 1.4, 12), new THREE.MeshStandardMaterial({ color: 0x334466 }));
+  body.position.y = 0.7;
+  pilot.add(body);
+  const head = new THREE.Mesh(new THREE.SphereGeometry(0.13, 12, 10), new THREE.MeshStandardMaterial({ color: 0xd9b48f }));
+  head.position.y = 1.55;
+  pilot.add(head);
+  const tx = new THREE.Mesh(new THREE.BoxGeometry(0.22, 0.14, 0.06), new THREE.MeshStandardMaterial({ color: 0x222222 }));
+  tx.position.set(0, 1.1, -0.26);
+  pilot.add(tx);
+  shadowed(pilot);
+  pilot.position.set(0, 0, 0);
   scene.add(pilot);
+
+  // Orientation arrow: flat triangle on the grass under the model, pointing where the nose points.
+  const arrowShape = new THREE.Shape();
+  arrowShape.moveTo(0, 0.55);
+  arrowShape.lineTo(0.35, -0.35);
+  arrowShape.lineTo(0, -0.15);
+  arrowShape.lineTo(-0.35, -0.35);
+  arrowShape.closePath();
+  const arrow = new THREE.Mesh(new THREE.ShapeGeometry(arrowShape), decal(new THREE.MeshBasicMaterial({ color: 0xffd34d, transparent: true, opacity: 0.85, side: THREE.DoubleSide })));
+  arrow.rotation.x = -Math.PI / 2;
+  arrow.position.y = 0.03;
+  scene.add(arrow);
 
   // Trees, instanced from the layout.
   const trunk = new THREE.InstancedMesh(new THREE.CylinderGeometry(0.25, 0.4, 2.5, 7), mats.trunk, layout.trees.length);
@@ -303,6 +329,8 @@ export function createScene(layout: FieldLayout): SceneHandles {
     scene,
     sun,
     windsock,
+    pilotMarker: pilot,
+    arrow,
     animate(_dt, time) {
       for (const h of heads) h.obj.rotation.x = 0.35 + 0.3 * Math.sin(time * 0.6 + h.phase);
     },

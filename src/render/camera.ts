@@ -39,6 +39,12 @@ export class PilotCamera {
     this.camera.position.copy(this.eye);
   }
 
+  /** Move where the pilot stands (eye height stays 1.7 m). */
+  setEye(x: number, z: number): void {
+    this.eye.set(x, 1.7, z);
+    if (this.mode === 'pilot') this.pos.copy(this.eye);
+  }
+
   cycle(): CameraMode {
     this.mode = CAMERA_MODES[(CAMERA_MODES.indexOf(this.mode) + 1) % CAMERA_MODES.length];
     return this.mode;

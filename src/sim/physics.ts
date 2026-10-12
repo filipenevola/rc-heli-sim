@@ -468,8 +468,8 @@ export class HelicopterSim {
     t.lambda = main.lambda;
     t.battery = soc;
     t.gLoad = thrust / (m.mass * G);
-    t.vrs = main.vrs;
-    t.stall = main.stall;
+    t.vrs = rotorAlive ? main.vrs : 0;
+    t.stall = rotorAlive ? main.stall : 0;
     if (motorTorque > 0.05) t.flightSeconds += dt;
   }
 

@@ -34,6 +34,9 @@ export interface SettingsCallbacks {
   onPause(): void;
   /** Set a camera mode, or cycle when undefined. Returns the label of the active mode. */
   onCamera(mode?: CameraMode): string;
+  /** Move the pilot to a named spot, or walk toward the helicopter ('heli'). */
+  onPilotSpot(spot: string): void;
+  onArrow(on: boolean): void;
 }
 
 type AxisName = 'aileron' | 'elevator' | 'rudder' | 'collective';
@@ -151,6 +154,7 @@ export class SettingsPanel {
     bar.querySelector('#btn-full')!.addEventListener('click', () => void toggleFullscreen());
     window.addEventListener('keydown', (e) => {
       if (e.code === 'KeyU') setHidden(!document.body.classList.contains('ui-hidden'));
+      if (e.code === 'KeyG') cb.onPilotSpot('heli');
       if (e.code === 'KeyF') void toggleFullscreen();
     });
     const soundBtn = bar.querySelector('#btn-sound') as HTMLButtonElement;
@@ -249,6 +253,9 @@ export class SettingsPanel {
         <h4>Camera</h4>
         ${sel('camera', CAMERA_MODES.map((m) => [m, CAMERA_LABELS[m]]), this.cameraMode)}
         <p class="hint">Cam button or C key cycles. "Pilot" is the realistic one: you stand on the field.</p>
+        <label>Pilot stands at ${sel('spot', [['pad', 'The helipad (default)'], ['barn', 'By the barn'], ['pond', 'By the pond'], ['tower', 'By the tower'], ['road', 'On the road']], this.spot)}</label>
+        <button id="walk">Walk to the heli (G)</button>
+        <label><input type="checkbox" id="arrow" ${this.arrowOn ? 'checked' : ''}> Orientation arrow under the heli (beginner aid)</label>
       </section>
       <section>
         <h4>Sound</h4>
@@ -297,6 +304,15 @@ export class SettingsPanel {
     bind('rate', (v) => { im.shaping.aileron.rate = v; im.shaping.elevator.rate = v; });
     bind('rexpo', (v) => (im.shaping.rudder.expo = v));
     bind('tilt', (v) => (im.motion.maxTiltDeg = v));
+    q<HTMLSelectElement>('#spot').addEventListener('change', (e) => {
+      this.spot = (e.target as HTMLSelectElement).value;
+      this.cb.onPilotSpot(this.spot);
+    });
+    q('#walk').addEventListener('click', () => this.cb.onPilotSpot('heli'));
+    q<HTMLInputElement>('#arrow').addEventListener('change', (e) => {
+      this.arrowOn = (e.target as HTMLInputElement).checked;
+      this.cb.onArrow(this.arrowOn);
+    });
     q<HTMLSelectElement>('#camera').addEventListener('change', (e) => {
       this.cameraMode = (e.target as HTMLSelectElement).value as CameraMode;
       this.applyCamera();
@@ -382,6 +398,8 @@ export class SettingsPanel {
   }
 
   cameraMode: CameraMode = 'pilot';
+  spot = 'pad';
+  arrowOn = true;
 
   setCamera(mode: CameraMode): void {
     this.cameraMode = mode;

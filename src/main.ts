@@ -175,6 +175,28 @@ const settings = new SettingsPanel(ui, input, wind, audio, {
   onPause() {
     setPaused(!paused);
   },
+  onPilotSpot(spot) {
+    const spots: Record<string, [number, number]> = { pad: [0, 0], barn: [-40, -6], pond: [28, -12], tower: [14, -34], road: [0, 64] };
+    let x: number;
+    let z: number;
+    if (spot === 'heli') {
+      // Walk to about 4 m from where the heli is, approaching from where you stand.
+      const hx = sim.state.pos.x;
+      const hz = sim.state.pos.z;
+      const dx = hx - pilotCam.eye.x;
+      const dz = hz - pilotCam.eye.z;
+      const d = Math.hypot(dx, dz) || 1;
+      const back = Math.min(d, 4);
+      x = hx - (dx / d) * back;
+      z = hz - (dz / d) * back;
+    } else [x, z] = spots[spot] ?? [0, 0];
+    pilotCam.setEye(x, z);
+    field.pilotMarker.position.set(x, 0, z);
+    hud.notify(spot === 'heli' ? '<b>Walked to the heli</b>' : `<b>Pilot moved</b><br>${spot}`, 2000);
+  },
+  onArrow(on) {
+    field.arrow.visible = on;
+  },
   onCamera(mode) {
     if (mode) pilotCam.mode = mode;
     else pilotCam.cycle();
@@ -393,6 +415,13 @@ function frame(now: number): void {
   const windAngle = Math.atan2(-w.x, -w.z);
   field.windsock.rotation.set(-(1 - Math.min(1, wind.speed / 6)) * 1.2, windAngle + Math.PI, 0, 'YXZ');
   field.animate(dt, sim.state.time);
+  // Orientation arrow under the model, pointing where the nose points; faces the pilot figure toward the model.
+  if (field.arrow.visible) {
+    const fwd = new THREE.Vector3(0, 0, -1).applyQuaternion(heliQuat);
+    field.arrow.position.set(sim.state.pos.x, 0.03, sim.state.pos.z);
+    field.arrow.rotation.set(-Math.PI / 2, 0, Math.atan2(-fwd.x, -fwd.z));
+  }
+  field.pilotMarker.rotation.y = Math.atan2(-(sim.state.pos.x - field.pilotMarker.position.x), -(sim.state.pos.z - field.pilotMarker.position.z));
 
   if (!paused && (!lesson || lesson.mode === 'teach')) {
     flightTimer.update(sim, dt);
