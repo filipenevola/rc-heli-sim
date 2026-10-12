@@ -3,6 +3,13 @@
 All notable changes to RC Heli Sim. The version shown in the game (Help and Settings) matches the latest
 entry here; the commit hash next to it identifies the exact build.
 
+## 0.28.0
+
+- **Fly your own helicopter**: Settings → Helicopter → My helicopter takes the numbers from the box and the radio
+  (blade length, all-up weight, battery cells and capacity, head speeds per mode, flybar or flybarless) and builds a
+  physics model for it, scaling everything else between the 450 and 700 references with power laws in rotor
+  radius. It appears in the Model list, keeps its own model setup, and is saved on the device and with your account.
+
 ## 0.27.0
 
 - **Canopy**: a proper teardrop canopy with a two-tone scheme, bright on top and dark underneath, plus a white

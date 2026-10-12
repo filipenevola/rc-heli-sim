@@ -24,6 +24,7 @@ import { installTypingGuard } from './input/typing-guard';
 import { lessonFor, LessonRunner } from './game/lessons';
 import { recordGhost, type GhostFrame } from './game/ghost';
 import { Trail } from './render/trail';
+import { buildCustomModel, normalizeSpec, type CustomSpec } from './sim/custom-model';
 import { LessonOverlay } from './ui/lesson-overlay';
 import type { AssistMode } from './sim/physics';
 
@@ -61,6 +62,11 @@ scene.add(trail.object);
 
 let baseModel: HeliModel = HELI_MODELS[0];
 let trainingGear = false;
+let customModel: HeliModel | null = null;
+/** Every model the pilot can pick: the built-ins plus their custom one. */
+function allModels(): HeliModel[] {
+  return customModel ? [...HELI_MODELS, customModel] : [...HELI_MODELS];
+}
 function setModel(model: HeliModel): void {
   baseModel = model;
   let tuned = applySetup(model, (profile.setup?.[model.id] as ModelSetup | undefined) ?? undefined);
@@ -179,6 +185,13 @@ const settings = new SettingsPanel(ui, input, wind, audio, {
   onModel(model) {
     setModel(model);
   },
+  onCustom(spec) {
+    customModel = buildCustomModel(spec);
+    // The spec travels with the account setup so it follows the pilot across devices.
+    profile.setup = { ...(profile.setup ?? {}), 'custom-spec': spec as unknown as Record<string, unknown> };
+    void challenges.sync();
+    return customModel;
+  },
   onTrainingGear(on) {
     trainingGear = on;
     setModel(baseModel);
@@ -187,7 +200,7 @@ const settings = new SettingsPanel(ui, input, wind, audio, {
   onSetup(modelId, setup) {
     profile.setup = { ...(profile.setup ?? {}), [modelId]: setup };
     // Re-apply without resetting the flight: patch the live model in place.
-    const base = HELI_MODELS.find((m) => m.id === modelId) ?? baseModel;
+    const base = allModels().find((m) => m.id === modelId) ?? baseModel;
     let tuned = applySetup(base, setup);
     if (trainingGear) tuned = withTrainingGear(tuned);
     sim.model = tuned;
@@ -257,6 +270,13 @@ window.addEventListener('keydown', (e) => {
   if (e.code === 'KeyC') settings.cycleCamera();
 });
 settings.setPilotLabel(profile.name, profile.verified);
+// A custom heli saved to the account (another device) comes back through the setup blob.
+const accountSpec = profile.setup?.['custom-spec'] as Partial<CustomSpec> | undefined;
+if (accountSpec && typeof accountSpec === 'object') {
+  const spec = normalizeSpec(accountSpec);
+  customModel = buildCustomModel(spec);
+  settings.setCustom(spec, customModel);
+}
 settings.restore();
 settings.onRadioReport = (r) => rankingClient.sendRadioReport(r);
 settings.onMappingChanged = () => void challenges.sync();

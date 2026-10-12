@@ -140,6 +140,10 @@ const HELP_HTML = `
   </ul>
   <p><b>Dual rates on the mode switch</b> (Settings → Input): real radios usually fly Normal with a lower cyclic rate
   and Idle-Up with full rate. The "Normal-mode rate" slider does that: 0.6 makes the hover gentle without touching 3D.</p>
+  <p><b>Your own helicopter</b> (Settings → Helicopter → My helicopter): type the blade length, all-up weight,
+  battery and head speeds from your real model, choose flybar or flybarless, and fly that. Everything the box does
+  not tell you (inertias, rotor and tail geometry, drag, motor) is scaled between the 450 and 700 references, so a
+  550 feels like a 550. It is saved on this device and with your account.</p>
   <p><b>Governor off / rate gyro</b> (Settings → Helicopter → Model setup): switch the ESC governor off and the
   head speed droops when you pull collective, as with a plain throttle curve; set the Idle-Up throttle to match your
   pitch. Switch the tail gyro to rate mode and the tail no longer holds its heading: every collective change

@@ -1,4 +1,5 @@
 import { HELI_MODELS, type HeliModel, type ModelSetup } from '../sim/heli-model';
+import { DEFAULT_CUSTOM, normalizeSpec, type CustomSpec } from '../sim/custom-model';
 import type { InputManager, SourceChoice } from '../input/manager';
 import { saveMapping, builtinName, readAxis, type AxisMapping, type GamepadMapping, type SwitchMapping } from '../input/gamepad';
 import type { StickMode } from '../input/types';
@@ -20,6 +21,8 @@ export const HOLD_HELP = {
 
 export interface SettingsCallbacks {
   onModel(model: HeliModel): void;
+  /** The pilot described their own heli: build it, register it and fly it. */
+  onCustom(spec: CustomSpec): HeliModel;
   onTrainingGear(on: boolean): void;
   /** The pilot changed the model setup (pitch curves, head speeds, gains) for the given base model. */
   onSetup(modelId: string, setup: ModelSetup): void;
@@ -55,7 +58,7 @@ const AXIS_HINT: Record<AxisName | SwitchName, string> = {
 };
 
 const PREFS_KEY = 'rc-heli-sim.prefs.v1';
-interface Prefs { trail?: boolean; gear?: boolean; nrate?: number; model?: string; source?: string; stickMode?: number; expo?: number; rate?: number; rexpo?: number; assist?: string; camera?: string; spot?: string; arrow?: boolean; wind?: number; windDir?: number; gust?: number; volume?: number; muted?: boolean; tilt?: number }
+interface Prefs { custom?: CustomSpec; trail?: boolean; gear?: boolean; nrate?: number; model?: string; source?: string; stickMode?: number; expo?: number; rate?: number; rexpo?: number; assist?: string; camera?: string; spot?: string; arrow?: boolean; wind?: number; windDir?: number; gust?: number; volume?: number; muted?: boolean; tilt?: number }
 function loadPrefs(): Prefs {
   try { return JSON.parse(localStorage.getItem(PREFS_KEY) ?? '{}') as Prefs; } catch { return {}; }
 }
@@ -69,9 +72,18 @@ export class SettingsPanel {
   private wizardState: { axis: AxisName | SwitchName; baseline: number[]; baselineButtons: boolean[] } | null = null;
   private wizardStatus: HTMLElement | null = null;
   currentModelId = HELI_MODELS[0].id;
+  /** Built-in models plus the pilot's custom one when defined. */
+  models: HeliModel[] = [...HELI_MODELS];
+  customSpec: CustomSpec | null = null;
+
+  /** Register (or replace) the custom model in the list. */
+  setCustom(spec: CustomSpec, model: HeliModel): void {
+    this.customSpec = spec;
+    this.models = [...HELI_MODELS, model];
+  }
 
   private setupHtml(): string {
-    const base = HELI_MODELS.find((m) => m.id === this.currentModelId) ?? HELI_MODELS[0];
+    const base = this.models.find((m) => m.id === this.currentModelId) ?? HELI_MODELS[0];
     const cur = this.cb.getSetup(base.id) ?? {};
     const deg = (c: number[], i: number) => c[i];
     const modes = ['Normal', 'Idle-Up 1', 'Idle-Up 2'];
@@ -103,6 +115,38 @@ export class SettingsPanel {
       <button id="setup-reset">Reset to factory</button>`;
   }
 
+  private customHtml(): string {
+    const c = this.customSpec ?? DEFAULT_CUSTOM;
+    const num = (id: string, label: string, value: number, min: number, max: number, step = 1) =>
+      `<label class="setup-row"><span>${label}</span><input type="number" data-custom="${id}" value="${value}" min="${min}" max="${max}" step="${step}"></label>`;
+    return `
+      <p class="hint">Type the numbers from the box and your radio; everything else (inertia, rotor, tail, motor, drag) is
+      scaled between the 450 and the 700 references. Then pick it in the Model list above.</p>
+      <label class="setup-row"><span>Name</span><input type="text" data-custom="name" value="${c.name.replace(/"/g, '&quot;')}" maxlength="40"></label>
+      ${num('bladeMm', 'Main blade length (mm)', c.bladeMm, 150, 900)}
+      ${num('massG', 'All-up weight (g)', c.massG, 100, 9000, 10)}
+      ${num('cells', 'Battery cells (S)', c.cells, 1, 14)}
+      ${num('mah', 'Battery capacity (mAh)', c.mah, 100, 20000, 100)}
+      ${num('hs0', 'Head speed Normal (rpm)', c.headspeedRpm[0], 600, 4500, 50)}
+      ${num('hs1', 'Head speed Idle-Up 1 (rpm)', c.headspeedRpm[1], 600, 4500, 50)}
+      ${num('hs2', 'Head speed Idle-Up 2 (rpm)', c.headspeedRpm[2], 600, 4500, 50)}
+      <label><input type="checkbox" data-custom="flybar" ${c.flybar ? 'checked' : ''}> Mechanical flybar head</label>
+      <button id="custom-fly">Build it and fly it</button>`;
+  }
+
+  private readCustom(): CustomSpec {
+    const g = (id: string) => (this.panel.querySelector(`[data-custom="${id}"]`) as HTMLInputElement).value;
+    return normalizeSpec({
+      name: g('name'),
+      bladeMm: Number(g('bladeMm')),
+      massG: Number(g('massG')),
+      cells: Number(g('cells')),
+      mah: Number(g('mah')),
+      headspeedRpm: [Number(g('hs0')), Number(g('hs1')), Number(g('hs2'))],
+      flybar: (this.panel.querySelector('[data-custom="flybar"]') as HTMLInputElement).checked,
+    });
+  }
+
   private readSetup(): ModelSetup {
     const g = (id: string) => Number((this.panel.querySelector(`[data-setup="${id}"]`) as HTMLInputElement).value);
     return {
@@ -124,6 +168,15 @@ export class SettingsPanel {
         this.cb.onSetup(this.currentModelId, this.readSetup());
       });
     }
+    this.panel.querySelector('#custom-fly')?.addEventListener('click', () => {
+      const spec = this.readCustom();
+      const model = this.cb.onCustom(spec);
+      this.setCustom(spec, model);
+      this.currentModelId = model.id;
+      this.cb.onModel(model);
+      savePrefs({ custom: spec, model: model.id });
+      this.render();
+    });
     this.panel.querySelector('#setup-reset')?.addEventListener('click', () => {
       this.cb.onSetup(this.currentModelId, {});
       this.render();
@@ -206,8 +259,12 @@ export class SettingsPanel {
   restore(): void {
     const p = loadPrefs();
     const im = this.input;
+    if (p.custom) {
+      const spec = normalizeSpec(p.custom);
+      this.setCustom(spec, this.cb.onCustom(spec));
+    }
     if (p.model) {
-      const m = HELI_MODELS.find((x) => x.id === p.model);
+      const m = this.models.find((x) => x.id === p.model);
       if (m) { this.currentModelId = m.id; this.cb.onModel(m); }
     }
     if (p.source && p.source !== 'motion') im.choice = p.source as SourceChoice; // motion needs a permission tap
@@ -268,8 +325,9 @@ export class SettingsPanel {
       <p class="hint">v${__VERSION__} · build <code>${__COMMIT__}</code> (${__BUILD__.split(' ').slice(1).join(' ')}) · <a href="https://github.com/filipenevola/rc-heli-sim/blob/main/CHANGELOG.md" target="_blank" rel="noopener">Release log</a></p>
       <section>
         <h4>Helicopter</h4>
-        ${sel('model', HELI_MODELS.map((m) => [m.id, m.name]), this.currentModelId)}
+        ${sel('model', this.models.map((m) => [m.id, m.name]), this.currentModelId)}
         <label><input type="checkbox" id="gear" ${this.gearOn ? 'checked' : ''}> Training gear (cross of rods with balls: nearly tip-proof, a bit heavier and slower)</label>
+        <details class="setup"><summary>My helicopter (custom)</summary>${this.customHtml()}</details>
         <details class="setup"><summary>Model setup (pitch curves, head speed, gyro) — like your radio's model memory</summary>
           ${this.setupHtml()}
         </details>
@@ -326,7 +384,7 @@ export class SettingsPanel {
     const q = <T extends HTMLElement>(s: string) => this.panel.querySelector(s) as T;
     q('#close').addEventListener('click', () => this.toggle());
     q<HTMLSelectElement>('#model').addEventListener('change', (e) => {
-      const m = HELI_MODELS.find((x) => x.id === (e.target as HTMLSelectElement).value)!;
+      const m = this.models.find((x) => x.id === (e.target as HTMLSelectElement).value)!;
       this.currentModelId = m.id;
       this.cb.onModel(m);
       savePrefs({ model: m.id });
