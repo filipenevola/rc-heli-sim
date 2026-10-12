@@ -9,7 +9,10 @@ import { CHALLENGES } from './challenges';
 
 for (const model of HELI_MODELS) {
   // 3D on a flybar trainer boom-strikes (by design); the game runs those lessons on the flybarless 450.
-  const lessons = LESSONS.filter((l) => !(model.controller.type === 'flybar' && CHALLENGES.find((c) => c.id === l.challengeId)?.level === '3D'));
+  // A micro cannot autorotate (no rotor energy) and the demo's hold entry boom-strikes a flybar; the game runs
+  // that lesson on the flybarless 450 too.
+  const lessons = LESSONS.filter((l) => !(model.controller.type === 'flybar' && CHALLENGES.find((c) => c.id === l.challengeId)?.level === '3D'))
+    .filter((l) => !((model.rotor.radius < 0.3 || model.controller.type === 'flybar') && l.challengeId === 'autorotation'));
   describe.each(lessons)(`show-me on ${model.name}: $challengeId`, (lesson) => {
     it('completes without crashing', () => {
       const { world } = buildField();

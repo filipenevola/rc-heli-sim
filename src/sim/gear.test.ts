@@ -17,9 +17,7 @@ function sloppyLanding(gear: boolean) {
   ctl.flightMode = 1;
   ctl.collective = -0.05;
   run(sim, ctl, 25);
-  sim.state.pos.y = 1.0;
-  sim.state.onGround = false;
-  ctl.collective = 0.05;
+  ctl.collective = 0.05; // light on the skids
   run(sim, ctl, 0.5);
   ctl.aileron = 1;
   run(sim, ctl, 0.5);
@@ -56,7 +54,26 @@ describe('training gear', () => {
     const bare = sloppyLanding(false);
     const geared = sloppyLanding(true);
     expect(bare.state.crashed).toBe(true);
-    expect(bare.state.crashReason).toContain('Blade strike');
+    expect(bare.state.crashReason).toMatch(/Blade strike|Hard landing/);
     expect(geared.state.crashed).toBe(false);
+  });
+});
+
+describe('hard landings', () => {
+  function drop(gear: boolean, height: number) {
+    const model = gear ? withTrainingGear(HELI_450_FLYBAR) : HELI_450_FLYBAR;
+    const sim = new HelicopterSim(model, new Wind());
+    const ctl = neutralFrame();
+    sim.state.pos.y = height;
+    sim.state.onGround = false;
+    run(sim, ctl, 2);
+    return sim.state;
+  }
+  it('folds the skids above a couple of metres per second, survives a gentle drop', () => {
+    expect(drop(false, 0.08).crashed).toBe(false); // ~1.2 m/s
+    const hard = drop(false, 0.5); // ~3 m/s
+    expect(hard.crashed).toBe(true);
+    expect(hard.crashReason).toContain('Hard landing');
+    expect(drop(true, 0.35).crashed).toBe(false); // foam balls take ~2.6 m/s
   });
 });

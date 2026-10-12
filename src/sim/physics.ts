@@ -411,6 +411,11 @@ export class HelicopterSim {
       }
       // Side hits on objects at speed break things too (a skid into a wall).
       if (cp.kind === 'skid' && normal.y < 0.5 && !s.crashed && len(vPointW) > 3) this.crash(`Hit ${what}`);
+      // Slamming the skids down: carbon or plastic skids fold at a couple of metres per second; the training
+      // gear's foam balls take a bit more.
+      if (cp.kind === 'skid' && normal.y >= 0.5 && !s.crashed && vn < -(cp.gear ? 3.0 : 2.2)) {
+        this.crash(`Hard landing: ${(-vn).toFixed(1)} m/s onto ${what}. The skids folded.`);
+      }
       onGround = true;
       if (cp.kind === 'skid' && normal.y > 0.5 && !cp.gear) {
         skidsTouching++;

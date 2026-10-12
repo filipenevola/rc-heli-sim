@@ -14,6 +14,7 @@ export class Hud {
   private lastHtml = '';
   private toast: HTMLElement;
   private toastUntil = 0;
+  private airborne = false;
   private lastLanding: object | null = null;
 
   constructor(container: HTMLElement) {
@@ -117,16 +118,27 @@ export class Hud {
     this.sticks.style.display = sourceId === 'touch' || sourceId === 'motion' ? 'none' : '';
     this.drawSticks(ctl);
     this.warn(t.vrs > 0.3 ? 'VORTEX RING: descending into your own downwash. Forward cyclic or less collective.' : t.stall > 0.2 ? 'BLADE STALL: too much collective for this head speed. Ease it off.' : t.battery <= 0 ? 'BATTERY FLAT: motor off. Autorotate!' : t.battery < 0.1 ? 'Battery low: land soon.' : '');
+    if (!s.onGround && s.pos.y > 0.3) this.airborne = true;
     if (s.landed && s.landed !== this.lastLanding) {
       this.lastLanding = s.landed;
-      const cm = Math.round(s.landed.offset * 100);
-      const key = `rc-heli-sim.best.${s.landed.target.id}`;
-      const best = Number(localStorage.getItem(key) ?? Infinity);
-      const record = cm < best;
-      if (record) localStorage.setItem(key, String(cm));
-      this.toast.innerHTML = `<b>Landed on the ${s.landed.target.name}</b><br>${cm} cm from centre${record ? ' · new best!' : best < Infinity ? ` · best ${best} cm` : ''}`;
-      this.toast.style.display = '';
-      this.toastUntil = performance.now() + 5000;
+      // Only a landing after a flight counts: sitting on the pad at start-up is not one.
+      if (this.airborne) {
+        this.airborne = false;
+        const cm = Math.round(s.landed.offset * 100);
+        const key = `rc-heli-sim.best.${s.landed.target.id}`;
+        const best = Number(localStorage.getItem(key) ?? Infinity);
+        const record = cm < best;
+        if (record) localStorage.setItem(key, String(cm));
+        const line = `<b>Landed on the ${s.landed.target.name}</b>: ${cm} cm from centre${record ? ' · new best!' : best < Infinity ? ` · best ${best} cm` : ''}`;
+        if (this.toast.style.display !== 'none' && this.toast.querySelector('button[data-action]')) {
+          // The debrief card is up: add the landing line to it rather than replacing it.
+          this.toast.insertAdjacentHTML('afterbegin', `${line}<br>`);
+        } else {
+          this.toast.innerHTML = line;
+          this.toast.style.display = '';
+          this.toastUntil = performance.now() + 5000;
+        }
+      }
     }
     if (this.toastUntil && performance.now() > this.toastUntil) {
       this.toast.style.display = 'none';

@@ -3,6 +3,19 @@
 All notable changes to RC Heli Sim. The version shown in the game (Help and Settings) matches the latest
 entry here; the commit hash next to it identifies the exact build.
 
+## 0.21.0
+
+- **Physics: hard landings break things.** Skids fold above about 2.2 m/s of sink at touchdown (the training gear's
+  foam balls take about 3 m/s). Before this, a 6 m/s slam counted as a clean flight.
+- **Autorotation lesson rewritten as the real technique**: throttle hold with the collective at the bottom, a
+  forward descent, a nose-up flare at about 12 m that bleeds the airspeed and raises the head speed, level skids and
+  one smooth pull. The demo flies it on the flybarless 450 and the 700; on a micro or the flybar trainer it switches
+  to the 450 for the demo and switches back after.
+- The "Landed on the helipad" note now only appears after a real flight, not for sitting on the pad at start-up,
+  and it joins the debrief card instead of replacing it.
+- Dev: `scripts/drive.mjs` drives the game in headless Chrome over the DevTools protocol (used to verify the
+  debrief and replay end to end).
+
 ## 0.20.0
 
 - **Replay any flight**: the debrief card has a Replay flight button that plays the whole flight back from

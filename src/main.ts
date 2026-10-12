@@ -102,6 +102,14 @@ function startLesson(challengeId: string, mode: 'show' | 'teach' = 'show'): void
     modelBeforeLesson = sim.model;
     setModel(HELI_450);
     hud.notify('<b>3D lesson: switched to the flybarless 450</b><br>The flybar trainer cannot take full cyclic at negative G. Your model comes back after the lesson.', 6000);
+  } else if (challengeId === 'autorotation' && (sim.model.rotor.radius < 0.3 || sim.model.controller.type === 'flybar')) {
+    // A micro's rotor stores almost no energy to cushion with, and the demo pilot's hold entry (collective dumped
+    // with cyclic in) boom-strikes a flybar head. The demo flies the flybarless 450; the challenge is open to any model.
+    modelBeforeLesson = sim.model;
+    setModel(HELI_450);
+    hud.notify(sim.model.rotor.radius < 0.3
+      ? '<b>Autorotation: switched to the flybarless 450</b><br>A micro\'s light blades store too little energy to cushion a landing. Your model comes back after the lesson.'
+      : '<b>Autorotation: switched to the flybarless 450</b><br>The demo\'s hold entry would boom-strike the flybar head. Your model comes back after the lesson.', 6000);
   }
   sim.reset();
   tracker.resetTransient();

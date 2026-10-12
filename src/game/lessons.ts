@@ -271,40 +271,60 @@ export const LESSONS: Lesson[] = [
     intro: 'Throttle hold kills the motor; the rotor keeps turning because the air flowing up through the disc drives it, as long as the collective is low. At the bottom, the stored energy in the blades gives one cushioned landing.',
     steps: [
       spoolUp(1, 'Idle-Up 1. Spool up.'),
-      liftTo(38, 'Climb to about 38 m. Autos need height.'),
-      hoverFor(2, 'Settle.'),
+      liftTo(30, 'Climb to about 30 m. Autos need height.'),
       {
-        caption: 'Throttle hold ON, collective well below centre. The heli drops fast; the head speed must stay up. Keep it level with the cyclic.',
-        run: ({ ap, sim }) => {
-          ap.ctl.throttleHold = true;
-          ap.goTo({ x: sim.state.pos.x, y: -10, z: sim.state.pos.z }, ap.heading, { vzMax: 20 });
-          ap.ctl.collective = -0.55;
-          return ap.ctl;
+        caption: 'Fly forward and build up speed: 8-9 m/s. A real auto is flown with airspeed; the flare at the bottom turns that speed back into head speed.',
+        run: ({ ap, sim, mem }) => {
+          mem.x ??= sim.state.pos.x;
+          mem.z0 ??= sim.state.pos.z;
+          return ap.goTo({ x: mem.x, y: 30, z: mem.z0 - 80 }, ap.heading, { vmax: 9, vzMax: 2 });
         },
-        done: ({ sim }) => sim.state.pos.y < 9,
+        done: ({ sim }) => Math.hypot(sim.state.vel.x, sim.state.vel.z) > 7.5,
+        timeout: 15,
+      },
+      {
+        caption: 'Throttle hold ON, collective to the bottom. The heli drops fast; the air coming up through the disc keeps the head speed. Keep the nose a little down so the airspeed stays.',
+        run: ({ ap, sim, mem, t }) => {
+          mem.x ??= sim.state.pos.x;
+          mem.z0 ??= sim.state.pos.z;
+          ap.ctl.throttleHold = true;
+          ap.goTo({ x: mem.x, y: -10, z: mem.z0 - 120 }, ap.heading, { vmax: 9, vzMax: 20 });
+          ap.ctl.collective = -1;
+          return ap.ctl;
+          void t;
+        },
+        done: ({ sim }) => sim.state.pos.y < 12,
         timeout: 30,
       },
       {
-        caption: 'Flare: a little back cyclic to slow the descent, collective still low.',
-        run: ({ ap, sim }) => {
+        caption: 'Flare: nose up, collective still low. The disc tilts back into the airflow: the forward speed bleeds off, the sink rate drops and the head speed comes UP. Watch the rpm.',
+        run: ({ ap, sim, mem }) => {
+          mem.x ??= sim.state.pos.x;
           ap.ctl.throttleHold = true;
-          ap.goTo({ x: sim.state.pos.x, y: -10, z: sim.state.pos.z }, ap.heading);
-          ap.ctl.collective = -0.35;
+          ap.goTo({ x: mem.x, y: sim.state.pos.y, z: sim.state.pos.z }, ap.heading);
+          ap.ctl.elevator = -0.7; // stick back: about 25 degrees nose up
+          ap.ctl.collective = -0.3;
           return ap.ctl;
         },
-        done: ({ sim }) => sim.state.pos.y < 3.5,
-        timeout: 10,
+        done: ({ sim }) => Math.hypot(sim.state.vel.x, sim.state.vel.z) < 1.5 || sim.state.pos.y < 2.0,
+        timeout: 8,
       },
       {
-        caption: 'Now pull the collective up smoothly: the blades turn their stored energy into one cushion. Level skids, touch down.',
-        run: ({ ap, sim, t }) => {
+        caption: 'Level the skids and pull the collective: the stored head speed becomes one cushion. Too early and it dies up high; too late and the skids fold.',
+        run: ({ ap, sim, mem }) => {
+          mem.x ??= sim.state.pos.x;
+          mem.z ??= sim.state.pos.z;
           ap.ctl.throttleHold = true;
-          ap.goTo({ x: sim.state.pos.x, y: skidHeight(sim), z: sim.state.pos.z }, ap.heading);
-          ap.ctl.collective = Math.min(0.9, 0.2 + t * 0.5);
+          ap.goTo({ x: mem.x, y: skidHeight(sim), z: mem.z }, ap.heading, { vmax: 1 });
+          // Closed loop on the sink rate: target descent proportional to height above the skids.
+          const h = Math.max(0, sim.state.pos.y - skidHeight(sim));
+          const vTarget = -Math.max(0.35, Math.min(6, 0.8 * h));
+          const err = vTarget - sim.state.vel.y;
+          ap.ctl.collective = Math.max(-0.4, Math.min(1, 0.4 + 1.0 * err));
           return ap.ctl;
         },
-        done: ({ sim, t }) => sim.state.onGround && t > 1.5,
-        timeout: 10,
+        done: ({ sim, t }) => sim.state.onGround && t > 1.0,
+        timeout: 14,
       },
       {
         caption: 'Down. Collective to the bottom, hold stays on. That was an autorotation.',

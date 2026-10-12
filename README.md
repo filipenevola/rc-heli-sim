@@ -41,6 +41,9 @@ npm install
 npm run dev        # http://localhost:5173
 npm test           # physics regression tests (hover trim, control signs, autorotation, crashes)
 npm run build
+scripts/smoke.sh   # loads a few URLs in headless Chrome against the dev server, fails on uncaught errors
+node scripts/drive.mjs "http://localhost:5173/?cam=chase" "wait:rcHeli.sim.state.time > 5" "eval:rcHeli.sim.state.pos.y"
+                   # drives the running game over the DevTools protocol (real time): wait:<expr> polls, eval:<expr> prints
 ```
 
 ## Challenges and rankings
