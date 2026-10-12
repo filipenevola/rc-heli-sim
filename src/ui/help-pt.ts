@@ -210,6 +210,15 @@ export const HELP_HTML_PT = `
   postes de luz, alguns carros estacionados, dois galpões no fundo e um contêiner cujo teto é um alvo de
   pouso (a 2,6 m, quase sem efeito solo). Céu aberto e vento, como um estacionamento de clube de verdade; os postes são a
   surpresa de sempre. Os desafios da mesa, picape, pontão e torre do campo aparecem como "Só no campo" lá.</p>
+  <h4>Relatório de física: os números por trás dos modelos</h4>
+  <p>Calculado ao vivo com o mesmo modelo de rotor que o simulador voa (elemento de pá + teoria da quantidade de movimento,
+  inflow de Pitt–Peters), para você comparar com o que mede no seu heli: passo e potência no pairado com um wattímetro,
+  razão de subida, descida em autorrotação. Rotores de aeromodelo voados em rotação de 3D têm figura de mérito baixa
+  (0,2–0,4): nessas cargas de pá minúsculas o arrasto de perfil, não a potência induzida, é a maior parte da conta. O
+  modelo de rotor não tem fator de perda de ponta, então o simulador paira cerca de um grau mais baixo do que uma
+  folha de setup típica; potência e autonomia batem com as correntes de pairado publicadas (um 450 a 8–11 A em 3S, um
+  700 a 12–16 A em 12S).</p>
+  <div id="physics-report"></div>
   <h4>Resgate: o buddy box</h4>
   <p>Segure <b>Espaço</b> (ou pressione e segure o botão 🛟) e o instrutor assume os sticks: o heli fica de pé, a deriva
   para e ele segura um pairado onde está, subindo primeiro a 3 m se estava mais baixo. Solte e os sticks voltam para

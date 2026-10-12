@@ -1,6 +1,8 @@
 import { BILLBOARDS } from '../sim/ads';
 import { HELP_HTML_PT } from './help-pt';
-import { getLang } from '../i18n';
+import { getLang, t } from '../i18n';
+import { physicsReport, type PhysicsReport } from '../sim/report';
+import { HELI_MODELS } from '../sim/heli-model';
 
 /** In-game manual. Plain HTML so it works on every device and can be read while paused. */
 export class HelpPanel {
@@ -28,6 +30,8 @@ export class HelpPanel {
 
   private build(): void {
     this.el.innerHTML = getLang() === 'pt-BR' ? HELP_HTML_PT : HELP_HTML;
+    const host = this.el.querySelector('#physics-report');
+    if (host) host.innerHTML = physicsTable(HELI_MODELS.map(physicsReport));
     // Table of contents from the section headings, so the long manual is navigable on a phone.
     const heads = [...this.el.querySelectorAll('h4')];
     heads.forEach((h, i) => (h.id = `help-${i}`));
@@ -257,6 +261,14 @@ const HELP_HTML = `
   light poles, a few parked cars, two warehouses along the back and a shipping container whose roof is a landing
   target (2.6 m up, almost no ground effect). Open sky and wind, like a real club lot; the poles are the usual
   surprise. The field's picnic table, truck, pontoon and tower challenges are marked "Field only" there.</p>
+  <h4>Physics report: the numbers behind the models</h4>
+  <p>Computed live from the same rotor model the sim flies (blade element + momentum theory, Pitt–Peters inflow),
+  so you can compare with what you measure on your own heli: hover pitch and hover power with a wattmeter, climb
+  rate, autorotation sink. Model rotors flown at 3D head speeds have a low figure of merit (0.2–0.4): at these tiny
+  blade loadings profile drag, not induced power, is most of the bill. The rotor model has no tip-loss factor, so
+  the sim hovers about a degree lower than a typical setup sheet; power and endurance match published hover currents
+  (a 450 at 8–11 A on 3S, a 700 at 12–16 A on 12S).</p>
+  <div id="physics-report"></div>
   <h4>Rescue: the buddy box</h4>
   <p>Hold <b>Space</b> (or press and hold the 🛟 button) and the instructor takes the sticks: the heli rolls upright,
   the drift stops and it holds a hover where it is, climbing to 3 m first if it was lower. Let go and the sticks are
@@ -345,3 +357,24 @@ const HELP_HTML = `
   plays back with your own stick inputs on the big gimbals so you can see what went wrong. Then R or Reset.</p>
 </section>
 `;
+
+/** The report as a table, one column per model. */
+export function physicsTable(reports: PhysicsReport[]): string {
+  const f = (v: number, d = 1) => v.toFixed(d);
+  const rows: [string, (r: PhysicsReport) => string][] = [
+    [t('Mass'), (r) => `${f(r.massKg, 2)} kg`],
+    [t('Rotor disc'), (r) => `${f(r.discAreaM2, 2)} m²`],
+    [t('Disc loading'), (r) => `${f(r.discLoading)} N/m²`],
+    [t('Head speed (Idle-Up 1)'), (r) => `${f(r.headRpm, 0)} rpm · ${f(r.tipSpeed, 0)} m/s ${t('tip')}`],
+    [t('Solidity · CT/σ'), (r) => `${f(r.solidity, 3)} · ${f(r.ctSigma, 3)}`],
+    [t('Hover collective'), (r) => `${f(r.hoverPitchDeg)}° (${t('rotor alone')} ${f(r.rotorTrimPitchDeg)}°)`],
+    [t('Hover induced velocity'), (r) => `${f(r.inducedVelocity)} m/s`],
+    [t('Rotor power in hover'), (r) => `${f(r.hoverRotorPowerW, 0)} W (${t('ideal')} ${f(r.idealPowerW, 0)} W)`],
+    [t('Figure of merit'), (r) => f(r.figureOfMerit, 2)],
+    [t('Power drawn in hover'), (r) => `${f(r.hoverTotalPowerW, 0)} W`],
+    [t('Hover endurance'), (r) => `${f(r.hoverEnduranceMin)} min`],
+    [t('Max vertical climb'), (r) => `${f(r.maxClimb)} m/s`],
+    [t('Vertical autorotation'), (r) => `${f(r.autoSink)} m/s ${t('sink at')} ${f(r.autoHeadSpeedFrac * 100, 0)}% ${t('head speed')}`],
+  ];
+  return `<table class="physics"><tr><th></th>${reports.map((r) => `<th>${r.model}</th>`).join('')}</tr>${rows.map(([label, fn]) => `<tr><td>${label}</td>${reports.map((r) => `<td>${fn(r)}</td>`).join('')}</tr>`).join('')}</table>`;
+}

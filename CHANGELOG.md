@@ -3,6 +3,12 @@
 All notable changes to RC Heli Sim. The version shown in the game (Help and Settings) matches the latest
 entry here; the commit hash next to it identifies the exact build.
 
+## 0.61.0
+
+- Manual: a **physics report** computed live from the rotor model for every built-in heli: disc loading, tip speed,
+  CT/σ, flown hover collective and power, induced velocity, figure of merit, hover endurance, max climb and vertical
+  autorotation sink. A test pins the 450 and 700 numbers to published hover currents and pitch settings.
+
 ## 0.60.0
 
 - Rescue on a transmitter switch: Settings → Transmitter mapping → Assign Rescue switch. Flip it and the instructor
