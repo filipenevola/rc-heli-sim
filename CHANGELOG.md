@@ -3,6 +3,11 @@
 All notable changes to RC Heli Sim. The version shown in the game (Help and Settings) matches the latest
 entry here; the commit hash next to it identifies the exact build.
 
+## 0.54.1
+
+- Fix: the rankings API image copied only `index.mjs`, so the 0.53.0 server (which imports `radio-rooms.mjs`)
+  failed to start and the API answered 503. The Dockerfile now ships every server module.
+
 ## 0.54.0
 
 - Phone radio pairing shows a **QR code** of the phone link next to the code: point the phone camera at the screen
