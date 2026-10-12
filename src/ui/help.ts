@@ -210,6 +210,10 @@ const HELP_HTML = `
   <p>Press <b>T</b> (or Settings → Smoke trail) for a fading ribbon of the last 12 seconds of flight. It shows the
   real shape of your loop, eight or funnel from where you stand, the way smoke does at a show, and it also draws
   during replays.</p>
+  <h4>Telemetry graph</h4>
+  <p>Press <b>Y</b> (or Settings → Telemetry graph) for a strip chart of the last 30 seconds: head speed (yellow),
+  collective (blue), altitude (green) and G (red), the way a radio's telemetry log looks. Watch the head speed sag
+  on a hard pull with the governor off, or wander when the gyro gain is too high.</p>
   <h4>Camera</h4>
   <p>The <b>Cam</b> button (or C) cycles: <b>Pilot</b> — you stand on the field and the view zooms with distance, the
   realistic way and the one that transfers to the real model; <b>Chase</b> — behind the tail, turning with the heading;

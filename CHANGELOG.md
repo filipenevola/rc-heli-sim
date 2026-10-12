@@ -3,6 +3,12 @@
 All notable changes to RC Heli Sim. The version shown in the game (Help and Settings) matches the latest
 entry here; the commit hash next to it identifies the exact build.
 
+## 0.41.0
+
+- **Telemetry graph** (Y, or Settings → Telemetry graph): a strip chart of the last 30 s of head speed,
+  collective, altitude and G, like a radio's telemetry log. Good for seeing governor droop, throttle-curve sag and
+  tail-wag wander.
+
 ## 0.40.0
 
 - **The logbook follows your account**: signed-in pilots get their last sixty flights synced to the rankings

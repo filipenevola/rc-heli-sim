@@ -167,3 +167,6 @@ table.channels button { padding: 2px 8px; font-size: 12px; }
 .field-only { opacity: 0.7; font-size: 12px; }
 
 .coach { margin: 6px 0 8px; padding: 8px 10px; background: rgba(40, 110, 200, 0.22); border: 1px solid rgba(120, 180, 255, 0.45); border-radius: 8px; font-size: 13px; }
+
+.hud-graph { position: absolute; right: 10px; bottom: 10px; border-radius: 8px; pointer-events: none; }
+@media (pointer: coarse) { .hud-graph { bottom: 215px; width: 220px; height: 88px; } }

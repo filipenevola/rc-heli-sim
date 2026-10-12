@@ -44,6 +44,7 @@ export interface SettingsCallbacks {
   onPilotSpot(spot: string): void;
   onArrow(on: boolean): void;
   onTrail(on: boolean): void;
+  onGraph(on: boolean): void;
 }
 
 type AxisName = 'aileron' | 'elevator' | 'rudder' | 'collective';
@@ -60,7 +61,7 @@ const AXIS_HINT: Record<AxisName | SwitchName, string> = {
 };
 
 const PREFS_KEY = 'rc-heli-sim.prefs.v1';
-interface Prefs { site?: SiteId; lang?: Lang; welcomed?: boolean; custom?: CustomSpec; trail?: boolean; gear?: boolean; nrate?: number; model?: string; source?: string; stickMode?: number; expo?: number; rate?: number; rexpo?: number; assist?: string; camera?: string; spot?: string; arrow?: boolean; wind?: number; windDir?: number; gust?: number; volume?: number; muted?: boolean; tilt?: number }
+interface Prefs { graph?: boolean; site?: SiteId; lang?: Lang; welcomed?: boolean; custom?: CustomSpec; trail?: boolean; gear?: boolean; nrate?: number; model?: string; source?: string; stickMode?: number; expo?: number; rate?: number; rexpo?: number; assist?: string; camera?: string; spot?: string; arrow?: boolean; wind?: number; windDir?: number; gust?: number; volume?: number; muted?: boolean; tilt?: number }
 function loadPrefs(): Prefs {
   try { return JSON.parse(localStorage.getItem(PREFS_KEY) ?? '{}') as Prefs; } catch { return {}; }
 }
@@ -298,6 +299,7 @@ export class SettingsPanel {
     if (p.spot) { this.spot = p.spot; this.cb.onPilotSpot(p.spot); }
     if (p.arrow !== undefined) { this.arrowOn = p.arrow; this.cb.onArrow(p.arrow); }
     if (p.trail) this.setTrail(true);
+    if (p.graph) this.setGraph(true);
     if (p.gear) { this.gearOn = true; this.cb.onTrainingGear(true); }
     if (p.wind !== undefined) this.wind.speed = p.wind;
     if (p.windDir !== undefined) this.wind.fromDeg = p.windDir;
@@ -390,6 +392,7 @@ export class SettingsPanel {
         <button id="walk">Walk to the heli (G)</button>
         <label><input type="checkbox" id="arrow" ${this.arrowOn ? 'checked' : ''}> Orientation arrow under the heli (beginner aid)</label>
         <label><input type="checkbox" id="trail" ${this.trailOn ? 'checked' : ''}> Smoke trail: fading path of the last 12 s (T)</label>
+        <label><input type="checkbox" id="graph" ${this.graphOn ? 'checked' : ''}> Telemetry graph: head speed, collective, altitude and G over the last 30 s (Y)</label>
       </section>
       <section>
         <h4>Sound</h4>
@@ -466,6 +469,9 @@ export class SettingsPanel {
       this.arrowOn = (e.target as HTMLInputElement).checked;
       this.cb.onArrow(this.arrowOn);
       savePrefs({ arrow: this.arrowOn });
+    });
+    q<HTMLInputElement>('#graph').addEventListener('change', (e) => {
+      this.setGraph((e.target as HTMLInputElement).checked);
     });
     q<HTMLInputElement>('#trail').addEventListener('change', (e) => {
       this.setTrail((e.target as HTMLInputElement).checked);
@@ -560,7 +566,17 @@ export class SettingsPanel {
   spot = 'pad';
   arrowOn = true;
   trailOn = false;
+  graphOn = false;
   gearOn = false;
+
+  /** Telemetry graph on/off (settings checkbox, Y key); persisted. */
+  setGraph(on: boolean): void {
+    this.graphOn = on;
+    this.cb.onGraph(on);
+    const box = this.panel.querySelector<HTMLInputElement>('#graph');
+    if (box) box.checked = on;
+    savePrefs({ graph: on });
+  }
 
   /** Smoke trail on/off (settings checkbox, T key); persisted. */
   setTrail(on: boolean): void {

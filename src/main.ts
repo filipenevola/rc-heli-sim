@@ -284,6 +284,9 @@ const settings = new SettingsPanel(ui, input, wind, audio, {
   onTrail(on) {
     trail.visible = on;
   },
+  onGraph(on) {
+    hud.graphOn = on;
+  },
   onCamera(mode) {
     if (mode) pilotCam.mode = mode;
     else pilotCam.cycle();
@@ -401,6 +404,7 @@ window.addEventListener('keydown', (e) => {
   if (e.code === 'KeyR' && e.shiftKey) resetHover();
   else if (e.code === 'KeyR') reset();
   if (e.code === 'KeyT') settings.setTrail(!trail.visible);
+  if (e.code === 'KeyY') settings.setGraph(!hud.graphOn);
 });
 
 // Tap a billboard to open the site. A short press with no drag only, so camera-free touches on the field do nothing.

@@ -176,6 +176,7 @@ export const PT_BR: Record<string, string> = {
   'Walk to the heli (G)': 'Andar até o heli (G)',
   'Orientation arrow under the heli (beginner aid)': 'Seta de orientação embaixo do heli (ajuda para iniciantes)',
   'Smoke trail: fading path of the last 12 s (T)': 'Rastro de fumaça: trajetória dos últimos 12 s (T)',
+  'Telemetry graph: head speed, collective, altitude and G over the last 30 s (Y)': 'Gráfico de telemetria: rotação, coletivo, altitude e G dos últimos 30 s (Y)',
   'Sound': 'Som',
   'Volume': 'Volume',
   'Wind': 'Vento',

@@ -40,6 +40,83 @@ export class Hud {
     this.crash.className = 'crash-banner';
     this.crash.style.display = 'none';
     container.appendChild(this.crash);
+    this.graph = document.createElement('canvas');
+    this.graph.className = 'hud-graph';
+    this.graph.width = 300;
+    this.graph.height = 120;
+    this.graph.style.display = 'none';
+    container.appendChild(this.graph);
+  }
+
+  /** Telemetry strip chart: the last 30 s of head speed, collective, altitude and G, like a radio's log. */
+  private graph: HTMLCanvasElement;
+  private samples: { rpm: number; col: number; alt: number; g: number }[] = [];
+  private sampleAcc = 0;
+  private graphOnFlag = false;
+
+  get graphOn(): boolean {
+    return this.graphOnFlag;
+  }
+
+  set graphOn(on: boolean) {
+    this.graphOnFlag = on;
+    this.graph.style.display = on ? '' : 'none';
+    if (!on) this.samples = [];
+  }
+
+  private drawGraph(sim: HelicopterSim, dt: number): void {
+    const t = sim.telemetry;
+    const m = sim.model;
+    this.sampleAcc += dt;
+    if (this.sampleAcc >= 0.1) {
+      this.sampleAcc = 0;
+      const nominal = (m.headspeeds[2] * 60) / (2 * Math.PI);
+      this.samples.push({ rpm: Math.min(1.2, t.headspeedRpm / nominal), col: (t.collectiveDeg + 14) / 28, alt: Math.min(1, t.altitude / 40), g: Math.max(0, Math.min(1, (t.gLoad + 1) / 4)) });
+      if (this.samples.length > 300) this.samples.shift();
+    }
+    const g = this.graph.getContext('2d');
+    if (!g) return;
+    const W = this.graph.width;
+    const H = this.graph.height;
+    g.clearRect(0, 0, W, H);
+    g.fillStyle = 'rgba(0,0,0,0.5)';
+    g.fillRect(0, 0, W, H);
+    g.strokeStyle = 'rgba(255,255,255,0.15)';
+    g.lineWidth = 1;
+    for (const f of [0.25, 0.5, 0.75]) {
+      g.beginPath();
+      g.moveTo(0, H * (1 - f));
+      g.lineTo(W, H * (1 - f));
+      g.stroke();
+    }
+    const series: [keyof (typeof this.samples)[number], string, string][] = [
+      ['rpm', '#ffd34d', 'rpm'],
+      ['col', '#7fd4ff', `${t.collectiveDeg.toFixed(1)}°`],
+      ['alt', '#9be08a', `${t.altitude.toFixed(1)} m`],
+      ['g', '#ff8a80', `${t.gLoad.toFixed(1)} g`],
+    ];
+    const n = this.samples.length;
+    for (const [key, color] of series) {
+      g.strokeStyle = color;
+      g.lineWidth = 1.5;
+      g.beginPath();
+      for (let i = 0; i < n; i++) {
+        const x = (i / 299) * W;
+        const y = H - 4 - (H - 8) * Math.max(0, Math.min(1, this.samples[i][key]));
+        if (i === 0) g.moveTo(x, y);
+        else g.lineTo(x, y);
+      }
+      g.stroke();
+    }
+    g.font = '11px system-ui, sans-serif';
+    let x = 6;
+    for (const [, color, label] of series) {
+      g.fillStyle = color;
+      g.fillText(label, x, 12);
+      x += g.measureText(label).width + 12;
+    }
+    g.fillStyle = 'rgba(255,255,255,0.6)';
+    g.fillText('30 s', W - 28, H - 5);
   }
 
   onReplay: (() => void) | null = null;
@@ -118,6 +195,7 @@ export class Hud {
     // The on-screen gimbals already show stick position; the mini display would only cover them.
     this.sticks.style.display = sourceId === 'touch' || sourceId === 'motion' ? 'none' : '';
     this.drawSticks(ctl);
+    if (this.graphOnFlag) this.drawGraph(sim, dt);
     this.warn(t.vrs > 0.3 ? tr('VORTEX RING: descending into your own downwash. Forward cyclic or less collective.') : t.stall > 0.2 ? tr('BLADE STALL: too much collective for this head speed. Ease it off.') : t.wag > 0.5 ? tr('TAIL WAG: tail gyro gain too high. Lower it in Settings → Model setup.') : t.battery <= 0 ? (sim.model.power === 'nitro' ? tr('FUEL OUT: engine quit. Autorotate!') : tr('BATTERY FLAT: motor off. Autorotate!')) : t.battery < 0.1 ? (sim.model.power === 'nitro' ? tr('Fuel low: land soon.') : tr('Battery low: land soon.')) : '');
     if (!s.onGround && s.pos.y > 0.3) this.airborne = true;
     if (s.landed && s.landed !== this.lastLanding) {

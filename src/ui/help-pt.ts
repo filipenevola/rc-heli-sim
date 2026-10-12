@@ -163,6 +163,10 @@ export const HELP_HTML_PT = `
   <p>Aperte <b>T</b> (ou Configurações → Rastro de fumaça) para uma fita que desaparece aos poucos com os últimos 12 segundos de voo. Mostra a
   forma real do seu loop, oito ou funil de onde você está, como a fumaça faz num show, e também aparece
   nos replays.</p>
+  <h4>Gráfico de telemetria</h4>
+  <p>Aperte <b>Y</b> (ou Configurações → Gráfico de telemetria) para um gráfico dos últimos 30 segundos: rotação (amarelo),
+  coletivo (azul), altitude (verde) e G (vermelho), como o log de telemetria de um rádio. Veja a rotação cair
+  numa puxada forte com o governor desligado, ou vagar quando o ganho do giro está alto demais.</p>
   <h4>Câmera</h4>
   <p>O botão <b>Câmera</b> (ou C) alterna: <b>Piloto</b> — você fica parado no campo e a visão dá zoom com a distância, o jeito
   realista e o que transfere para o modelo de verdade; <b>Perseguição</b> — atrás da cauda, girando com o rumo;
