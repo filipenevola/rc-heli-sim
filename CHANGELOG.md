@@ -3,6 +3,11 @@
 All notable changes to RC Heli Sim. The version shown in the game (Help and Settings) matches the latest
 entry here; the commit hash next to it identifies the exact build.
 
+## 0.50.0
+
+- Phones buzz on a crash and tap once on a firm touchdown (where the browser allows vibration).
+- Dev: a test keeps the rankings server's points table identical to the client's challenges.
+
 ## 0.49.0
 
 - Challenges that belong to another site now say which one ("Parking lot only", "Gym only", "Field only").

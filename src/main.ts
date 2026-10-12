@@ -478,6 +478,7 @@ let flightStartFrame = 0;
 let lastFlight: Frame[] | null = null;
 let replay: { frames: Frame[]; i: number; acc: number; kind: 'crash' | 'flight' } | null = null;
 let recordedCrash = false;
+let wasOnGround = true;
 function record(ctl: ReturnType<typeof input.poll>): void {
   const st = sim.state;
   recording.push({ pos: { ...st.pos }, ori: { ...st.ori }, a1: st.a1, b1: st.b1, rotorOmega: st.rotorOmega, ctl: { ...ctl } });
@@ -652,8 +653,16 @@ function frame(now: number): void {
       accumulator -= PHYSICS_DT;
     }
     if (!sim.state.crashed) record(ctl);
-    else if (!recordedCrash) { record(ctl); recordedCrash = true; } // keep the impact frame once
+    else if (!recordedCrash) {
+      record(ctl); // keep the impact frame once
+      recordedCrash = true;
+      // Phones: a thump in the hand on a crash, like the real thing minus the repair bill.
+      if ('vibrate' in navigator) navigator.vibrate([120, 60, 200]);
+    }
     if (!sim.state.crashed) recordedCrash = false;
+    // A firm touchdown taps the phone once.
+    if (sim.state.onGround && !wasOnGround && !sim.state.crashed && sim.state.touchdownSpeed > 1.0 && 'vibrate' in navigator) navigator.vibrate(60);
+    wasOnGround = sim.state.onGround;
   }
 
   heliMesh.update(sim.state, paused ? 0 : dt);
