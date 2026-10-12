@@ -51,6 +51,27 @@ export class LessonOverlay {
     this.el.style.display = 'none';
   }
 
+  /** Replay mode: same gimbals, custom title and caption, no hint ring. */
+  showReplay(): void {
+    this.el.style.display = '';
+    (this.el.querySelector('.lesson-title span') as HTMLElement).textContent = 'Replay';
+    (this.el.querySelector('#lesson-name') as HTMLElement).textContent = 'your last 10 seconds';
+    (this.el.querySelector('#lesson-stop') as HTMLElement).textContent = 'Close replay';
+    this.intro.textContent = 'These were your sticks, exactly as you flew them. Watch what happened just before the crash.';
+    this.coach?.style.setProperty('display', 'none');
+  }
+
+  updateReplay(ctl: ControlFrame, secondsToCrash: number): void {
+    this.caption.textContent = secondsToCrash > 0 ? `${secondsToCrash.toFixed(1)} s before the crash` : 'Crash';
+    this.progress.textContent = '';
+    this.switches.innerHTML = `<span class="${ctl.flightMode > 0 ? 'on' : ''}">Mode: ${['Normal', 'Idle-Up 1', 'Idle-Up 2'][ctl.flightMode]}</span><span class="${ctl.throttleHold ? 'on' : ''}">Throttle hold: ${ctl.throttleHold ? 'ON' : 'off'}</span>`;
+    this.draw(ctl, null);
+  }
+
+  restoreStopLabel(): void {
+    (this.el.querySelector('#lesson-stop') as HTMLElement).textContent = 'Stop lesson';
+  }
+
   update(runner: LessonRunner, ctl: ControlFrame, hint: ControlFrame | null = null): void {
     const step = runner.step;
     const teach = runner.mode === 'teach';

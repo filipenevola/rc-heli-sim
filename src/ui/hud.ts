@@ -40,6 +40,7 @@ export class Hud {
     container.appendChild(this.crash);
   }
 
+  onReplay: (() => void) | null = null;
   private pausedEl: HTMLElement | null = null;
   setPaused(p: boolean): void {
     if (!this.pausedEl) {
@@ -122,8 +123,11 @@ export class Hud {
       this.toastUntil = 0;
     }
     if (s.crashed) {
+      if (this.crash.style.display === 'none') {
+        this.crash.innerHTML = `<h2>Crash</h2><p>${s.crashReason}</p><p class="hint">Press R or tap Reset</p><button id="btn-replay">▶ Replay last 10 s</button>`;
+        this.crash.querySelector('#btn-replay')!.addEventListener('click', () => this.onReplay?.());
+      }
       this.crash.style.display = '';
-      this.crash.innerHTML = `<h2>Crash</h2><p>${s.crashReason}</p><p class="hint">Press R or tap Reset</p>`;
     } else this.crash.style.display = 'none';
   }
 

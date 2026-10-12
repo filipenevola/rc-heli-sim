@@ -205,6 +205,8 @@ challenges.onProfileChange = () => settings.setPilotLabel(profile.name, profile.
 (window as unknown as { rcHeli: unknown }).rcHeli = { sim, input, wind, audio, camera: pilotCam, clouds, world, layout, tracker, flightTimer, profile, challengesList: CHALLENGES };
 
 function reset(): void {
+  if (replay) stopReplay();
+  recording.length = 0;
   if (lesson) stopLesson();
   sim.reset();
   tracker.resetTransient();
@@ -237,6 +239,34 @@ window.addEventListener('resize', () => {
 
 // Fixed-timestep physics driven by the render clock. Simulation time never runs ahead of wall time,
 // and a hitch (tab switch) is capped so the heli does not teleport.
+// Flight recorder: the last 10 s of state and sticks, for the crash replay.
+interface Frame { pos: { x: number; y: number; z: number }; ori: { x: number; y: number; z: number; w: number }; a1: number; b1: number; rotorOmega: number; ctl: ReturnType<typeof input.poll> }
+const REC_SECONDS = 10;
+const REC_MAX = 60 * REC_SECONDS;
+const recording: Frame[] = [];
+let replay: { frames: Frame[]; i: number; acc: number } | null = null;
+let recordedCrash = false;
+function record(ctl: ReturnType<typeof input.poll>): void {
+  const st = sim.state;
+  recording.push({ pos: { ...st.pos }, ori: { ...st.ori }, a1: st.a1, b1: st.b1, rotorOmega: st.rotorOmega, ctl: { ...ctl } });
+  if (recording.length > REC_MAX) recording.shift();
+}
+function startReplay(): void {
+  if (recording.length < 10) return;
+  replay = { frames: [...recording], i: 0, acc: 0 };
+  lessonOverlay.showReplay();
+  lessonOverlay.onStop = stopReplay;
+}
+function stopReplay(): void {
+  replay = null;
+  lessonOverlay.hide();
+  lessonOverlay.restoreStopLabel();
+  lessonOverlay.onStop = () => stopLesson();
+  // Put the mesh back on the real (crashed) state.
+  heliMesh.update(sim.state, 0);
+}
+hud.onReplay = startReplay;
+
 let paused = false;
 function setPaused(p: boolean): void {
   paused = p;
@@ -307,12 +337,34 @@ function frame(now: number): void {
     lastHold = ctl.throttleHold;
   }
 
+  if (replay) {
+    // Replay: no physics; walk the recorded frames at real time (they were taken once per render frame).
+    replay.acc += dt;
+    while (replay.acc > 1 / 60 && replay.i < replay.frames.length - 1) {
+      replay.acc -= 1 / 60;
+      replay.i++;
+    }
+    const f = replay.frames[replay.i];
+    const fake = { ...sim.state, pos: f.pos, ori: f.ori, a1: f.a1, b1: f.b1, rotorOmega: f.rotorOmega, crashed: false };
+    heliMesh.update(fake, dt);
+    lessonOverlay.updateReplay(f.ctl, (replay.frames.length - 1 - replay.i) / 60);
+    if (replay.i >= replay.frames.length - 1 && replay.acc > 2) replay.i = 0; // loop after a pause at the crash
+    target.set(f.pos.x, f.pos.y, f.pos.z);
+    heliQuat.set(f.ori.x, f.ori.y, f.ori.z, f.ori.w);
+    pilotCam.update(target, heliQuat, dt);
+    renderer.render(scene, pilotCam.camera);
+    requestAnimationFrame(frame);
+    return;
+  }
   if (!paused) {
     accumulator += dt;
     while (accumulator >= PHYSICS_DT) {
       sim.step(ctl, PHYSICS_DT);
       accumulator -= PHYSICS_DT;
     }
+    if (!sim.state.crashed) record(ctl);
+    else if (!recordedCrash) { record(ctl); recordedCrash = true; } // keep the impact frame once
+    if (!sim.state.crashed) recordedCrash = false;
   }
 
   heliMesh.update(sim.state, paused ? 0 : dt);

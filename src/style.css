@@ -5,7 +5,8 @@ html, body { margin: 0; height: 100%; overflow: hidden; background: #000; font-f
 #app canvas { display: block; }
 #ui { position: fixed; inset: 0; pointer-events: none; }
 #ui > * { pointer-events: auto; }
-#ui > .hud-sticks, #ui > .crash-banner, #ui > .toast, #ui > .touch-sticks { pointer-events: none; }
+#ui > .hud-sticks, #ui > .toast, #ui > .touch-sticks { pointer-events: none; }
+.crash-banner button { margin-top: 8px; background: rgba(0,0,0,0.5); color: #fff; border: 1px solid #ffd34d; border-radius: 6px; padding: 6px 12px; font-size: 14px; cursor: pointer; }
 body.ui-hidden .hud, body.ui-hidden .hud-sticks, body.ui-hidden .settings, body.ui-hidden .challenges, body.ui-hidden .help { display: none !important; }
 body.ui-hidden .topbar button:not(#btn-hide) { display: none !important; }
 
