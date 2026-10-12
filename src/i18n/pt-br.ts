@@ -35,6 +35,12 @@ export const PT_BR: Record<string, string> = {
   'Front': 'Frente',
   'Top': 'De cima',
   'Drone': 'Drone',
+  // ---- Replay transport ----
+  'Back 1 s (←)': 'Voltar 1 s (←)',
+  'Play / pause (Space)': 'Tocar / pausar (Espaço)',
+  'Forward 1 s (→)': 'Avançar 1 s (→)',
+  'Speed: 1× → ½× → ¼× → 1×': 'Velocidade: 1× → ½× → ¼× → 1×',
+  'Scrub': 'Arrastar no tempo',
   // ---- Physics report ----
   'Mass': 'Massa',
   'Rotor disc': 'Disco do rotor',

@@ -210,6 +210,10 @@ export const HELP_HTML_PT = `
   postes de luz, alguns carros estacionados, dois galpões no fundo e um contêiner cujo teto é um alvo de
   pouso (a 2,6 m, quase sem efeito solo). Céu aberto e vento, como um estacionamento de clube de verdade; os postes são a
   surpresa de sempre. Os desafios da mesa, picape, pontão e torre do campo aparecem como "Só no campo" lá.</p>
+  <h4>Transporte do replay</h4>
+  <p>Todo replay (queda, voo, arquivo carregado) tem uma barra de transporte: tocar/pausar (Espaço), 1 s para trás e
+  para a frente (← →), velocidade 1× / ½× / ¼× e um controle para arrastar no tempo. Câmera lenta é como você vê o que
+  os sticks fizeram no meio segundo antes de uma queda; troque a câmera enquanto toca.</p>
   <h4>Relatório de física: os números por trás dos modelos</h4>
   <p>Calculado ao vivo com o mesmo modelo de rotor que o simulador voa (elemento de pá + teoria da quantidade de movimento,
   inflow de Pitt–Peters), para você comparar com o que mede no seu heli: passo e potência no pairado com um wattímetro,

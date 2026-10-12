@@ -491,6 +491,12 @@ function hoverStick(model: HeliModel): number {
 window.addEventListener('keyup', (e) => { if (e.code === 'Space') setRescue(false); });
 window.addEventListener('blur', () => setRescue(false));
 window.addEventListener('keydown', (e) => {
+  if (replay) {
+    if (e.code === 'Space' && !e.repeat) { e.preventDefault(); lessonOverlay.onReplay?.({ toggle: true }); }
+    if (e.code === 'ArrowLeft') lessonOverlay.onReplay?.({ step: -1 });
+    if (e.code === 'ArrowRight') lessonOverlay.onReplay?.({ step: 1 });
+    return;
+  }
   if (e.code === 'Space' && !e.repeat) { e.preventDefault(); setRescue(true); }
   if (e.code === 'KeyR' && e.shiftKey) resetHover();
   else if (e.code === 'KeyR') reset();
@@ -531,7 +537,7 @@ const recording: Frame[] = [];
 let recFrameNo = 0;
 let flightStartFrame = 0;
 let lastFlight: Frame[] | null = null;
-let replay: { frames: Frame[]; i: number; acc: number; kind: 'crash' | 'flight' } | null = null;
+let replay: { frames: Frame[]; i: number; acc: number; kind: 'crash' | 'flight'; speed: number; playing: boolean } | null = null;
 let recordedCrash = false;
 let wasOnGround = true;
 function record(ctl: ReturnType<typeof input.poll>): void {
@@ -548,10 +554,18 @@ function flightFrames(): Frame[] {
 function startReplay(kind: 'crash' | 'flight' = 'crash', loaded: Frame[] | null = null): void {
   const frames = loaded ?? (kind === 'crash' ? recording.slice(-60 * REC_SECONDS) : lastFlight ?? []);
   if (frames.length < 10) return;
-  replay = { frames, i: 0, acc: 0, kind };
+  replay = { frames, i: 0, acc: 0, kind, speed: 1, playing: true };
   trail.clear();
   lessonOverlay.showReplay(kind);
   lessonOverlay.onStop = stopReplay;
+  lessonOverlay.onReplay = (cmd) => {
+    if (!replay) return;
+    const last = replay.frames.length - 1;
+    if (cmd.seek !== undefined) { replay.i = Math.round(cmd.seek * last); replay.acc = 0; trail.clear(); }
+    if (cmd.step !== undefined) { replay.i = Math.max(0, Math.min(last, replay.i + Math.round(cmd.step * 60))); replay.acc = 0; trail.clear(); }
+    if (cmd.toggle) replay.playing = !replay.playing;
+    if (cmd.speed) replay.speed = replay.speed === 1 ? 0.5 : replay.speed === 0.5 ? 0.25 : 1;
+  };
 }
 /** Download the last flight as a .json the Settings panel can load back, here or on another machine. */
 function exportFlight(): void {
@@ -682,18 +696,19 @@ function frame(now: number): void {
   }
 
   if (replay) {
-    // Replay: no physics; walk the recorded frames at real time (they were taken once per render frame).
-    replay.acc += dt;
+    // Replay: no physics; walk the recorded frames (taken once per render frame) at the chosen speed.
+    if (replay.playing) replay.acc += dt * replay.speed;
     while (replay.acc > 1 / 60 && replay.i < replay.frames.length - 1) {
       replay.acc -= 1 / 60;
       replay.i++;
     }
+    lessonOverlay.setReplayState(replay.i / Math.max(1, replay.frames.length - 1), replay.playing, replay.speed);
     const f = replay.frames[replay.i];
     const fake = { ...sim.state, pos: f.pos, ori: f.ori, a1: f.a1, b1: f.b1, rotorOmega: f.rotorOmega, crashed: false };
     heliMesh.update(fake, dt);
     trail.update(f.pos, dt);
     lessonOverlay.updateReplay(f.ctl, (replay.frames.length - 1 - replay.i) / 60, replay.i / 60);
-    if (replay.i >= replay.frames.length - 1 && replay.acc > 2) replay.i = 0; // loop after a pause at the end
+    if (replay.playing && replay.i >= replay.frames.length - 1 && replay.acc > 2) { replay.i = 0; trail.clear(); } // loop after a pause at the end
     target.set(f.pos.x, f.pos.y, f.pos.z);
     heliQuat.set(f.ori.x, f.ori.y, f.ori.z, f.ori.w);
     pilotCam.update(target, heliQuat, dt);

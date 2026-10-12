@@ -3,6 +3,11 @@
 All notable changes to RC Heli Sim. The version shown in the game (Help and Settings) matches the latest
 entry here; the commit hash next to it identifies the exact build.
 
+## 0.62.0
+
+- Replay transport: play/pause (Space), step 1 s (← →), slow motion ½× and ¼×, and a scrub slider on every replay
+  (crash, whole flight, loaded file).
+
 ## 0.61.0
 
 - Manual: a **physics report** computed live from the rotor model for every built-in heli: disc loading, tip speed,

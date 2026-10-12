@@ -195,3 +195,6 @@ body.radio-page { background: #141618; }
 .help table.physics { border-collapse: collapse; font-size: 12px; margin: 6px 0 10px; width: 100%; }
 .help table.physics th, .help table.physics td { border: 1px solid rgba(255,255,255,0.18); padding: 3px 6px; text-align: left; vertical-align: top; }
 .help table.physics th { background: rgba(255,255,255,0.08); }
+.replay-bar { display: flex; align-items: center; gap: 6px; margin-top: 6px; pointer-events: auto; }
+.replay-bar button { background: rgba(255,255,255,0.12); color: #fff; border: 1px solid rgba(255,255,255,0.3); border-radius: 6px; padding: 3px 8px; cursor: pointer; font-size: 14px; }
+.replay-bar input[type=range] { flex: 1; }

@@ -261,6 +261,10 @@ const HELP_HTML = `
   light poles, a few parked cars, two warehouses along the back and a shipping container whose roof is a landing
   target (2.6 m up, almost no ground effect). Open sky and wind, like a real club lot; the poles are the usual
   surprise. The field's picnic table, truck, pontoon and tower challenges are marked "Field only" there.</p>
+  <h4>Replay transport</h4>
+  <p>Every replay (crash, flight, loaded file) has a transport bar: play/pause (Space), 1 s back and forward (← →),
+  speed 1× / ½× / ¼×, and a scrub slider. Slow motion is how you see what the sticks did in the half second before
+  a crash; change the camera while it plays.</p>
   <h4>Physics report: the numbers behind the models</h4>
   <p>Computed live from the same rotor model the sim flies (blade element + momentum theory, Pitt–Peters inflow),
   so you can compare with what you measure on your own heli: hover pitch and hover power with a wattmeter, climb

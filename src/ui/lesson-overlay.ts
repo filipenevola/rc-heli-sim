@@ -14,6 +14,10 @@ export class LessonOverlay {
   private switches: HTMLElement;
   private progress: HTMLElement;
   onStop: (() => void) | null = null;
+  /** Replay transport: seek to a fraction, step by seconds, toggle play, cycle speed. */
+  onReplay: ((cmd: { seek?: number; step?: number; toggle?: boolean; speed?: boolean }) => void) | null = null;
+  private replayBar: HTMLElement;
+  private seek: HTMLInputElement;
 
   constructor(container: HTMLElement) {
     this.el = document.createElement('div');
@@ -25,6 +29,13 @@ export class LessonOverlay {
         <div class="lesson-intro"></div>
         <div class="lesson-caption"></div>
         <div class="lesson-progress"></div>
+        <div class="replay-bar" style="display:none">
+          <button data-replay="back" title="Back 1 s (←)">⏪</button>
+          <button data-replay="toggle" title="Play / pause (Space)">⏸</button>
+          <button data-replay="fwd" title="Forward 1 s (→)">⏩</button>
+          <button data-replay="speed" title="Speed: 1× → ½× → ¼× → 1×">1×</button>
+          <input type="range" min="0" max="1000" value="0" data-replay="seek" title="Scrub">
+        </div>
       </div>
       <div class="lesson-sticks">
         <canvas width="680" height="240"></canvas>
@@ -38,6 +49,25 @@ export class LessonOverlay {
     this.switches = this.el.querySelector('.lesson-switches')!;
     this.progress = this.el.querySelector('.lesson-progress')!;
     this.el.querySelector('#lesson-stop')!.addEventListener('click', () => this.onStop?.());
+    this.replayBar = this.el.querySelector('.replay-bar')!;
+    this.seek = this.el.querySelector('[data-replay="seek"]')!;
+    for (const b of this.replayBar.querySelectorAll<HTMLButtonElement>('button[data-replay]')) {
+      b.addEventListener('click', () => {
+        const k = b.dataset.replay;
+        if (k === 'back') this.onReplay?.({ step: -1 });
+        else if (k === 'fwd') this.onReplay?.({ step: 1 });
+        else if (k === 'toggle') this.onReplay?.({ toggle: true });
+        else if (k === 'speed') this.onReplay?.({ speed: true });
+      });
+    }
+    this.seek.addEventListener('input', () => this.onReplay?.({ seek: Number(this.seek.value) / 1000 }));
+  }
+
+  /** Reflect the transport state: slider position, play/pause glyph, speed label. */
+  setReplayState(frac: number, playing: boolean, speed: number): void {
+    if (document.activeElement !== this.seek) this.seek.value = String(Math.round(frac * 1000));
+    (this.replayBar.querySelector('[data-replay="toggle"]') as HTMLElement).textContent = playing ? '⏸' : '▶';
+    (this.replayBar.querySelector('[data-replay="speed"]') as HTMLElement).textContent = speed === 1 ? '1×' : speed === 0.5 ? '½×' : '¼×';
   }
 
   show(runner: LessonRunner): void {
@@ -51,6 +81,7 @@ export class LessonOverlay {
 
   hide(): void {
     this.el.style.display = 'none';
+    this.replayBar.style.display = 'none';
   }
 
   /** Replay mode: same gimbals, custom title and caption, no hint ring. */
@@ -66,6 +97,7 @@ export class LessonOverlay {
       ? t('These were your sticks, exactly as you flew them. Watch what happened just before the crash.')
       : t('Your sticks, exactly as you flew them, from lift-off to touchdown. Change the camera while it plays (keys 1-6).');
     this.coach?.style.setProperty('display', 'none');
+    this.replayBar.style.display = '';
   }
 
   updateReplay(ctl: ControlFrame, secondsLeft: number, elapsed = 0): void {
