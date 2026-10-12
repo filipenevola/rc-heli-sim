@@ -72,6 +72,8 @@ export interface HeliModel {
   gyroMode?: 'hh' | 'rate';
   /** Canopy colour (CSS hex) for the renderer; models without one get a colour by size. */
   color?: string;
+  /** Canopy paint scheme: solid, stripes, flames or checker over the base colour. */
+  scheme?: CanopyScheme;
   /** Training gear fitted (cross of rods with balls): rendered and part of the physics when true. */
   trainingGear?: boolean;
 }
@@ -304,6 +306,8 @@ export const HELI_250: HeliModel = {
 export const HELI_MODELS: HeliModel[] = [HELI_450_FLYBAR, HELI_450, HELI_700, HELI_250];
 
 /** Pilot-adjustable radio/model setup, like the model memory of a transmitter. All optional overrides. */
+export type CanopyScheme = 'solid' | 'stripes' | 'flames' | 'checker';
+
 export interface ModelSetup {
   /** Pitch curve end points and centre per flight mode, degrees: [low, mid, high]. */
   pitch?: [number, number, number][];
@@ -321,6 +325,9 @@ export interface ModelSetup {
   gyroMode?: 'hh' | 'rate';
   /** Nitro needle (mixture), percent of the correct setting: 100 right, 90 lean, 120 rich. */
   needlePct?: number;
+  /** Canopy colour (CSS hex) and paint scheme. */
+  color?: string;
+  scheme?: CanopyScheme;
 }
 
 /**
@@ -372,6 +379,8 @@ export function applySetup(base: HeliModel, setup: ModelSetup | undefined): Heli
   if (setup.governor !== undefined) m.governor = setup.governor;
   if (setup.idleUpThrottlePct) m.idleUpThrottle = setup.idleUpThrottlePct / 100;
   if (setup.needlePct) m.needle = setup.needlePct / 100;
+  if (setup.color && /^#[0-9a-f]{6}$/i.test(setup.color)) m.color = setup.color;
+  if (setup.scheme) m.scheme = setup.scheme;
   if (setup.gyroMode) m.gyroMode = setup.gyroMode;
   return m;
 }

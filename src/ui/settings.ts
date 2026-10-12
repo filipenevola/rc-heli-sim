@@ -132,6 +132,10 @@ export class SettingsPanel {
         <option value="on" ${cur.governor !== false ? 'selected' : ''}>On (holds head speed)</option>
         <option value="off" ${cur.governor === false ? 'selected' : ''}>Off (throttle curve, head speed droops)</option></select></label>
       ${row('Idle-Up throttle (governor off)', 'thr', 60, 100, 1, cur.idleUpThrottlePct ?? 90, '%')}
+      <h5>Paint</h5>
+      <label class="setup-row"><span>Canopy colour</span><input type="color" data-setup="color" value="${cur.color ?? base.color ?? (base.rotor.radius > 0.6 ? '#1f5fd6' : base.rotor.radius < 0.3 ? '#f2b705' : '#d8262a')}"></label>
+      <label class="setup-row"><span>Scheme</span><select data-setup="scheme">
+        ${(['solid', 'stripes', 'flames', 'checker'] as const).map((k) => `<option value="${k}" ${(cur.scheme ?? 'solid') === k ? 'selected' : ''}>${{ solid: 'Solid', stripes: 'Stripes', flames: 'Flames', checker: 'Checker' }[k]}</option>`).join('')}</select></label>
       ${base.power === 'nitro' ? `<h5>Engine</h5>${row('Needle (mixture): 100 right, lower is lean', 'needle', 80, 130, 1, cur.needlePct ?? 100, '%')}<p class="hint">Lean: a few percent more power, runs hot, and quits if you keep it loaded. Rich: soft, safe, thirsty.</p>` : ''}
       <button id="setup-reset">Reset to factory</button>`;
   }
@@ -187,6 +191,8 @@ export class SettingsPanel {
       governor: (this.panel.querySelector('[data-setup="gov"]') as HTMLSelectElement).value !== 'off',
       idleUpThrottlePct: g('thr'),
       ...(this.panel.querySelector('[data-setup="needle"]') ? { needlePct: g('needle') } : {}),
+      color: (this.panel.querySelector('[data-setup="color"]') as HTMLInputElement).value,
+      scheme: (this.panel.querySelector('[data-setup="scheme"]') as HTMLSelectElement).value as ModelSetup['scheme'],
     };
   }
 

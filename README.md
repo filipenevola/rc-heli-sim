@@ -109,7 +109,7 @@ helicopters is the main realism lever; see the test file for the quantities that
 
 ## Roadmap
 
-- [x] A slope site (the hillside). [ ] Model skins beyond the canopy colour.
+- [x] A slope site (the hillside). [x] Paint schemes (stripes, flames, checker) on the canopy.
 - [ ] Sampled sound layer (real nitro / electric recordings) on top of the synth.
 - [x] Nitro engines with a clutch and a needle. [ ] Collective-pitch coaxial trainers.
 - [ ] WebHID path for dongles that are not exposed as gamepads; Bluetooth transmitters.

@@ -23,6 +23,11 @@ export class HeliMesh {
     const L = m.tailOffset.z;
     const bodyColor = m.color && /^#[0-9a-f]{6}$/i.test(m.color) ? parseInt(m.color.slice(1), 16) : m.rotor.radius > 0.6 ? 0x1f5fd6 : m.rotor.radius < 0.3 ? 0xf2b705 : 0xd8262a;
     const body = new THREE.MeshStandardMaterial({ color: bodyColor, roughness: 0.5, metalness: 0.2 });
+    // Paint scheme: a procedural texture wrapped around the canopy (u around, v nose to tail).
+    if (m.scheme && m.scheme !== 'solid' && !ghost) {
+      const tex = canopyTexture(m.scheme, `#${bodyColor.toString(16).padStart(6, '0')}`);
+      if (tex) { body.map = tex; body.color.set(0xffffff); }
+    }
     const dark = new THREE.MeshStandardMaterial({ color: 0x222222, roughness: 0.7 });
     const metal = new THREE.MeshStandardMaterial({ color: 0x8a8f99, roughness: 0.4, metalness: 0.8 });
     const bladeMat = new THREE.MeshStandardMaterial({ color: 0x111111, roughness: 0.6 });
@@ -202,4 +207,52 @@ export class HeliMesh {
     this.tailDisc.visible = fast;
     this.tailBlades.visible = !fast;
   }
+}
+
+/** Canopy paint as a canvas texture: stripes along the body, flames licking back from the nose, or a checker. */
+export function canopyTexture(scheme: 'stripes' | 'flames' | 'checker', base: string): THREE.Texture | null {
+  if (typeof document === 'undefined') return null;
+  const c = document.createElement('canvas');
+  c.width = 256;
+  c.height = 128;
+  const g = c.getContext('2d');
+  if (!g) return null;
+  g.fillStyle = base;
+  g.fillRect(0, 0, 256, 128);
+  // v runs nose (0) to tail (1) along y of the canvas; u around the body along x.
+  if (scheme === 'stripes') {
+    g.fillStyle = '#ffffff';
+    for (const y of [40, 60]) g.fillRect(0, y, 256, 6);
+    g.fillStyle = '#111111';
+    g.fillRect(0, 50, 256, 4);
+  } else if (scheme === 'checker') {
+    g.fillStyle = '#ffffff';
+    for (let i = 0; i < 16; i++) for (let j = 0; j < 8; j++) if ((i + j) % 2 === 0 && j < 5) g.fillRect(i * 16, j * 16, 16, 16);
+  } else {
+    // Flames: tongues from the nose back, on the upper half only (the underside stays dark on the model anyway).
+    g.fillStyle = '#ffd34d';
+    for (let k = 0; k < 7; k++) {
+      const x0 = 20 + k * 34;
+      g.beginPath();
+      g.moveTo(x0 - 14, 0);
+      g.quadraticCurveTo(x0 - 4, 30 + (k % 3) * 10, x0, 70 + (k % 2) * 16);
+      g.quadraticCurveTo(x0 + 4, 30 + ((k + 1) % 3) * 10, x0 + 14, 0);
+      g.closePath();
+      g.fill();
+    }
+    g.fillStyle = '#ff6a00';
+    for (let k = 0; k < 7; k++) {
+      const x0 = 20 + k * 34;
+      g.beginPath();
+      g.moveTo(x0 - 8, 0);
+      g.quadraticCurveTo(x0 - 2, 20 + (k % 3) * 8, x0, 48 + (k % 2) * 12);
+      g.quadraticCurveTo(x0 + 2, 20 + ((k + 1) % 3) * 8, x0 + 8, 0);
+      g.closePath();
+      g.fill();
+    }
+  }
+  const tex = new THREE.CanvasTexture(c);
+  tex.colorSpace = THREE.SRGBColorSpace;
+  tex.wrapS = THREE.RepeatWrapping;
+  return tex;
 }

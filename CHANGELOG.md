@@ -3,6 +3,11 @@
 All notable changes to RC Heli Sim. The version shown in the game (Help and Settings) matches the latest
 entry here; the commit hash next to it identifies the exact build.
 
+## 0.77.0
+
+- Paint: every model (built-in or custom) takes a canopy colour and a scheme in Model setup → Paint: solid, stripes,
+  flames or checker, drawn as a procedural texture on the canopy. Saved per model and with the account.
+
 ## 0.76.0
 
 - Loss of tail effectiveness is now surfaced: the tail rotor's vortex ring state (sliding sideways into its own
