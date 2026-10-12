@@ -82,13 +82,13 @@ export class RankingClient {
     return this.call('/api/auth/request', { email, name });
   }
 
-  verifyCode(email: string, code: string, deviceId: string): Promise<{ token: string; name: string; completed: string[]; bestFlight: number; radio?: Record<string, unknown> | null; setup?: Record<string, unknown> | null }> {
+  verifyCode(email: string, code: string, deviceId: string): Promise<{ token: string; name: string; completed: string[]; bestFlight: number; radio?: Record<string, unknown> | null; setup?: Record<string, unknown> | null; logbook?: unknown[] | null }> {
     return this.call('/api/auth/verify', { email, code, deviceId });
   }
 
   /** Push the current records. Unverified players are keyed by device id and shown unverified. */
-  submit(p: Profile): Promise<{ ok: true }> {
-    return this.call('/api/scores', { name: p.name, deviceId: p.deviceId, completed: p.completed, bestFlight: Math.round(p.bestFlight), radio: p.radio ?? null, setup: p.setup ?? null }, p.token);
+  submit(p: Profile, logbook: unknown[] | null = null): Promise<{ ok: true }> {
+    return this.call('/api/scores', { name: p.name, deviceId: p.deviceId, completed: p.completed, bestFlight: Math.round(p.bestFlight), radio: p.radio ?? null, setup: p.setup ?? null, logbook: p.verified ? logbook : null }, p.token);
   }
 
   sendRadioReport(report: unknown): Promise<{ ok: true }> {

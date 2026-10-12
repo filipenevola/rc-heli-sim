@@ -32,6 +32,45 @@ export class FlightLog {
     }
   }
 
+  /** Merge entries from another device (the account copy): union by timestamp, newest first, capped. */
+  merge(other: unknown): number {
+    if (!Array.isArray(other)) return 0;
+    const have = new Set(this.entries.map((e) => e.at));
+    let added = 0;
+    for (const raw of other) {
+      const e = raw as Partial<LogEntry>;
+      if (!e || typeof e.at !== 'number' || typeof e.seconds !== 'number' || have.has(e.at)) continue;
+      this.entries.push({
+        at: e.at,
+        model: String(e.model ?? ''),
+        seconds: e.seconds,
+        crashed: Boolean(e.crashed),
+        reason: String(e.reason ?? ''),
+        touchdown: Number(e.touchdown ?? 0),
+        maxAltitude: Number(e.maxAltitude ?? 0),
+        maxSpeed: Number(e.maxSpeed ?? 0),
+        maxG: Number(e.maxG ?? 1),
+        tricks: Array.isArray(e.tricks) ? e.tricks.map(String) : [],
+      });
+      have.add(e.at);
+      added++;
+    }
+    if (added) {
+      this.entries.sort((a, b) => b.at - a.at);
+      if (this.entries.length > MAX) this.entries.length = MAX;
+      this.save();
+    }
+    return added;
+  }
+
+  private save(): void {
+    try {
+      localStorage.setItem(KEY, JSON.stringify(this.entries));
+    } catch {
+      /* storage full or disabled: the log is a convenience */
+    }
+  }
+
   add(d: FlightSummary, model: string): LogEntry {
     const e: LogEntry = {
       at: Date.now(),
@@ -47,11 +86,7 @@ export class FlightLog {
     };
     this.entries.unshift(e);
     if (this.entries.length > MAX) this.entries.length = MAX;
-    try {
-      localStorage.setItem(KEY, JSON.stringify(this.entries));
-    } catch {
-      /* storage full or disabled: the log is a convenience */
-    }
+    this.save();
     return e;
   }
 

@@ -55,6 +55,7 @@ db.exec(`
 `);
 try { db.exec('ALTER TABLE players ADD COLUMN radio TEXT'); } catch { /* column exists */ }
 try { db.exec('ALTER TABLE players ADD COLUMN setup TEXT'); } catch { /* column exists */ }
+try { db.exec('ALTER TABLE players ADD COLUMN logbook TEXT'); } catch { /* column exists */ }
 
 const q = {
   playerByKey: db.prepare('SELECT * FROM players WHERE key = ?'),
@@ -62,6 +63,7 @@ const q = {
     ON CONFLICT(key) DO UPDATE SET name = excluded.name, verified = MAX(players.verified, excluded.verified), completed = excluded.completed, best_flight = MAX(players.best_flight, excluded.best_flight), updated_at = datetime('now')`),
   setRadio: db.prepare('UPDATE players SET radio = ? WHERE key = ?'),
   setSetup: db.prepare('UPDATE players SET setup = ? WHERE key = ?'),
+  setLogbook: db.prepare('UPDATE players SET logbook = ? WHERE key = ?'),
   setCode: db.prepare('INSERT OR REPLACE INTO codes (email, code, name, expires_at, attempts) VALUES (?, ?, ?, ?, 0)'),
   getCode: db.prepare('SELECT * FROM codes WHERE email = ?'),
   bumpAttempts: db.prepare('UPDATE codes SET attempts = attempts + 1 WHERE email = ?'),
@@ -193,7 +195,7 @@ createServer(async (req, res) => {
       const player = q.playerByKey.get(key);
       const token = randomBytes(24).toString('base64url');
       q.addToken.run(hash(token), player.id);
-      return json(res, 200, { token, name: player.name, completed: JSON.parse(player.completed), bestFlight: player.best_flight, radio: player.radio ? JSON.parse(player.radio) : null, setup: player.setup ? JSON.parse(player.setup) : null });
+      return json(res, 200, { token, name: player.name, completed: JSON.parse(player.completed), bestFlight: player.best_flight, radio: player.radio ? JSON.parse(player.radio) : null, setup: player.setup ? JSON.parse(player.setup) : null, logbook: player.logbook ? JSON.parse(player.logbook) : null });
     }
 
     if (req.method === 'POST' && url.pathname === '/api/scores') {
@@ -223,6 +225,16 @@ createServer(async (req, res) => {
       }
       if (verified && body.setup && typeof body.setup === 'object') {
         q.setSetup.run(JSON.stringify(body.setup).slice(0, 20000), key);
+      }
+      // The logbook (last sixty flights) travels with the account too: union with what the server has, by timestamp.
+      if (verified && Array.isArray(body.logbook)) {
+        const have = existing?.logbook ? JSON.parse(existing.logbook) : [];
+        const seen = new Set(have.map((e) => e.at));
+        const clean = body.logbook
+          .filter((e) => e && typeof e.at === 'number' && typeof e.seconds === 'number' && !seen.has(e.at))
+          .map((e) => ({ at: e.at, model: String(e.model ?? '').slice(0, 60), seconds: Number(e.seconds), crashed: Boolean(e.crashed), reason: String(e.reason ?? '').slice(0, 120), touchdown: Number(e.touchdown) || 0, maxAltitude: Number(e.maxAltitude) || 0, maxSpeed: Number(e.maxSpeed) || 0, maxG: Number(e.maxG) || 1, tricks: Array.isArray(e.tricks) ? e.tricks.slice(0, 20).map(String) : [] }));
+        const merged = [...have, ...clean].sort((a, b) => b.at - a.at).slice(0, 60);
+        q.setLogbook.run(JSON.stringify(merged).slice(0, 60000), key);
       }
       return json(res, 200, { ok: true });
     }

@@ -3,6 +3,12 @@
 All notable changes to RC Heli Sim. The version shown in the game (Help and Settings) matches the latest
 entry here; the commit hash next to it identifies the exact build.
 
+## 0.40.0
+
+- **The logbook follows your account**: signed-in pilots get their last sixty flights synced to the rankings
+  server and merged on every device (union by time, newest first), so the progress line and the coach line see
+  all your flying, not just this phone's.
+
 ## 0.39.0
 
 - **Coach line in the logbook**: after a couple of crashes it names the most common way your recent flights

@@ -68,7 +68,7 @@ export class ChallengesPanel {
     saveLocalRanking(this.profile.name, this.profile.bestFlight, this.tracker.points, this.profile.completed);
     if (this.client.online && this.profile.name) {
       try {
-        await this.client.submit(this.profile);
+        await this.client.submit(this.profile, this.log?.entries ?? null);
       } catch (e) {
         this.status = `Online sync failed: ${(e as Error).message}`;
       }
@@ -229,6 +229,7 @@ export class ChallengesPanel {
         if (r.name) p.name = r.name; // the account's callsign wins over whatever this device had
         importMappings(r.radio as Record<string, GamepadMapping> | null | undefined); // transmitter calibration follows the account too
         if (r.setup) p.setup = { ...(p.setup ?? {}), ...r.setup }; // and the model setups
+        if (r.logbook && this.log) this.log.merge(r.logbook); // and the logbook
         // Merge what the server knows for this email with what this device has.
         for (const id of r.completed) this.tracker.completed.add(id);
         p.bestFlight = Math.max(p.bestFlight, r.bestFlight);

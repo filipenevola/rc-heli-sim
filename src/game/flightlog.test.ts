@@ -54,6 +54,21 @@ describe('logbook', () => {
     expect(logbookHtml(log, (s) => `${s}s`)).toContain('Most of your recent crashes');
   });
 
+  it('merges the account copy without duplicates, newest first', () => {
+    localStorage.clear();
+    const log = new FlightLog();
+    const a = log.add(flight({}), 'A');
+    const added = log.merge([
+      { ...a }, // same timestamp: ignored
+      { at: a.at - 1000, model: 'B', seconds: 40, crashed: false, reason: '', touchdown: 0.5, maxAltitude: 6, maxSpeed: 3, maxG: 1.1, tricks: [] },
+      { at: a.at + 1000, model: 'C', seconds: 12, crashed: true, reason: 'Blade strike', touchdown: 0, maxAltitude: 2, maxSpeed: 1, maxG: 1, tricks: ['x'] },
+      { junk: true },
+    ]);
+    expect(added).toBe(2);
+    expect(log.entries.map((e) => e.model)).toEqual(['C', 'A', 'B']);
+    expect(new FlightLog().entries.length).toBe(3);
+  });
+
   it('keeps at most sixty entries', () => {
     localStorage.clear();
     const log = new FlightLog();
