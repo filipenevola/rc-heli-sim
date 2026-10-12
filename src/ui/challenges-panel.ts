@@ -4,7 +4,7 @@ import { importMappings, loadMappings, type GamepadMapping } from '../input/game
 import { fmtTime, localRankings, saveLocalRanking, saveProfile, type Profile, type RankingClient } from '../game/player';
 import { logbookHtml, type FlightLog } from '../game/flightlog';
 import { localizeDom, t } from '../i18n';
-import { unavailableHere } from '../site';
+import { homeLabel, unavailableHere } from '../site';
 
 /**
  * Challenges + rankings drawer. Tabs: Challenges (list with live progress), Rankings (longest flight,
@@ -122,7 +122,7 @@ export class ChallengesPanel {
             const teach = lessonFor(c.id)
               ? `<button class="teach" data-teach="${c.id}" data-mode="show" title="${t('Watch a demo pilot do the whole challenge; the sticks are shown')}">${t('Show me')}</button><button class="teach" data-teach="${c.id}" data-mode="teach" title="${t('You fly it step by step with a ghost stick guiding you')}">${t('Teach me')}</button>`
               : '';
-            return `<li class="${done ? 'done' : ''}"><div class="row"><b>${done ? '✓ ' : ''}${t(c.title)}</b><span>${c.points} pts ${unavailableHere(c.id) ? `<i class="field-only">${t('Field only')}</i>` : teach}</span></div><div class="desc">${t(c.description)}</div><div class="bar"><i data-bar="${c.id}" style="width:${Math.round(pr * 100)}%"></i></div></li>`;
+            return `<li class="${done ? 'done' : ''}"><div class="row"><b>${done ? '✓ ' : ''}${t(c.title)}</b><span>${c.points} pts ${unavailableHere(c.id) ? `<i class="field-only">${t(homeLabel(c.id))}</i>` : teach}</span></div><div class="desc">${t(c.description)}</div><div class="bar"><i data-bar="${c.id}" style="width:${Math.round(pr * 100)}%"></i></div></li>`;
           }).join('')}
         </ul>`).join('')}`;
     } else if (this.tab === 'rankings') {

@@ -21,6 +21,14 @@ export function siteFor(id: string): SiteId {
   return SITE_OF[id] ?? 'field';
 }
 
+/** Label for a challenge that belongs to another site. */
+export function homeLabel(id: string): string {
+  const home = SITE_OF[id];
+  if (home === 'lot') return 'Parking lot only';
+  if (home === 'gym') return 'Gym only';
+  return 'Field only';
+}
+
 /** Challenges that cannot be completed on the current site. */
 export function unavailableHere(id: string): boolean {
   const home = SITE_OF[id];

@@ -11,7 +11,7 @@ import { Wind } from './sim/wind';
 import { buildSite } from './sim/world';
 import { createGymScene } from './render/gym';
 import { createLotScene } from './render/lot';
-import { getSite, setSite, unavailableHere, type SiteId } from './site';
+import { getSite, homeLabel, setSite, unavailableHere, type SiteId } from './site';
 import { InputManager } from './input/manager';
 import { Hud } from './ui/hud';
 import { SettingsPanel, MODE_HELP, HOLD_HELP } from './ui/settings';
@@ -128,7 +128,7 @@ function startLesson(challengeId: string, mode: 'show' | 'teach' = 'show'): void
   const l = lessonFor(challengeId);
   if (!l) return;
   if (unavailableHere(challengeId)) {
-    hud.notify(`<b>${t('Field only')}</b><br>${t('This one needs the outdoor field: altitude, wind or its landing targets. Settings → Flying site → The field.')}`, 5000);
+    hud.notify(`<b>${t(homeLabel(challengeId))}</b><br>${t('This one belongs to another site: its landing target, altitude or wind is not here. Settings → Flying site.')}`, 5000);
     return;
   }
   stopLesson();

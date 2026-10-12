@@ -3,6 +3,13 @@
 All notable changes to RC Heli Sim. The version shown in the game (Help and Settings) matches the latest
 entry here; the commit hash next to it identifies the exact build.
 
+## 0.49.0
+
+- Challenges that belong to another site now say which one ("Parking lot only", "Gym only", "Field only").
+- CI: the physics benchmark's bar is 5x real time and the ghost pre-flight's time limit allows for shared
+  runners being slower than a laptop; both had been failing there (since 0.23.0 and 0.30.0) while deploys kept
+  working.
+
 ## 0.48.0
 
 - **Three new landing challenges** for the other sites, each with Show me and Teach me: the container roof on
