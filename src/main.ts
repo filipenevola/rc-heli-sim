@@ -27,12 +27,13 @@ import { GateMeshes } from './render/gates';
 import { ChallengesPanel } from './ui/challenges-panel';
 import { installTypingGuard } from './input/typing-guard';
 import { Rescue } from './game/rescue';
+import { Voice } from './ui/voice';
 import { lessonFor, LessonRunner } from './game/lessons';
 import { recordGhost, type GhostFrame } from './game/ghost';
 import { Trail } from './render/trail';
 import { parseFlight, serializeFlight } from './game/replay-file';
 import { buildCustomModel, normalizeSpec, type CustomSpec } from './sim/custom-model';
-import { detectLang, onLangChange, setLang, t, type Lang } from './i18n';
+import { detectLang, onLangChange, setLang, t, type Lang, getLang } from './i18n';
 import { LessonOverlay } from './ui/lesson-overlay';
 import type { AssistMode } from './sim/physics';
 
@@ -219,12 +220,16 @@ function stopLesson(resetHeli = true): void {
 lessonOverlay.onStop = () => stopLesson();
 tracker.onComplete = (c) => {
   stats.trick(c.id);
+  voice.say(t('Challenge complete: {title}', { title: t(c.title) }), getLang());
   hud.notify(`<b>${t('Challenge complete: {title}', { title: t(c.title) })}</b><br>${t('+{points} points · {total} total', { points: c.points, total: tracker.points })}`, 5000);
   void challenges.sync();
 };
 const stats = new FlightStats();
 let telemetryClock = 0;
 // Rescue (buddy box): hold Space or the 🛟 button and the demo pilot levels the heli and holds a hover.
+const voice = new Voice();
+let spokenStep = -1;
+let spokenLesson: unknown = null;
 const rescue = new Rescue(sim);
 // Emergencies: a tail rotor failure on demand, or once per flight at a random moment above 15 m.
 let randomFailures = false;
@@ -232,6 +237,7 @@ let failureAt = Infinity;
 function failTailNow(): void {
   if (sim.state.onGround || sim.state.crashed || sim.state.tailFailed || lesson || replay) return;
   sim.failTail();
+  voice.say(t('Tail rotor failure. Throttle hold now.'), getLang(), true);
   hud.notify(`<b>⚠ ${t('TAIL ROTOR FAILURE')}</b><br>${t('Throttle hold now (H), then autorotate.')}`, 4000);
 }
 let rescueSwitchWas = false;
@@ -327,6 +333,10 @@ const settings = new SettingsPanel(ui, input, wind, audio, {
   },
   onRandomFailures(on) {
     randomFailures = on;
+  },
+  onVoice(on) {
+    voice.enabled = on;
+    if (!on) voice.stop();
   },
   onPilotSpot(spot) {
     // The road spot stands beside the cerradoX billboard (x = 0, z = 56), not behind it.
@@ -814,6 +824,15 @@ function frame(now: number): void {
   }
   gates.update([tracker.nextGate('circuit'), tracker.nextGate('figure-eight')], [tracker.completed.has('circuit'), tracker.completed.has('figure-eight')]);
   challenges.tick();
+  // The instructor reads each new lesson caption aloud (and the intro on the first step).
+  if (lesson && !lesson.finished) {
+    if (lesson !== spokenLesson) { spokenLesson = lesson; spokenStep = -1; }
+    if (lesson.stepIndex !== spokenStep) {
+      spokenStep = lesson.stepIndex;
+      const cap = lesson.step?.caption ?? '';
+      voice.say(spokenStep === 0 ? `${t(lesson.lesson.intro)} ${t(cap)}` : t(cap), getLang());
+    }
+  } else if (!lesson && spokenLesson) { spokenLesson = null; voice.stop(); }
   hud.update(sim, ctl, input.active.label, input.active.id, dt);
   // A live instruction from a challenge in progress (the orientation drill's next heading).
   {

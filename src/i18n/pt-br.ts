@@ -37,6 +37,8 @@ export const PT_BR: Record<string, string> = {
   'Drone': 'Drone',
   'Dynamic rollover: once a skid is on the ground the cyclic must stay neutral or away from the ground. Lift straight up with collective, or set the other skid down; never fight the tilt with aileron.': 'Capotamento dinâmico: com um esqui no chão o cíclico tem que ficar neutro ou para longe do chão. Suba reto com o coletivo, ou apoie o outro esqui; nunca brigue com a inclinação usando o aileron.',
   'Next for you': 'Próximo para você',
+  'Spoken captions: the instructor reads lesson steps and emergencies aloud': 'Legendas faladas: o instrutor lê os passos das lições e as emergências em voz alta',
+  'Tail rotor failure. Throttle hold now.': 'Falha do rotor de cauda. Throttle hold agora.',
   'Download the logbook as CSV': 'Baixar o diário de bordo em CSV',
   'Orientation drill': 'Treino de orientação',
   'Hover between 1 and 6 m and turn the nose through eight orientations in turn, 3 s each: tail-in, left side-in, nose-in, right side-in, then back the other way. The HUD tells you the next one.': 'Paire entre 1 e 6 m e gire o nariz por oito orientações em sequência, 3 s cada: cauda para você, lado esquerdo, nariz para você, lado direito, depois volta pelo outro lado. O HUD diz a próxima.',

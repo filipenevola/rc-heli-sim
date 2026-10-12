@@ -264,6 +264,10 @@ const HELP_HTML = `
   light poles, a few parked cars, two warehouses along the back and a shipping container whose roof is a landing
   target (2.6 m up, almost no ground effect). Open sky and wind, like a real club lot; the poles are the usual
   surprise. The field's picnic table, truck, pontoon and tower challenges are marked "Field only" there.</p>
+  <h4>Spoken captions</h4>
+  <p>In Show me and Teach me the instructor reads every step aloud (and calls out emergencies and completed
+  challenges), using the voice your device has for the chosen language, so your eyes stay on the model. Settings →
+  Sound → Spoken captions turns it off.</p>
   <h4>Emergencies: tail rotor failure</h4>
   <p>Settings → <b>Emergencies</b> fails the tail rotor on demand, or at random once per flight above 15 m. The
   fuselage then follows the main rotor torque: under power the nose swings into a spin within a second. The drill is

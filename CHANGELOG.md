@@ -3,6 +3,11 @@
 All notable changes to RC Heli Sim. The version shown in the game (Help and Settings) matches the latest
 entry here; the commit hash next to it identifies the exact build.
 
+## 0.72.0
+
+- **Spoken captions**: the instructor reads each lesson step aloud (intro included), calls out tail rotor failures
+  and completed challenges, in English or Portuguese with the device's own voice. Settings → Sound turns it off.
+
 ## 0.71.0
 
 - Logbook: a ⬇ CSV button downloads every logged flight (date, model, time, outcome, landing speed, peaks,
