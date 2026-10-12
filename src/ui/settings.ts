@@ -191,7 +191,7 @@ export class SettingsPanel {
     bar.innerHTML = `
       <button id="btn-hide" data-tip="Show / hide the controls (U). Long-press any icon for help." title="Show / hide controls (U)">👁</button>
       <button id="btn-pause" data-tip="Pause / resume the simulation (P)" title="Pause (P)">⏸</button>
-      <button id="btn-reset" data-tip="Reset the helicopter to the pad (R)" title="Reset (R)">↺</button>
+      <button id="btn-reset" data-tip="Reset the helicopter to the pad (R). Shift+R resets into a hover at 6 m for 3D drills." title="Reset (R)">↺</button>
       <button id="btn-mode" data-tip="Flight mode (1 / 2 / 3): Normal, Idle-Up 1, Idle-Up 2. Idle-Up = fixed head speed and negative pitch for inverted flight." title="Flight mode (1/2/3)">🔀 N</button>
       <button id="btn-hold" data-tip="Throttle hold (H): motor off, rotor freewheels. Autorotation practice or a safety." title="Throttle hold (H)">✋</button>
       <button id="btn-sound" data-tip="Sound on / off (M)" title="Sound (M)">🔊</button>

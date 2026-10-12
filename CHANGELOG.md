@@ -3,6 +3,15 @@
 All notable changes to RC Heli Sim. The version shown in the game (Help and Settings) matches the latest
 entry here; the commit hash next to it identifies the exact build.
 
+## 0.30.0
+
+- **Shift+R: reset into a hover** at 6 m in Idle-Up 1 with the rotor at speed, for drilling 3D figures without
+  spooling up every time. It stays frozen until the collective is near the hover point (the keyboard's is placed
+  there for you), then flies.
+- The help manual has a table of contents.
+- Dev: a physics benchmark test (`tests/bench.test.ts`) keeps the step cost in view: 17-25 ms of CPU per simulated
+  second on a laptop, 40-57x real time.
+
 ## 0.29.0
 
 - **Logbook** (Challenges → Pilot): the last sixty flights on this device with duration, landing grade, peak

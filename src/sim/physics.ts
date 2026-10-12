@@ -170,6 +170,21 @@ export class HelicopterSim {
     this.telemetry.flightSeconds = 0;
   }
 
+  /**
+   * Reset straight into a hover: rotor at the Idle-Up head speed, a few metres up, level. The sim equivalent of
+   * "reset to hover" in every RC simulator, for drilling 3D figures without spooling up each time. The pilot must
+   * hold the collective near the hover point (about half stick in Idle-Up) or it will sink.
+   */
+  resetInAir(height = 6, yaw = 0): void {
+    this.reset(this.model);
+    const s = this.state;
+    s.pos.y = height;
+    s.onGround = false;
+    s.rotorOmega = this.model.headspeeds[1];
+    s.governorTarget = this.model.headspeeds[1];
+    s.ori = mkq(0, Math.sin(yaw / 2), 0, Math.cos(yaw / 2));
+  }
+
   step(ctl: ControlFrame, dt = PHYSICS_DT): void {
     const m = this.model;
     const s = this.state;

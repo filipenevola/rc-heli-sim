@@ -318,6 +318,7 @@ challenges.onProfileChange = () => settings.setPilotLabel(profile.name, profile.
 
 function reset(): void {
   if (replay) stopReplay();
+  hoverArmed = false;
   recording.length = 0;
   trail.clear();
   if (lesson) stopLesson();
@@ -325,8 +326,42 @@ function reset(): void {
   tracker.resetTransient();
 }
 
+/** Shift+R: reset into a hover at 6 m in Idle-Up 1, for 3D drills. */
+function resetHover(): void {
+  if (replay) stopReplay();
+  recording.length = 0;
+  trail.clear();
+  if (lesson) stopLesson(false);
+  sim.resetInAir(6);
+  tracker.resetTransient();
+  // Idle-Up 1 on every source; the keyboard's collective goes to the hover stick, a transmitter must be held there.
+  input.keyboard.poll(0).flightMode = 1;
+  input.gamepad.flightMode = 1;
+  input.keyboard.poll(0).collective = hoverStick(sim.model);
+  // Freeze until the collective is near the hover point, so a transmitter stick left at the bottom does not
+  // dump the heli from 6 m the instant it appears.
+  hoverArmed = true;
+  hud.notify('<b>Hover reset</b><br>Idle-Up 1, 6 m up, rotor at speed. Frozen until your collective is near the middle.', 4500);
+}
+let hoverArmed = false;
+/** Stick position where the Idle-Up 1 pitch curve gives roughly the hover pitch (about 5.5 degrees). */
+function hoverStick(model: HeliModel): number {
+  const curve = model.pitchCurves[1];
+  let best = 0;
+  let bestErr = 1e9;
+  for (let st = -1; st <= 1; st += 0.01) {
+    const t = ((st + 1) / 2) * (curve.length - 1);
+    const i = Math.min(curve.length - 2, Math.floor(t));
+    const deg = curve[i] * (1 - (t - i)) + curve[i + 1] * (t - i);
+    const err = Math.abs(deg - 5.5);
+    if (err < bestErr) { bestErr = err; best = st; }
+  }
+  return best;
+}
+
 window.addEventListener('keydown', (e) => {
-  if (e.code === 'KeyR') reset();
+  if (e.code === 'KeyR' && e.shiftKey) resetHover();
+  else if (e.code === 'KeyR') reset();
   if (e.code === 'KeyT') settings.setTrail(!trail.visible);
 });
 
@@ -499,7 +534,15 @@ function frame(now: number): void {
     requestAnimationFrame(frame);
     return;
   }
-  if (!paused) {
+  if (hoverArmed) {
+    if (Math.abs(ctl.collective - hoverStick(sim.model)) < 0.2) {
+      hoverArmed = false;
+      hud.notify('<b>Go</b>', 800);
+    } else {
+      accumulator = 0;
+    }
+  }
+  if (!paused && !hoverArmed) {
     accumulator += dt;
     while (accumulator >= PHYSICS_DT) {
       sim.step(ctl, PHYSICS_DT);

@@ -9,6 +9,19 @@ export class HelpPanel {
     this.el.className = 'help';
     this.el.style.display = 'none';
     this.el.innerHTML = HELP_HTML;
+    // Table of contents from the section headings, so the long manual is navigable on a phone.
+    const heads = [...this.el.querySelectorAll('h4')];
+    heads.forEach((h, i) => (h.id = `help-${i}`));
+    const toc = document.createElement('nav');
+    toc.className = 'help-toc';
+    toc.innerHTML = heads.map((h) => `<a href="#${h.id}">${h.textContent}</a>`).join('');
+    toc.addEventListener('click', (e) => {
+      const a = (e.target as HTMLElement).closest('a');
+      if (!a) return;
+      e.preventDefault();
+      this.el.querySelector(a.getAttribute('href')!)?.scrollIntoView({ behavior: 'smooth', block: 'start' });
+    });
+    this.el.querySelector('.version-line')?.after(toc);
     container.appendChild(this.el);
     this.el.querySelector('#help-close')!.addEventListener('click', () => this.toggle());
     window.addEventListener('keydown', (e) => {
@@ -56,6 +69,9 @@ const HELP_HTML = `
 </section>
 
 <section>
+  <p><b>R</b> resets to the pad. <b>Shift+R</b> resets straight into a hover at 6 m in Idle-Up 1 with the rotor at
+  speed, for drilling 3D figures without spooling up each time. It stays frozen until your collective is near the
+  middle, then flies.</p>
   <h4>Flight modes and switches</h4>
   <ul>
     <li><b>Normal</b> — training mode. Bottom stick = motor off and a little negative pitch; the governor spools up as you raise

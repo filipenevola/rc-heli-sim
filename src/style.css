@@ -159,3 +159,7 @@ table.channels button { padding: 2px 8px; font-size: 12px; }
 .log-row.crash { background: rgba(200, 40, 40, 0.18); }
 .log-row span { white-space: nowrap; overflow: hidden; text-overflow: ellipsis; }
 @media (max-width: 600px) { .log-row { grid-template-columns: 4.5em 1fr 3.2em 6.5em; } .log-row span:last-child { display: none; } }
+
+.help-toc { display: flex; flex-wrap: wrap; gap: 4px 8px; margin: 6px 0 10px; font-size: 12px; }
+.help-toc a { color: #ffd34d; text-decoration: none; padding: 2px 6px; border: 1px solid rgba(255,211,77,0.35); border-radius: 10px; white-space: nowrap; }
+.help-toc a:hover { background: rgba(255,211,77,0.15); }
