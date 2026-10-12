@@ -14,6 +14,8 @@ export interface LogEntry {
   maxSpeed: number;
   maxG: number;
   tricks: string[];
+  /** Cyclic reversals per minute (the over-control index), when the flight was long enough to measure. */
+  reversals?: number;
 }
 
 const KEY = 'rc-heli-sim.flightlog.v1';
@@ -51,6 +53,7 @@ export class FlightLog {
         maxSpeed: Number(e.maxSpeed ?? 0),
         maxG: Number(e.maxG ?? 1),
         tricks: Array.isArray(e.tricks) ? e.tricks.map(String) : [],
+        ...(typeof e.reversals === 'number' ? { reversals: e.reversals } : {}),
       });
       have.add(e.at);
       added++;
@@ -83,6 +86,7 @@ export class FlightLog {
       maxSpeed: d.maxSpeed,
       maxG: d.maxG,
       tricks: [...d.tricks],
+      ...(d.reversalsPerMin !== undefined && d.seconds > 10 ? { reversals: Math.round(d.reversalsPerMin) } : {}),
     };
     this.entries.unshift(e);
     if (this.entries.length > MAX) this.entries.length = MAX;
@@ -144,6 +148,40 @@ export function coachTip(log: FlightLog): { reason: string; tip: string } | null
   return { reason, tip };
 }
 
+/**
+ * Progress chart: one bar per flight (oldest left), height = flight time, red when it crashed; a yellow line over it
+ * is the over-control index (cyclic reversals per minute, lower is calmer). Inline SVG so it works everywhere.
+ */
+export function progressSvg(entries: LogEntry[], width = 340, height = 70): string {
+  const xs = entries.slice(0, 40).reverse();
+  if (xs.length < 3) return '';
+  const maxSec = Math.max(30, ...xs.map((e) => e.seconds));
+  const slot = width / xs.length;
+  const bars = xs.map((e, i) => {
+    const h = Math.max(2, (e.seconds / maxSec) * (height - 14));
+    return `<rect x="${(i * slot + 1).toFixed(1)}" y="${(height - 2 - h).toFixed(1)}" width="${Math.max(1, slot - 2).toFixed(1)}" height="${h.toFixed(1)}" fill="${e.crashed ? '#d9534f' : '#5cb85c'}"/>`;
+  }).join('');
+  const withRev = xs.map((e, i) => [i, e.reversals] as [number, number | undefined]).filter((p): p is [number, number] => typeof p[1] === 'number');
+  let line = '';
+  if (withRev.length >= 2) {
+    const maxRev = Math.max(60, ...withRev.map((p) => p[1]));
+    const pts = withRev.map(([i, r]) => `${(i * slot + slot / 2).toFixed(1)},${(height - 2 - (r / maxRev) * (height - 14)).toFixed(1)}`).join(' ');
+    line = `<polyline points="${pts}" fill="none" stroke="#ffd34d" stroke-width="1.5"/>`;
+  }
+  return `<svg class="progress" viewBox="0 0 ${width} ${height}" width="100%" height="${height}" role="img" aria-label="${t('Flight time per flight; red = crash; yellow line = stick reversals per minute')}">${bars}${line}</svg>`;
+}
+
+/** Trend of the over-control index: last ten flights vs the ten before, when both are known. */
+export function calmTrend(entries: LogEntry[]): { recent: number; earlier: number } | null {
+  const avg = (xs: LogEntry[]) => {
+    const v = xs.map((e) => e.reversals).filter((r): r is number => typeof r === 'number');
+    return v.length >= 3 ? v.reduce((a, b) => a + b, 0) / v.length : null;
+  };
+  const recent = avg(entries.slice(0, 10));
+  const earlier = avg(entries.slice(10, 20));
+  return recent !== null && earlier !== null ? { recent, earlier } : null;
+}
+
 /** The logbook table and its progress line, as HTML. */
 export function logbookHtml(log: FlightLog, fmtTime: (s: number) => string): string {
   const st = log.stats();
@@ -156,8 +194,13 @@ export function logbookHtml(log: FlightLog, fmtTime: (s: number) => string): str
   ).join('');
   const coach = coachTip(log);
   const coachLine = coach ? `<p class="coach">${t('Most of your recent crashes:')} <b>${coach.reason}</b>. ${t(coach.tip)}</p>` : '';
+  const calm = calmTrend(log.entries);
+  const calmLine = calm
+    ? `<p class="hint">${t('Stick reversals per minute, last 10 flights:')} ${Math.round(calm.recent)} (${t('before:')} ${Math.round(calm.earlier)}). ${calm.recent < calm.earlier * 0.85 ? t('Your hands are calming down.') : calm.recent > calm.earlier * 1.15 ? t('Busier hands lately: slow down, hold each correction longer.') : ''}</p>`
+    : '';
   return `<h5>${t('Logbook')}</h5>
     <p class="hint">${st.flights} ${t('flights')}, ${st.clean} ${t('clean')} (${Math.round((100 * st.clean) / st.flights)}%), ${fmtTime(st.airtime)} ${t('in the air, landings average')} ${st.avgTouchdown.toFixed(1)} m/s.</p>
-    ${trend}${coachLine}
+    ${progressSvg(log.entries)}
+    ${trend}${calmLine}${coachLine}
     <div class="logbook">${rows}</div>`;
 }

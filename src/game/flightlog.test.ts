@@ -1,5 +1,5 @@
 import { beforeAll, describe, expect, it } from 'vitest';
-import { FlightLog, logbookHtml, fmtAgo, coachTip } from './flightlog';
+import { FlightLog, logbookHtml, fmtAgo, coachTip, progressSvg, calmTrend } from './flightlog';
 import type { FlightSummary } from './debrief';
 
 // Node 26 exposes a `localStorage` global that is undefined without --localstorage-file, and that shadows the
@@ -74,5 +74,21 @@ describe('logbook', () => {
     const log = new FlightLog();
     for (let i = 0; i < 70; i++) log.add(flight({}), 'A');
     expect(log.entries.length).toBe(60);
+  });
+
+  it('draws a progress chart with one bar per flight and a reversal line, and reads the calm trend', () => {
+    localStorage.clear();
+    const log = new FlightLog();
+    const base: FlightSummary = { seconds: 40, crashed: false, crashReason: '', maxAltitude: 5, maxSpeed: 3, maxG: 1.2, minG: 0.9, vrsSeconds: 0, stallSeconds: 0, batteryUsed: 0.1, touchdown: 0.4, tricks: [] };
+    for (let i = 0; i < 20; i++) log.add({ ...base, crashed: i % 7 === 0, reversalsPerMin: i < 10 ? 120 : 60 }, '450'); // oldest first: busy, then calm
+    const svg = progressSvg(log.entries);
+    expect((svg.match(/<rect/g) ?? []).length).toBe(20);
+    expect((svg.match(/#d9534f/g) ?? []).length).toBe(3);
+    expect(svg).toContain('<polyline');
+    const trend = calmTrend(log.entries)!;
+    expect(trend.recent).toBeCloseTo(60);
+    expect(trend.earlier).toBeCloseTo(120);
+    expect(logbookHtml(log, (s) => `${s}s`)).toContain('calming down');
+    expect(progressSvg(log.entries.slice(0, 2))).toBe('');
   });
 });

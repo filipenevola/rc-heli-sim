@@ -35,6 +35,11 @@ export const PT_BR: Record<string, string> = {
   'Front': 'Frente',
   'Top': 'De cima',
   'Drone': 'Drone',
+  // ---- Logbook chart ----
+  'Flight time per flight; red = crash; yellow line = stick reversals per minute': 'Tempo de cada voo; vermelho = queda; linha amarela = inversões de stick por minuto',
+  'Stick reversals per minute, last 10 flights:': 'Inversões de stick por minuto, últimos 10 voos:',
+  'Your hands are calming down.': 'Suas mãos estão ficando mais calmas.',
+  'Busier hands lately: slow down, hold each correction longer.': 'Mãos mais agitadas ultimamente: devagar, segure cada correção por mais tempo.',
   // ---- Emergencies ----
   'Tail rotor failure': 'Falha do rotor de cauda',
   'Emergency: the tail rotor quits in flight (Settings → Emergencies, or the drill lesson). Throttle hold at once, autorotate, and land upright touching down slower than 1.5 m/s.': 'Emergência: o rotor de cauda para em voo (Configurações → Emergências, ou a lição de treino). Throttle hold na hora, autorrotação, e pouse de pé tocando a menos de 1,5 m/s.',
