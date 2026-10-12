@@ -66,6 +66,9 @@ export class KeyboardInput implements InputSource {
   poll(dt: number): ControlFrame {
     const f = this.frame;
     if (!this.enabled) return f;
+    // A held key is activity too: otherwise a transmitter left plugged in takes the sticks back after 4 s of
+    // holding W to climb.
+    if (this.keys.size > 0) this.last = performance.now();
     const axis = (neg: string, pos: string, value: number) => {
       const dir = (this.keys.has(pos) ? 1 : 0) - (this.keys.has(neg) ? 1 : 0);
       if (dir !== 0) return clamp1(value + dir * this.rampRate * dt);

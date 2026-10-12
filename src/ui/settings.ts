@@ -38,6 +38,7 @@ export interface SettingsCallbacks {
   /** Move the pilot to a named spot, or walk toward the helicopter ('heli'). */
   onPilotSpot(spot: string): void;
   onArrow(on: boolean): void;
+  onTrail(on: boolean): void;
 }
 
 type AxisName = 'aileron' | 'elevator' | 'rudder' | 'collective';
@@ -54,7 +55,7 @@ const AXIS_HINT: Record<AxisName | SwitchName, string> = {
 };
 
 const PREFS_KEY = 'rc-heli-sim.prefs.v1';
-interface Prefs { gear?: boolean; nrate?: number; model?: string; source?: string; stickMode?: number; expo?: number; rate?: number; rexpo?: number; assist?: string; camera?: string; spot?: string; arrow?: boolean; wind?: number; windDir?: number; gust?: number; volume?: number; muted?: boolean; tilt?: number }
+interface Prefs { trail?: boolean; gear?: boolean; nrate?: number; model?: string; source?: string; stickMode?: number; expo?: number; rate?: number; rexpo?: number; assist?: string; camera?: string; spot?: string; arrow?: boolean; wind?: number; windDir?: number; gust?: number; volume?: number; muted?: boolean; tilt?: number }
 function loadPrefs(): Prefs {
   try { return JSON.parse(localStorage.getItem(PREFS_KEY) ?? '{}') as Prefs; } catch { return {}; }
 }
@@ -209,6 +210,7 @@ export class SettingsPanel {
     if (p.camera && (CAMERA_MODES as string[]).includes(p.camera)) this.setCamera(p.camera as CameraMode);
     if (p.spot) { this.spot = p.spot; this.cb.onPilotSpot(p.spot); }
     if (p.arrow !== undefined) { this.arrowOn = p.arrow; this.cb.onArrow(p.arrow); }
+    if (p.trail) this.setTrail(true);
     if (p.gear) { this.gearOn = true; this.cb.onTrainingGear(true); }
     if (p.wind !== undefined) this.wind.speed = p.wind;
     if (p.windDir !== undefined) this.wind.fromDeg = p.windDir;
@@ -297,6 +299,7 @@ export class SettingsPanel {
         <label>Pilot stands at ${sel('spot', [['pad', 'The helipad (default)'], ['barn', 'By the barn'], ['pond', 'By the pond'], ['tower', 'By the tower'], ['road', 'On the road']], this.spot)}</label>
         <button id="walk">Walk to the heli (G)</button>
         <label><input type="checkbox" id="arrow" ${this.arrowOn ? 'checked' : ''}> Orientation arrow under the heli (beginner aid)</label>
+        <label><input type="checkbox" id="trail" ${this.trailOn ? 'checked' : ''}> Smoke trail: fading path of the last 12 s (T)</label>
       </section>
       <section>
         <h4>Sound</h4>
@@ -363,6 +366,9 @@ export class SettingsPanel {
       this.arrowOn = (e.target as HTMLInputElement).checked;
       this.cb.onArrow(this.arrowOn);
       savePrefs({ arrow: this.arrowOn });
+    });
+    q<HTMLInputElement>('#trail').addEventListener('change', (e) => {
+      this.setTrail((e.target as HTMLInputElement).checked);
     });
     q<HTMLSelectElement>('#camera').addEventListener('change', (e) => {
       this.cameraMode = (e.target as HTMLSelectElement).value as CameraMode;
@@ -451,7 +457,17 @@ export class SettingsPanel {
   cameraMode: CameraMode = 'pilot';
   spot = 'pad';
   arrowOn = true;
+  trailOn = false;
   gearOn = false;
+
+  /** Smoke trail on/off (settings checkbox, T key); persisted. */
+  setTrail(on: boolean): void {
+    this.trailOn = on;
+    this.cb.onTrail(on);
+    const box = this.panel.querySelector<HTMLInputElement>('#trail');
+    if (box) box.checked = on;
+    savePrefs({ trail: on });
+  }
 
   setCamera(mode: CameraMode): void {
     this.cameraMode = mode;

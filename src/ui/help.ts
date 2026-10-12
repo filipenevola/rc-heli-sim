@@ -162,6 +162,10 @@ const HELP_HTML = `
 </section>
 
 <section>
+  <h4>Smoke trail</h4>
+  <p>Press <b>T</b> (or Settings → Smoke trail) for a fading ribbon of the last 12 seconds of flight. It shows the
+  real shape of your loop, eight or funnel from where you stand, the way smoke does at a show, and it also draws
+  during replays.</p>
   <h4>Camera</h4>
   <p>The <b>Cam</b> button (or C) cycles: <b>Pilot</b> — you stand on the field and the view zooms with distance, the
   realistic way and the one that transfers to the real model; <b>Chase</b> — behind the tail, turning with the heading;

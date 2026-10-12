@@ -3,6 +3,15 @@
 All notable changes to RC Heli Sim. The version shown in the game (Help and Settings) matches the latest
 entry here; the commit hash next to it identifies the exact build.
 
+## 0.23.0
+
+- **Smoke trail** (T, or Settings → Smoke trail): a fading ribbon of the last 12 seconds of flight, so the shape
+  of a loop, an eight or a funnel is visible from the pilot's spot. Also drawn during replays. Saved with your
+  preferences.
+- Fix: with a transmitter plugged in, holding a keyboard key for more than 4 s handed the sticks back to the
+  transmitter mid-climb. A held key now counts as keyboard activity.
+- Dev: `scripts/drive.mjs` gained a `shot:<file.png>` step.
+
 ## 0.22.0
 
 - **Physics: the tail gyro loop is now a real loop.** The gyro's anti-vibration filter, the tail servo's finite

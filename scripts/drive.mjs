@@ -3,6 +3,7 @@
 // Usage: node scripts/drive.mjs <url> <step>... where each step is either
 //   wait:<js expression>      poll (1 Hz) until truthy, up to --timeout seconds (default 120)
 //   eval:<js expression>      run once and print the result
+//   shot:<file.png>           save a screenshot
 // Exits 1 on any uncaught exception in the page, a timeout, or a step that throws.
 const args = process.argv.slice(2);
 const timeoutIdx = args.indexOf('--timeout');
@@ -56,6 +57,11 @@ try {
     const expr = rest.join(':');
     if (kind === 'eval') {
       console.log('eval', expr, '=>', JSON.stringify(await evaluate(expr)));
+    } else if (kind === 'shot') {
+      const r = await send('Page.captureScreenshot', { format: 'png' });
+      const { writeFileSync } = await import('node:fs');
+      writeFileSync(expr, Buffer.from(r.result.data, 'base64'));
+      console.log('shot', expr);
     } else if (kind === 'wait') {
       let ok = false;
       while (Date.now() - t0 < timeout * 1000) {

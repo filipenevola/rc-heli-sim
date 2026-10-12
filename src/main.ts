@@ -23,6 +23,7 @@ import { ChallengesPanel } from './ui/challenges-panel';
 import { installTypingGuard } from './input/typing-guard';
 import { lessonFor, LessonRunner } from './game/lessons';
 import { recordGhost, type GhostFrame } from './game/ghost';
+import { Trail } from './render/trail';
 import { LessonOverlay } from './ui/lesson-overlay';
 import type { AssistMode } from './sim/physics';
 
@@ -55,6 +56,8 @@ wind.obstacles = world.windObstacles();
 const sim = new HelicopterSim(HELI_MODELS[0], wind, world);
 let heliMesh = new HeliMesh(sim.model);
 scene.add(heliMesh.root);
+const trail = new Trail();
+scene.add(trail.object);
 
 let baseModel: HeliModel = HELI_MODELS[0];
 let trainingGear = false;
@@ -241,6 +244,9 @@ const settings = new SettingsPanel(ui, input, wind, audio, {
   onArrow(on) {
     field.arrow.visible = on;
   },
+  onTrail(on) {
+    trail.visible = on;
+  },
   onCamera(mode) {
     if (mode) pilotCam.mode = mode;
     else pilotCam.cycle();
@@ -290,6 +296,7 @@ challenges.onProfileChange = () => settings.setPilotLabel(profile.name, profile.
 function reset(): void {
   if (replay) stopReplay();
   recording.length = 0;
+  trail.clear();
   if (lesson) stopLesson();
   sim.reset();
   tracker.resetTransient();
@@ -297,6 +304,7 @@ function reset(): void {
 
 window.addEventListener('keydown', (e) => {
   if (e.code === 'KeyR') reset();
+  if (e.code === 'KeyT') settings.setTrail(!trail.visible);
 });
 
 // Tap a billboard to open the site. A short press with no drag only, so camera-free touches on the field do nothing.
@@ -317,6 +325,7 @@ renderer.domElement.addEventListener('pointerup', (e) => {
 });
 window.addEventListener('resize', () => {
   renderer.setSize(window.innerWidth, window.innerHeight);
+  trail.setResolution(window.innerWidth, window.innerHeight);
   pilotCam.resize(window.innerWidth / window.innerHeight);
 });
 
@@ -348,6 +357,7 @@ function startReplay(kind: 'crash' | 'flight' = 'crash'): void {
   const frames = kind === 'crash' ? recording.slice(-60 * REC_SECONDS) : lastFlight ?? [];
   if (frames.length < 10) return;
   replay = { frames, i: 0, acc: 0, kind };
+  trail.clear();
   lessonOverlay.showReplay(kind);
   lessonOverlay.onStop = stopReplay;
 }
@@ -356,6 +366,7 @@ hud.onAction = (id) => {
 };
 function stopReplay(): void {
   replay = null;
+  trail.clear();
   lessonOverlay.hide();
   lessonOverlay.restoreStopLabel();
   lessonOverlay.onStop = () => stopLesson();
@@ -455,6 +466,7 @@ function frame(now: number): void {
     const f = replay.frames[replay.i];
     const fake = { ...sim.state, pos: f.pos, ori: f.ori, a1: f.a1, b1: f.b1, rotorOmega: f.rotorOmega, crashed: false };
     heliMesh.update(fake, dt);
+    trail.update(f.pos, dt);
     lessonOverlay.updateReplay(f.ctl, (replay.frames.length - 1 - replay.i) / 60, replay.i / 60);
     if (replay.i >= replay.frames.length - 1 && replay.acc > 2) replay.i = 0; // loop after a pause at the end
     target.set(f.pos.x, f.pos.y, f.pos.z);
@@ -476,6 +488,7 @@ function frame(now: number): void {
   }
 
   heliMesh.update(sim.state, paused ? 0 : dt);
+  if (!paused) trail.update(sim.state.pos, dt);
   target.set(sim.state.pos.x, sim.state.pos.y, sim.state.pos.z);
   heliQuat.set(sim.state.ori.x, sim.state.ori.y, sim.state.ori.z, sim.state.ori.w);
   pilotCam.update(target, heliQuat, dt);
