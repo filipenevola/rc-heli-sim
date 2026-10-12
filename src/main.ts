@@ -92,6 +92,7 @@ function setModel(model: HeliModel): void {
 
 const ui = document.getElementById('ui')!;
 const audio = new AudioEngine();
+audio.setIndoor(getSite() === 'gym');
 // Browsers only allow audio after a user gesture; any key, click or touch unlocks it.
 for (const ev of ['pointerdown', 'keydown', 'touchstart']) window.addEventListener(ev, () => audio.start(), { passive: true });
 window.addEventListener('focus', () => audio.resume());

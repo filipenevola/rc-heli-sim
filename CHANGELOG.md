@@ -3,6 +3,10 @@
 All notable changes to RC Heli Sim. The version shown in the game (Help and Settings) matches the latest
 entry here; the commit hash next to it identifies the exact build.
 
+## 0.43.0
+
+- Sound in the gym: a short hall echo on everything the helicopter makes, and no birds or wind indoors.
+
 ## 0.42.0
 
 - Rankings: a callsign that belongs to a signed-in account no longer shows the anonymous rows that still carry

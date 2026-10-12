@@ -34,6 +34,9 @@ export class AudioEngine {
   private beepGain!: GainNode;
   private nextBeep = 0;
   private nextChirp = 0;
+  /** Indoors (the gym): no birds or wind, and the hall's short slap-back echo on everything the heli makes. */
+  private indoor = false;
+  private echoGain: GainNode | null = null;
   private ambience!: GainNode;
   private crashedBefore = false;
   private started = false;
@@ -71,6 +74,19 @@ export class AudioEngine {
     this.heliBus = ctx.createGain();
     this.heliBus.gain.value = 0;
     this.heliBus.connect(this.master);
+    // Hall echo: a short feedback delay, darkened, mixed in only indoors.
+    const delay = ctx.createDelay(0.5);
+    delay.delayTime.value = 0.085;
+    const echoLp = ctx.createBiquadFilter();
+    echoLp.type = 'lowpass';
+    echoLp.frequency.value = 1800;
+    const feedback = ctx.createGain();
+    feedback.gain.value = 0.32;
+    this.echoGain = ctx.createGain();
+    this.echoGain.gain.value = this.indoor ? 0.35 : 0;
+    this.heliBus.connect(delay);
+    delay.connect(echoLp).connect(feedback).connect(delay);
+    echoLp.connect(this.echoGain).connect(this.master);
 
     // Motor: two detuned sawtooths through a resonant lowpass. Brushless whine is mostly the
     // commutation harmonics, so the fundamental is motor rpm x pole pairs / 60.
@@ -183,6 +199,12 @@ export class AudioEngine {
     if (this.master && this.ctx) this.master.gain.setTargetAtTime(this.effectiveGain(), this.ctx.currentTime, 0.05);
   }
 
+  /** Indoors: echo on, birds and wind off. */
+  setIndoor(on: boolean): void {
+    this.indoor = on;
+    if (this.echoGain && this.ctx) this.echoGain.gain.setTargetAtTime(on ? 0.35 : 0, this.ctx.currentTime, 0.1);
+  }
+
   setMuted(muted: boolean): void {
     this.muted = muted;
     this.applyGain();
@@ -278,7 +300,7 @@ export class AudioEngine {
     this.windFilter.frequency.setTargetAtTime(200 + 500 * windLevel + 150 * Math.sin(t * 0.6), t, 0.2);
 
     // Birds: a short frequency-swept chirp every few seconds, quieter when the heli is loud nearby.
-    if (t > this.nextChirp) {
+    if (t > this.nextChirp && !this.indoor) {
       this.nextChirp = t + 2.5 + Math.random() * 6;
       const o = ctx.createOscillator();
       o.type = 'sine';
@@ -300,7 +322,7 @@ export class AudioEngine {
       o.start(t);
       o.stop(t + n * 0.16 + 0.05);
     }
-    this.ambience.gain.setTargetAtTime(0.012 + 0.01 * Math.min(1, windSpeed / 8), t, 0.5);
+    this.ambience.gain.setTargetAtTime(this.indoor ? 0.006 : 0.012 + 0.01 * Math.min(1, windSpeed / 8), t, 0.5);
     // Low battery: double beep every 2 s under 10%, continuous fast beeps at 0% (the radio's timer alarm style).
     if (tel.battery < 0.1 && rpmFrac > 0.1) {
       if (t > this.nextBeep) {
