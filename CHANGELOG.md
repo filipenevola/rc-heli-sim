@@ -3,6 +3,15 @@
 All notable changes to RC Heli Sim. The version shown in the game (Help and Settings) matches the latest
 entry here; the commit hash next to it identifies the exact build.
 
+## 0.13.0 — 2026-10-12
+
+- New helicopter: 250 Micro CP (flybarless), a 210 g collective-pitch micro with 4,000 rpm head speed and a
+  5.5 Wh pack: twitchy, quick, short flights.
+- Model setup, like your radio's model memory: per flight mode pitch curve (low / centre / high) and head
+  speed, tail gyro gain and cyclic rate, in Settings → Helicopter → Model setup. Applies live, saved per
+  helicopter on the device and to your account when signed in.
+- Drivetrain friction now scales with the motor (the micro could not reach head speed against a 450's bearings).
+
 ## 0.12.0 — 2026-10-12
 
 - Wind is now a field, not a number: a boundary layer (calmer at skid height than at tree height), wakes behind

@@ -1,4 +1,4 @@
-import { HELI_MODELS, type HeliModel } from '../sim/heli-model';
+import { HELI_MODELS, type HeliModel, type ModelSetup } from '../sim/heli-model';
 import type { InputManager, SourceChoice } from '../input/manager';
 import { saveMapping, builtinName, readAxis, type AxisMapping, type GamepadMapping, type SwitchMapping } from '../input/gamepad';
 import type { StickMode } from '../input/types';
@@ -20,6 +20,10 @@ export const HOLD_HELP = {
 
 export interface SettingsCallbacks {
   onModel(model: HeliModel): void;
+  /** The pilot changed the model setup (pitch curves, head speeds, gains) for the given base model. */
+  onSetup(modelId: string, setup: ModelSetup): void;
+  /** Current setup for a model id (from the profile), to prefill the sliders. */
+  getSetup(modelId: string): ModelSetup | undefined;
   onReset(): void;
   onFlightMode(mode: 0 | 1 | 2): void;
   onThrottleHold(hold: boolean): void;
@@ -50,6 +54,56 @@ export class SettingsPanel {
   private panel: HTMLElement;
   private wizardState: { axis: AxisName | SwitchName; baseline: number[]; baselineButtons: boolean[] } | null = null;
   private wizardStatus: HTMLElement | null = null;
+  currentModelId = HELI_MODELS[0].id;
+
+  private setupHtml(): string {
+    const base = HELI_MODELS.find((m) => m.id === this.currentModelId) ?? HELI_MODELS[0];
+    const cur = this.cb.getSetup(base.id) ?? {};
+    const deg = (c: number[], i: number) => c[i];
+    const modes = ['Normal', 'Idle-Up 1', 'Idle-Up 2'];
+    const rpm = (w: number) => Math.round((w * 60) / (2 * Math.PI));
+    const row = (label: string, id: string, min: number, max: number, step: number, value: number, unit = '') =>
+      `<label class="setup-row"><span>${label}</span><input type="range" data-setup="${id}" min="${min}" max="${max}" step="${step}" value="${value}"><b data-setup-v="${id}">${value}${unit}</b></label>`;
+    return `
+      <p class="hint">Changes apply at once and are saved for this helicopter (and to your account when signed in).</p>
+      ${modes.map((name, i) => {
+        const p = cur.pitch?.[i] ?? [deg(base.pitchCurves[i], 0), deg(base.pitchCurves[i], 2), deg(base.pitchCurves[i], 4)];
+        const hs = cur.headspeedPct?.[i] ?? 100;
+        return `<h5>${name}</h5>
+          ${row('Pitch low', `p${i}l`, -14, 4, 0.5, p[0], '°')}
+          ${row('Pitch centre', `p${i}m`, -6, 8, 0.5, p[1], '°')}
+          ${row('Pitch high', `p${i}h`, 4, 15, 0.5, p[2], '°')}
+          ${row(`Head speed (${rpm(base.headspeeds[i])} rpm default)`, `h${i}`, 70, 115, 1, hs, '%')}`;
+      }).join('')}
+      <h5>Gyro / rates</h5>
+      ${row('Tail gyro gain', 'gyro', 50, 150, 5, cur.gyroGainPct ?? 100, '%')}
+      ${row('Cyclic rate', 'crate', 50, 130, 5, cur.cyclicRatePct ?? 100, '%')}
+      <button id="setup-reset">Reset to factory</button>`;
+  }
+
+  private readSetup(): ModelSetup {
+    const g = (id: string) => Number((this.panel.querySelector(`[data-setup="${id}"]`) as HTMLInputElement).value);
+    return {
+      pitch: [0, 1, 2].map((i) => [g(`p${i}l`), g(`p${i}m`), g(`p${i}h`)] as [number, number, number]),
+      headspeedPct: [0, 1, 2].map((i) => g(`h${i}`)),
+      gyroGainPct: g('gyro'),
+      cyclicRatePct: g('crate'),
+    };
+  }
+
+  private bindSetup(): void {
+    for (const el of this.panel.querySelectorAll<HTMLInputElement>('[data-setup]')) {
+      el.addEventListener('input', () => {
+        const v = this.panel.querySelector(`[data-setup-v="${el.dataset.setup}"]`);
+        if (v) v.textContent = el.value + (el.dataset.setup?.startsWith('p') ? '°' : '%');
+        this.cb.onSetup(this.currentModelId, this.readSetup());
+      });
+    }
+    this.panel.querySelector('#setup-reset')?.addEventListener('click', () => {
+      this.cb.onSetup(this.currentModelId, {});
+      this.render();
+    });
+  }
   private axisBars: HTMLElement | null = null;
   private calibrating: { min: number[]; max: number[] } | null = null;
 
@@ -158,7 +212,10 @@ export class SettingsPanel {
       <p class="hint">v${__VERSION__} · build <code>${__COMMIT__}</code> (${__BUILD__.split(' ').slice(1).join(' ')}) · <a href="https://github.com/filipenevola/rc-heli-sim/blob/main/CHANGELOG.md" target="_blank" rel="noopener">Release log</a></p>
       <section>
         <h4>Helicopter</h4>
-        ${sel('model', HELI_MODELS.map((m) => [m.id, m.name]), HELI_MODELS[0].id)}
+        ${sel('model', HELI_MODELS.map((m) => [m.id, m.name]), this.currentModelId)}
+        <details class="setup"><summary>Model setup (pitch curves, head speed, gyro) — like your radio's model memory</summary>
+          ${this.setupHtml()}
+        </details>
       </section>
       <section>
         <h4>Input</h4>
@@ -208,8 +265,11 @@ export class SettingsPanel {
     q('#close').addEventListener('click', () => this.toggle());
     q<HTMLSelectElement>('#model').addEventListener('change', (e) => {
       const m = HELI_MODELS.find((x) => x.id === (e.target as HTMLSelectElement).value)!;
+      this.currentModelId = m.id;
       this.cb.onModel(m);
+      this.render();
     });
+    this.bindSetup();
     q<HTMLSelectElement>('#source').addEventListener('change', (e) => {
       const choice = (e.target as HTMLSelectElement).value as SourceChoice;
       const status = q('#source-status');

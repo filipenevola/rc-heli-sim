@@ -119,6 +119,12 @@ const HELP_HTML = `
     <li><b>450 flybar trainer</b> — softest and most damped. The mechanical flybar adds stability but less authority.</li>
     <li><b>450 flybarless</b> — modern electronics in rate mode: crisp and quick, holds whatever attitude you leave it in.</li>
     <li><b>700 3D</b> — big, powerful and fast. Lots of inertia, lots of thrust.</li>
+    <li><b>250 Micro CP</b> — a garden-sized collective-pitch micro: light, quick, nervous, short on battery.</li>
+  </ul>
+  <p><b>Model setup</b> (Settings → Helicopter): pitch curves per flight mode, head speed, tail gyro gain and cyclic rate,
+  exactly the things you would set in your radio. Too much gyro gain wags the tail; too little lets it wander. A lower head
+  speed in Normal makes a trainer gentler; a higher pitch range in Idle-Up gives more 3D authority.</p>
+  <ul>
   </ul>
 </section>
 

@@ -147,3 +147,8 @@ table.channels button { padding: 2px 8px; font-size: 12px; }
 .warn-banner { position: absolute; top: 18%; left: 50%; transform: translateX(-50%); background: rgba(160, 40, 0, 0.85); border: 1px solid #ffd34d; padding: 8px 16px; border-radius: 8px; font-weight: 600; pointer-events: none; font-size: 14px; max-width: 90vw; text-align: center; }
 .lesson-coach { margin-top: 6px; font-size: 18px; font-weight: 700; color: #fff; background: rgba(190, 120, 0, 0.6); border-radius: 6px; padding: 4px 10px; display: inline-block; }
 .lesson-coach.ok { background: rgba(20, 120, 50, 0.7); }
+.setup summary { cursor: pointer; font-size: 13px; opacity: 0.9; margin: 6px 0; }
+.setup h5 { margin: 8px 0 2px; font-size: 13px; color: #ffd34d; }
+.setup-row { display: grid; grid-template-columns: 1fr 120px 52px; gap: 8px; align-items: center; font-size: 12px; margin: 2px 0; }
+.setup-row input[type=range] { width: 100%; }
+.setup button { margin-top: 6px; }

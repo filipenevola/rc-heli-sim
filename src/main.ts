@@ -15,7 +15,7 @@ import { SettingsPanel, MODE_HELP, HOLD_HELP } from './ui/settings';
 import { AudioEngine } from './audio/engine';
 import { HelpPanel } from './ui/help';
 import { ChallengeTracker, FlightTimer, CHALLENGES } from './game/challenges';
-import { HELI_450, type HeliModel } from './sim/heli-model';
+import { HELI_450, applySetup, type HeliModel, type ModelSetup } from './sim/heli-model';
 import { loadProfile, RankingClient, fmtTime } from './game/player';
 import { GateMeshes } from './render/gates';
 import { ChallengesPanel } from './ui/challenges-panel';
@@ -54,10 +54,13 @@ const sim = new HelicopterSim(HELI_MODELS[0], wind, world);
 let heliMesh = new HeliMesh(sim.model);
 scene.add(heliMesh.root);
 
+let baseModel: HeliModel = HELI_MODELS[0];
 function setModel(model: HeliModel): void {
+  baseModel = model;
+  const tuned = applySetup(model, (profile.setup?.[model.id] as ModelSetup | undefined) ?? undefined);
   scene.remove(heliMesh.root);
-  sim.reset(model);
-  heliMesh = new HeliMesh(model);
+  sim.reset(tuned);
+  heliMesh = new HeliMesh(tuned);
   scene.add(heliMesh.root);
 }
 
@@ -70,6 +73,7 @@ const input: InputManager = new InputManager(ui);
 const hud = new Hud(ui);
 const help = new HelpPanel(ui);
 const profile = loadProfile();
+if (profile.setup?.[baseModel.id]) setModel(baseModel);
 const tracker = new ChallengeTracker(profile.completed);
 const flightTimer = new FlightTimer();
 const rankingClient = new RankingClient();
@@ -133,6 +137,17 @@ flightTimer.onFlightEnd = (seconds, crashed) => {
 const settings = new SettingsPanel(ui, input, wind, audio, {
   onModel(model) {
     setModel(model);
+  },
+  onSetup(modelId, setup) {
+    profile.setup = { ...(profile.setup ?? {}), [modelId]: setup };
+    // Re-apply without resetting the flight: patch the live model in place.
+    const base = HELI_MODELS.find((m) => m.id === modelId) ?? baseModel;
+    const tuned = applySetup(base, setup);
+    sim.model = tuned;
+    void challenges.sync();
+  },
+  getSetup(modelId) {
+    return profile.setup?.[modelId] as ModelSetup | undefined;
   },
   onReset: reset,
   onFlightMode(mode) {

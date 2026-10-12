@@ -97,7 +97,9 @@ export class Autopilot {
     // Altitude: PD on collective.
     const vzMax = opts.vzMax ?? 1.5;
     const ey = target.y - s.pos.y;
+    // Integrate near the target; far from it, bleed the integrator off so a landing's wind-up does not block the next climb.
     if (Math.abs(ey) < 1.5) this.iy = Math.max(-0.3, Math.min(0.3, this.iy + ey * 0.15 * dt));
+    else this.iy *= 0.97;
     const vyWanted = Math.max(-vzMax, Math.min(vzMax, 1.0 * ey));
     this.ctl.collective = clamp1(this.hoverStick + 0.35 * (vyWanted - s.vel.y) + 0.06 * ey + this.iy);
 
