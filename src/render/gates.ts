@@ -11,9 +11,21 @@ export class GateMeshes {
   };
 
   private sets: { gates: GateSpec[]; rings: THREE.Mesh[] }[] = [];
+  /** The beginner's hover box: a translucent drum over the pad, 1-4 m up within 4 m, shown until that challenge is done. */
+  readonly hoverBox = new THREE.Group();
 
   constructor() {
     for (const gates of [GATES, EIGHT_GATES]) this.sets.push({ gates, rings: this.build(gates, gates === EIGHT_GATES ? 0x6ec6ff : 0xffffff) });
+    const wall = new THREE.Mesh(new THREE.CylinderGeometry(4, 4, 3, 48, 1, true), new THREE.MeshBasicMaterial({ color: 0xffd34d, transparent: true, opacity: 0.1, side: THREE.DoubleSide, depthWrite: false }));
+    wall.position.set(0, 2.5, -6);
+    const edgeMat = new THREE.LineBasicMaterial({ color: 0xffd34d, transparent: true, opacity: 0.6 });
+    for (const y of [1, 4]) {
+      const pts: THREE.Vector3[] = [];
+      for (let i = 0; i <= 64; i++) pts.push(new THREE.Vector3(4 * Math.cos((i / 64) * Math.PI * 2), y, -6 + 4 * Math.sin((i / 64) * Math.PI * 2)));
+      this.hoverBox.add(new THREE.Line(new THREE.BufferGeometry().setFromPoints(pts), edgeMat));
+    }
+    this.hoverBox.add(wall);
+    this.group.add(this.hoverBox);
   }
 
   private build(gates: GateSpec[], color: number): THREE.Mesh[] {
@@ -35,8 +47,9 @@ export class GateMeshes {
     return rings;
   }
 
-  /** Highlight: next ring yellow, passed rings green, for each gate set. */
-  update(next: [number, number], done: [boolean, boolean]): void {
+  /** Highlight: next ring yellow, passed rings green, for each gate set; the hover box until that challenge is done. */
+  update(next: [number, number], done: [boolean, boolean], hoverBoxDone = false): void {
+    this.hoverBox.visible = !hoverBoxDone;
     this.sets.forEach((set, k) => {
       set.rings.forEach((r, i) => {
         r.material = done[k] || i < next[k] ? this.mats.done : i === next[k] ? this.mats.next : (r.userData.todo as THREE.Material);

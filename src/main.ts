@@ -864,7 +864,7 @@ function frame(now: number): void {
     if (flightTimer.flying) stats.update(sim, dt, ctl);
     tracker.update(sim, dt, flightTimer.flying ? flightTimer.airTime : 0);
   }
-  gates.update([tracker.nextGate('circuit'), tracker.nextGate('figure-eight')], [tracker.completed.has('circuit'), tracker.completed.has('figure-eight')]);
+  gates.update([tracker.nextGate('circuit'), tracker.nextGate('figure-eight')], [tracker.completed.has('circuit'), tracker.completed.has('figure-eight')], tracker.completed.has('hover-box') || getSite() !== 'field');
   challenges.tick();
   // The instructor reads each new lesson caption aloud (and the intro on the first step).
   if (lesson && !lesson.finished) {

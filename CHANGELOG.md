@@ -3,6 +3,11 @@
 All notable changes to RC Heli Sim. The version shown in the game (Help and Settings) matches the latest
 entry here; the commit hash next to it identifies the exact build.
 
+## 0.81.0
+
+- The beginner's hover box is drawn on the field: a translucent drum over the pad (1-4 m up, 4 m across) that
+  shows the limits of "Hover in the box" until the challenge is done.
+
 ## 0.80.0
 
 - CI runs the browser smoke (every entry URL loads in headless Chrome without an uncaught exception) against the
