@@ -3,6 +3,10 @@
 All notable changes to RC Heli Sim. The version shown in the game (Help and Settings) matches the latest
 entry here; the commit hash next to it identifies the exact build.
 
+## 0.82.0
+
+- The helipad carries a dashed 50 cm ring around the H: the spot-landing target you are aiming for.
+
 ## 0.81.0
 
 - The beginner's hover box is drawn on the field: a translucent drum over the pad (1-4 m up, 4 m across) that

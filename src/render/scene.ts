@@ -465,6 +465,14 @@ export function makePadTexture(): THREE.Texture {
   g.textBaseline = 'middle';
   g.fillStyle = '#ffffff';
   g.fillText('H', 256, 270);
+  // The spot-landing target: a thin dashed ring 50 cm from the centre (the pad is 2.2 m in radius = 215 px).
+  g.strokeStyle = '#ffd34d';
+  g.lineWidth = 5;
+  g.setLineDash([14, 10]);
+  g.beginPath();
+  g.arc(256, 256, (0.5 / 2.2) * 215, 0, Math.PI * 2);
+  g.stroke();
+  g.setLineDash([]);
   const t = new THREE.CanvasTexture(c);
   t.colorSpace = THREE.SRGBColorSpace;
   return t;
