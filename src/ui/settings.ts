@@ -89,7 +89,7 @@ export class SettingsPanel {
           ${row(`Head speed (${rpm(base.headspeeds[i])} rpm default)`, `h${i}`, 70, 115, 1, hs, '%')}`;
       }).join('')}
       <h5>Gyro / rates</h5>
-      ${row('Tail gyro gain', 'gyro', 50, 150, 5, cur.gyroGainPct ?? 100, '%')}
+      ${row('Tail gyro gain', 'gyro', 50, 400, 5, cur.gyroGainPct ?? 100, '%')}
       ${row('Cyclic rate', 'crate', 50, 130, 5, cur.cyclicRatePct ?? 100, '%')}
       <button id="setup-reset">Reset to factory</button>`;
   }

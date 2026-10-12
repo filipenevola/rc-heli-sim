@@ -3,6 +3,15 @@
 All notable changes to RC Heli Sim. The version shown in the game (Help and Settings) matches the latest
 entry here; the commit hash next to it identifies the exact build.
 
+## 0.22.0
+
+- **Physics: the tail gyro loop is now a real loop.** The gyro's anti-vibration filter, the tail servo's finite
+  speed (full throw in about 80 ms) and a few milliseconds of transport delay are modelled, so too much gyro gain
+  wags the tail instead of just feeling tighter: the wag starts around 250% on a 450, 200% on a micro, higher on
+  the 700. The setup slider now goes to 300% so you can find the wag and back off, as on the field. Factory gains
+  were retuned for the same feel (a little less overshoot on rudder steps).
+- The mechanical flybar now senses the true body rate (it is a gyroscope, not a sensor).
+
 ## 0.21.0
 
 - **Physics: hard landings break things.** Skids fold above about 2.2 m/s of sink at touchdown (the training gear's

@@ -95,6 +95,12 @@ export interface ControllerParams {
   flybarBellRatio: number;
   /** Servo + linkage first-order lag, s. */
   servoTau: number;
+  /** Rate-gyro anti-vibration low-pass time constant, s (0 = none). */
+  gyroTau: number;
+  /** Tail servo slew: seconds to cover its full throw (0 = unlimited). */
+  tailThrowTime: number;
+  /** Tail gyro + servo-frame transport delay, ms (whole milliseconds at the 1 kHz physics rate). */
+  delayMs: number;
 }
 
 const rpm = (n: number) => (n * 2 * Math.PI) / 60;
@@ -144,11 +150,14 @@ export const HELI_450: HeliModel = {
     yawRate: (520 * Math.PI) / 180,
     cyclicP: 0.015,
     cyclicI: 0.45,
-    yawP: 0.09,
-    yawI: 0.9,
+    yawP: 0.27,
+    yawI: 0.54,
     flybarTau: 0.14,
     flybarBellRatio: 0.45,
     servoTau: 0.018,
+    gyroTau: 0.003,
+    tailThrowTime: 0.08,
+    delayMs: 3,
   },
 };
 
@@ -160,7 +169,7 @@ export const HELI_450_FLYBAR: HeliModel = {
   hubStiffness: 12,
   lockNumber: 3.6,
   headspeeds: [rpm(2400), rpm(2600), rpm(2800)],
-  controller: { ...HELI_450.controller, type: 'flybar', yawP: 0.08, yawI: 0.8 },
+  controller: { ...HELI_450.controller, type: 'flybar', yawP: 0.24, yawI: 0.48 },
 };
 
 /** 700-class 3D machine. Heavier, more authority, higher blade tip speed. */
@@ -208,11 +217,14 @@ export const HELI_700: HeliModel = {
     yawRate: (560 * Math.PI) / 180,
     cyclicP: 0.015,
     cyclicI: 0.5,
-    yawP: 0.085,
-    yawI: 0.85,
+    yawP: 0.255,
+    yawI: 0.51,
     flybarTau: 0.16,
     flybarBellRatio: 0.45,
     servoTau: 0.02,
+    gyroTau: 0.003,
+    tailThrowTime: 0.08,
+    delayMs: 3,
   },
 };
 
@@ -261,11 +273,14 @@ export const HELI_250: HeliModel = {
     yawRate: (600 * Math.PI) / 180,
     cyclicP: 0.012,
     cyclicI: 0.4,
-    yawP: 0.08,
-    yawI: 0.9,
+    yawP: 0.24,
+    yawI: 0.54,
     flybarTau: 0.12,
     flybarBellRatio: 0.45,
     servoTau: 0.014,
+    gyroTau: 0.003,
+    tailThrowTime: 0.06,
+    delayMs: 3,
   },
 };
 

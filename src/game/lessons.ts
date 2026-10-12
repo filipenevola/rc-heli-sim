@@ -714,13 +714,15 @@ export const LESSONS: Lesson[] = [
           // Bank right 55°: right.y = -sin(55°).
           const target = -Math.sin((55 * Math.PI) / 180);
           ap.ctl.aileron = Math.max(-1, Math.min(1, ((target - right.y) * -6) / c.cyclicRate * 4));
-          ap.ctl.elevator = -0.35;
+          // A big heli carries far more energy round the circle: less pull keeps its speed from swinging.
+          ap.ctl.elevator = sim.model.rotor.radius > 0.6 ? -0.22 : -0.35;
           ap.ctl.rudder = 0.1;
           const vy = s.vel.y;
           ap.ctl.collective = Math.max(-0.2, Math.min(1, 0.6 + 0.3 * ((mem.y - s.pos.y) * 0.8 - vy)));
           return ap.ctl;
         },
-        done: ({ mem }) => Math.abs(mem.acc ?? 0) > 2 * Math.PI + 2.5,
+        // Two laps: the detector wants one unbroken 360 with speed above 3 m/s, and the entry lap can dip under it.
+        done: ({ mem }) => Math.abs(mem.acc ?? 0) > 4 * Math.PI + 3,
         timeout: 25,
       },
       {

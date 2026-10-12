@@ -33,6 +33,10 @@ export interface HeliState {
   iPitch: number;
   iRoll: number;
   iYaw: number;
+  /** Rate-gyro sensor outputs after the unit's low-pass filter (rad/s): pitch-up, roll-right, yaw-right. */
+  gyroPitch: number;
+  gyroRoll: number;
+  gyroYaw: number;
   governorTarget: number;
   governorI: number;
   /** Energy left in the pack, Wh. */
@@ -94,6 +98,9 @@ export function initialState(model: HeliModel, yaw = 0): HeliState {
     iPitch: 0,
     iRoll: 0,
     iYaw: 0,
+    gyroPitch: 0,
+    gyroRoll: 0,
+    gyroYaw: 0,
     governorTarget: 0,
     governorI: 0,
     batteryWh: model.batteryWh,
@@ -131,6 +138,16 @@ export class HelicopterSim {
   attitudeMaxAngle = (35 * Math.PI) / 180;
   /** Outer-loop gain: rate commanded per radian of attitude error, 1/s. */
   attitudeGain = 7;
+  /** Ring buffer for the tail gyro/servo-frame transport delay. */
+  private cmdDelay: number[] = [];
+  private delayCommands(ms: number, cmd: number): number {
+    const n = Math.max(0, Math.round(ms));
+    if (n === 0) return cmd;
+    this.cmdDelay.push(cmd);
+    if (this.cmdDelay.length > n) return this.cmdDelay.shift()!;
+    return this.cmdDelay[0];
+  }
+
   telemetry: Telemetry = {
     thrust: 0, torque: 0, tailThrust: 0, collectiveDeg: 0, headspeedRpm: 0, motorPower: 0,
     altitude: 0, groundSpeed: 0, verticalSpeed: 0, groundEffect: 1, lambda: 0, battery: 1, vrs: 0, stall: 0, flightSeconds: 0, gLoad: 1, wake: 0,
@@ -142,6 +159,7 @@ export class HelicopterSim {
 
   reset(model = this.model): void {
     this.model = model;
+    this.cmdDelay = [];
     this.state = initialState(model);
     this.telemetry.flightSeconds = 0;
   }
@@ -158,9 +176,20 @@ export class HelicopterSim {
     const collectiveCmd = pitchFromCurve(m.pitchCurves[mode], ctl.collective);
 
     // Body rates expressed as pilot-intuitive rates.
-    const pitchUpRate = s.omega.x;
-    const rollRightRate = -s.omega.z;
-    const yawRightRate = -s.omega.y;
+    const pitchUpRateRaw = s.omega.x;
+    const rollRightRateRaw = -s.omega.z;
+    const yawRightRateRaw = -s.omega.y;
+    // What the tail gyro actually sees: the MEMS rate after its anti-vibration low-pass. Together with the tail
+    // servo's finite speed and a few milliseconds of delay, this is what makes too much gain wag the tail, exactly
+    // as on the field, instead of simply being "tighter". (The cyclic loop keeps the ideal path: its tuning is
+    // shared with the attitude assist and the demo pilot.)
+    const gf = c.gyroTau > 0 ? clamp(dt / c.gyroTau, 0, 1) : 1;
+    s.gyroPitch = pitchUpRateRaw;
+    s.gyroRoll = rollRightRateRaw;
+    s.gyroYaw += (yawRightRateRaw - s.gyroYaw) * gf;
+    const pitchUpRate = s.gyroPitch;
+    const rollRightRate = s.gyroRoll;
+    const yawRightRate = s.gyroYaw;
 
     const rotorAlive = s.rotorOmega > 0.3 * m.headspeeds[1];
     let cycPitchCmd: number;
@@ -195,8 +224,9 @@ export class HelicopterSim {
       // and lags behind body rotation, which is where the flybar's damping comes from.
       const stickPitch = -ctl.elevator * m.maxCyclic;
       const stickRoll = ctl.aileron * m.maxCyclic;
-      s.fbA += ((stickPitch - s.fbA) / c.flybarTau - pitchUpRate) * dt;
-      s.fbB += ((stickRoll - s.fbB) / c.flybarTau - rollRightRate) * dt;
+      // The paddles are a real gyroscope: they feel the true body rate, not a filtered sensor.
+      s.fbA += ((stickPitch - s.fbA) / c.flybarTau - pitchUpRateRaw) * dt;
+      s.fbB += ((stickRoll - s.fbB) / c.flybarTau - rollRightRateRaw) * dt;
       s.fbA = clamp(s.fbA, -0.35, 0.35);
       s.fbB = clamp(s.fbB, -0.35, 0.35);
       cycPitchCmd = c.flybarBellRatio * stickPitch + (1 - c.flybarBellRatio) * s.fbA;
@@ -214,12 +244,18 @@ export class HelicopterSim {
     let tailCmd = eYaw * c.yawP + s.iYaw + ctl.rudder * 0.25;
     tailCmd = clamp(tailCmd, -m.maxTailPitch, m.maxTailPitch);
 
-    // Servo lag.
+    // Servo lag; the tail servo also gets a slew limit (full throw in about 80 ms), which is what turns excess
+    // gyro gain into a limit cycle (the wag) rather than a divergence.
+    // Plus a transport delay of a few milliseconds (controller loop, servo pulse frame), which costs more phase than
+    // the lag does.
     const sv = clamp(dt / c.servoTau, 0, 1);
+    const slew = (cur: number, cmd: number, maxRate: number): number => cur + clamp((cmd - cur) * sv, -maxRate * dt, maxRate * dt);
+    const tailRate = c.tailThrowTime > 0 ? (2 * m.maxTailPitch) / c.tailThrowTime : 1e9;
+    const tailDelayed = this.delayCommands(c.delayMs, tailCmd);
     s.servoCollective += (collectiveCmd - s.servoCollective) * sv;
     s.servoCycPitch += (cycPitchCmd - s.servoCycPitch) * sv;
     s.servoCycRoll += (cycRollCmd - s.servoCycRoll) * sv;
-    s.servoTail += (tailCmd - s.servoTail) * sv;
+    s.servoTail = slew(s.servoTail, tailDelayed, tailRate);
 
     // ---------- Governor / motor ----------
     let targetOmega = 0;
