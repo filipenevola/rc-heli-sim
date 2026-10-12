@@ -3,6 +3,10 @@
 All notable changes to RC Heli Sim. The version shown in the game (Help and Settings) matches the latest
 entry here; the commit hash next to it identifies the exact build.
 
+## 0.83.1
+
+- `NEXT_STEPS.md`: the planned backlog, how to resume, what needs the pilot, and the pitfalls already met.
+
 ## 0.83.0
 
 - Phones: the minimap and the live badges (drill, rescue) hide while a panel is open and sit between the gimbals,
