@@ -3,6 +3,11 @@
 All notable changes to RC Heli Sim. The version shown in the game (Help and Settings) matches the latest
 entry here; the commit hash next to it identifies the exact build.
 
+## 0.31.0
+
+- A short **welcome card** on the first visit: the controls for your device, where Show me is, and where the
+  manual is. Shown once per device.
+
 ## 0.30.0
 
 - **Shift+R: reset into a hover** at 6 m in Idle-Up 1 with the rotor at speed, for drilling 3D figures without

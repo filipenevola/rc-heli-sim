@@ -58,7 +58,7 @@ const AXIS_HINT: Record<AxisName | SwitchName, string> = {
 };
 
 const PREFS_KEY = 'rc-heli-sim.prefs.v1';
-interface Prefs { custom?: CustomSpec; trail?: boolean; gear?: boolean; nrate?: number; model?: string; source?: string; stickMode?: number; expo?: number; rate?: number; rexpo?: number; assist?: string; camera?: string; spot?: string; arrow?: boolean; wind?: number; windDir?: number; gust?: number; volume?: number; muted?: boolean; tilt?: number }
+interface Prefs { welcomed?: boolean; custom?: CustomSpec; trail?: boolean; gear?: boolean; nrate?: number; model?: string; source?: string; stickMode?: number; expo?: number; rate?: number; rexpo?: number; assist?: string; camera?: string; spot?: string; arrow?: boolean; wind?: number; windDir?: number; gust?: number; volume?: number; muted?: boolean; tilt?: number }
 function loadPrefs(): Prefs {
   try { return JSON.parse(localStorage.getItem(PREFS_KEY) ?? '{}') as Prefs; } catch { return {}; }
 }
@@ -256,8 +256,17 @@ export class SettingsPanel {
   assist: AssistMode = 'rate';
 
   /** Re-apply what the pilot set last time (model, input, assist, camera, wind, sound...). Call once after wiring. */
+  /** True when nothing was ever saved on this device: show the welcome card once. */
+  firstVisit = false;
+
+  markWelcomed(): void {
+    this.firstVisit = false;
+    savePrefs({ welcomed: true });
+  }
+
   restore(): void {
     const p = loadPrefs();
+    this.firstVisit = !p.welcomed && Object.keys(p).length === 0;
     const im = this.input;
     if (p.custom) {
       const spec = normalizeSpec(p.custom);

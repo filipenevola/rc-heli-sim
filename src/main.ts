@@ -281,6 +281,19 @@ if (accountSpec && typeof accountSpec === 'object') {
   settings.setCustom(spec, customModel);
 }
 settings.restore();
+// First visit: a short welcome card with the three things a newcomer needs. Dismissed by its button or by flying.
+if (settings.firstVisit && !new URLSearchParams(location.search).get('lesson')) {
+  const touch = matchMedia('(pointer: coarse)').matches;
+  hud.notify(
+    `<b>Welcome to RC Heli Sim</b><br>${touch
+      ? 'Left stick: throttle and rudder. Right stick: cyclic. Raise the throttle slowly.'
+      : 'W / S collective, arrow keys cyclic, A / D rudder. Raise W slowly to lift off.'}<br>` +
+      'New to helis? Open <b>Challenges</b> and press <b>Show me</b> on First hover. The <b>?</b> button is the manual.' +
+      '<br><button data-action="welcome-ok">Got it</button>',
+    60000,
+  );
+  settings.markWelcomed();
+}
 settings.onRadioReport = (r) => rankingClient.sendRadioReport(r);
 settings.onMappingChanged = () => void challenges.sync();
 // Auto-calibration widened a range while flying: persist it to the account too (throttled).
@@ -421,6 +434,7 @@ function startReplay(kind: 'crash' | 'flight' = 'crash'): void {
 }
 hud.onAction = (id) => {
   if (id === 'replay-flight') startReplay('flight');
+  // 'welcome-ok' just closes the card.
 };
 function stopReplay(): void {
   replay = null;
