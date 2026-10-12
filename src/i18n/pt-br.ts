@@ -37,6 +37,11 @@ export const PT_BR: Record<string, string> = {
   'Drone': 'Drone',
   'Dynamic rollover: once a skid is on the ground the cyclic must stay neutral or away from the ground. Lift straight up with collective, or set the other skid down; never fight the tilt with aileron.': 'Capotamento dinâmico: com um esqui no chão o cíclico tem que ficar neutro ou para longe do chão. Suba reto com o coletivo, ou apoie o outro esqui; nunca brigue com a inclinação usando o aileron.',
   'Next for you': 'Próximo para você',
+  'Engine': 'Motor',
+  'Needle (mixture): 100 right, lower is lean': 'Agulha (mistura): 100 certo, menos é pobre',
+  'Lean: a few percent more power, runs hot, and quits if you keep it loaded. Rich: soft, safe, thirsty.': 'Pobre: alguns por cento a mais de potência, esquenta, e apaga se você mantiver carga. Rica: macia, segura, gastona.',
+  'ENGINE QUIT (lean run): autorotate!': 'MOTOR APAGOU (mistura pobre): autorrotação!',
+  'Engine running hot: richen the needle (Model setup).': 'Motor esquentando: enriqueça a agulha (Setup do modelo).',
   // ---- Logbook chart ----
   'Flight time per flight; red = crash; yellow line = stick reversals per minute': 'Tempo de cada voo; vermelho = queda; linha amarela = inversões de stick por minuto',
   'Stick reversals per minute, last 10 flights:': 'Inversões de stick por minuto, últimos 10 voos:',

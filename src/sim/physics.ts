@@ -45,6 +45,9 @@ export interface HeliState {
   crashReason: string;
   /** Tail rotor gone (drive or blades): no tail thrust, no tail torque. Set by failTail(); cleared by reset. */
   tailFailed: boolean;
+  /** Nitro: engine heat 0..1 (a lean needle under load climbs it) and whether it has quit from running lean. */
+  engineHeat: number;
+  engineDead: boolean;
   /** Landing-target bookkeeping: which target every skid rests on, for how long, and the last confirmed landing. */
   restingOn: string | null;
   restingTime: number;
@@ -81,6 +84,8 @@ export interface Telemetry {
   wake: number;
   /** Tail wag 0..1: fast yaw oscillation from too much gyro gain (or a slack tail). */
   wag: number;
+  /** Nitro engine heat 0..1 (0 on electric). */
+  engineHeat: number;
 }
 
 export function initialState(model: HeliModel, yaw = 0): HeliState {
@@ -110,6 +115,8 @@ export function initialState(model: HeliModel, yaw = 0): HeliState {
     batteryWh: model.batteryWh,
     crashed: false,
     tailFailed: false,
+    engineHeat: 0,
+    engineDead: false,
     crashReason: '',
     restingOn: null,
     restingTime: 0,
@@ -159,7 +166,7 @@ export class HelicopterSim {
 
   telemetry: Telemetry = {
     thrust: 0, torque: 0, tailThrust: 0, collectiveDeg: 0, headspeedRpm: 0, motorPower: 0,
-    altitude: 0, groundSpeed: 0, verticalSpeed: 0, groundEffect: 1, lambda: 0, battery: 1, vrs: 0, stall: 0, flightSeconds: 0, gLoad: 1, wake: 0, wag: 0,
+    altitude: 0, groundSpeed: 0, verticalSpeed: 0, groundEffect: 1, lambda: 0, battery: 1, vrs: 0, stall: 0, flightSeconds: 0, gLoad: 1, wake: 0, wag: 0, engineHeat: 0,
   };
 
   constructor(public model: HeliModel, public wind: Wind, public world: World = new World()) {
@@ -323,7 +330,12 @@ export class HelicopterSim {
       const x = (s.rotorOmega - peak) / peak;
       const curve = Math.max(0.15, 1 - 1.6 * x * x); // falls off either side of the peak, never quite dead
       const clutch = clamp((thrCurve - 0.08) / 0.1, 0, 1); // centrifugal clutch lets go below ~10% throttle
-      torqueCeiling *= curve * clutch;
+      // The needle: a touch lean gives a few percent more power but the engine runs hot and, pushed, quits; rich
+      // is safe, soft and thirsty. Heat climbs with load and leanness, and cools at idle or with the mixture right.
+      const needle = m.needle ?? 1;
+      const mix = clamp(needle < 1 ? 1 + 0.6 * (1 - needle) : 1 - 0.9 * (needle - 1), 0.3, 1.15);
+      torqueCeiling *= curve * clutch * mix;
+      if (s.engineDead) torqueCeiling = 0;
     }
     if (s.governorTarget > 1 && torqueCeiling > 0 && (m.governor === false || (nitro && nitroThr < 1))) {
       // Governor off: an open-loop throttle. The motor behaves like a brushless motor on a fixed voltage: torque
@@ -352,7 +364,11 @@ export class HelicopterSim {
     if (nitro) {
       const running = s.governorTarget > 1 || ctl.throttleHold ? 1 : 0; // the engine idles through hold
       const load = clamp((motorTorque * s.rotorOmega) / (m.maxMotorTorque * m.headspeeds[2] * 0.6), 0, 1);
-      s.batteryWh = Math.max(0, s.batteryWh - running * (0.08 + 0.55 * load) * dt);
+      const needle = m.needle ?? 1;
+      s.batteryWh = Math.max(0, s.batteryWh - running * (0.08 + 0.55 * load) * Math.max(1, needle) * dt);
+      const lean = Math.max(0, 1 - needle);
+      s.engineHeat = clamp(s.engineHeat + (running * load * (0.01 + 1.5 * lean) - 0.02) * dt, 0, 1);
+      if (s.engineHeat >= 1 && !s.engineDead) s.engineDead = true; // lean run: the engine quits. Autorotate.
     } else {
       s.batteryWh = Math.max(0, s.batteryWh - (electricalW * dt) / 3600);
     }
@@ -659,6 +675,7 @@ export class HelicopterSim {
     const fast = Math.abs(yawRightRateRaw - this.yawSlow);
     this.wagLevel += (Math.min(1, fast / 1.5) - this.wagLevel) * Math.min(1, dt / 0.3);
     t.wag = rotorAlive ? this.wagLevel : 0;
+    t.engineHeat = s.engineHeat;
     t.stall = rotorAlive ? main.stall : 0;
     if (motorTorque > 0.05) t.flightSeconds += dt;
   }

@@ -66,3 +66,36 @@ describe('nitro engine', () => {
     expect(sim.telemetry.motorPower).toBeLessThan(1);
   });
 });
+
+describe('nitro needle', () => {
+  const hover = (needlePct: number, seconds: number) => {
+    const m = { ...nitro50(), needle: needlePct / 100 };
+    const sim = new HelicopterSim(m, new Wind());
+    sim.assist = 'attitude';
+    const ctl = neutralFrame();
+    ctl.flightMode = 1;
+    ctl.collective = -0.05;
+    run(sim, ctl, 25);
+    sim.state.pos.y = 8;
+    sim.state.onGround = false;
+    ctl.collective = 0.45;
+    const fuel0 = sim.telemetry.battery;
+    run(sim, ctl, seconds);
+    return { sim, burnt: fuel0 - sim.telemetry.battery };
+  };
+
+  it('right on the needle the engine stays cool; rich burns more fuel', () => {
+    const ok = hover(100, 20);
+    expect(ok.sim.telemetry.engineHeat).toBe(0);
+    expect(ok.sim.state.engineDead).toBe(false);
+    const rich = hover(125, 20);
+    expect(rich.sim.state.engineDead).toBe(false);
+    expect(rich.burnt).toBeGreaterThan(ok.burnt * 1.15);
+  });
+
+  it('a lean needle under load heats the engine until it quits, and the rotor winds down', () => {
+    const lean = hover(85, 45);
+    expect(lean.sim.state.engineDead).toBe(true);
+    expect(lean.sim.telemetry.headspeedRpm).toBeLessThan(1500);
+  });
+});

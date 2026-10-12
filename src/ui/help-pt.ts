@@ -134,7 +134,10 @@ export const HELP_HTML_PT = `
   <p><b>Nitro</b> (Meu helicóptero → Motorização): um motor glow atrás de uma embreagem centrífuga e um tanque de
   combustível em vez de bateria. O torque tem pico perto da rotação do Idle-Up e cai acima e abaixo dela; abaixo de uns 10% de
   acelerador a embreagem solta e o rotor gira livre enquanto o motor fica em marcha lenta, por isso o hold e as autorrotações
-  funcionam do jeito que funcionam no nitro. O combustível queima com a carga; o motor apaga quando seca. O som é o pulso do escapamento, não o zumbido de um motor elétrico.</p>
+  funcionam do jeito que funcionam no nitro. O combustível queima com a carga; o motor apaga quando seca. O som é o pulso do escapamento, não o zumbido de um motor elétrico.
+  A <b>agulha</b> (Setup do modelo → Motor) é a mistura: um pouco pobre compra alguns por cento de potência, mas o motor
+  esquenta sob carga e, forçado, apaga (o HUD avisa antes); rica é macia, segura e gastona. Ajuste como no campo: pobre
+  até cantar, depois enriqueça um pouco.</p>
   <p><b>Governor desligado / giro em rate</b> (Configurações → Helicóptero → Ajustes do modelo): desligue o governor do ESC e a
   rotação cai quando você puxa coletivo, como numa curva de acelerador comum; ajuste o acelerador do Idle-Up ao seu
   passo. Mude o giro de cauda para rate e a cauda deixa de segurar o rumo: toda mudança de coletivo

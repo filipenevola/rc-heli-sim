@@ -66,6 +66,8 @@ export interface HeliModel {
   nitroPeakHeadRpm?: number;
   /** Idle-Up throttle with the governor off, 0..1. */
   idleUpThrottle?: number;
+  /** Nitro needle (mixture) as a ratio of the correct setting: < 1 lean (more power, runs hot, can quit), > 1 rich (less power, more fuel). */
+  needle?: number;
   /** Tail gyro mode. */
   gyroMode?: 'hh' | 'rate';
   /** Canopy colour (CSS hex) for the renderer; models without one get a colour by size. */
@@ -317,6 +319,8 @@ export interface ModelSetup {
   idleUpThrottlePct?: number;
   /** Tail gyro: heading hold (default) or plain rate damping, where the tail drifts with torque changes. */
   gyroMode?: 'hh' | 'rate';
+  /** Nitro needle (mixture), percent of the correct setting: 100 right, 90 lean, 120 rich. */
+  needlePct?: number;
 }
 
 /**
@@ -367,6 +371,7 @@ export function applySetup(base: HeliModel, setup: ModelSetup | undefined): Heli
   if (setup.cyclicRatePct) m.controller.cyclicRate = base.controller.cyclicRate * (setup.cyclicRatePct / 100);
   if (setup.governor !== undefined) m.governor = setup.governor;
   if (setup.idleUpThrottlePct) m.idleUpThrottle = setup.idleUpThrottlePct / 100;
+  if (setup.needlePct) m.needle = setup.needlePct / 100;
   if (setup.gyroMode) m.gyroMode = setup.gyroMode;
   return m;
 }

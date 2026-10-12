@@ -127,6 +127,7 @@ export class SettingsPanel {
         <option value="on" ${cur.governor !== false ? 'selected' : ''}>On (holds head speed)</option>
         <option value="off" ${cur.governor === false ? 'selected' : ''}>Off (throttle curve, head speed droops)</option></select></label>
       ${row('Idle-Up throttle (governor off)', 'thr', 60, 100, 1, cur.idleUpThrottlePct ?? 90, '%')}
+      ${base.power === 'nitro' ? `<h5>Engine</h5>${row('Needle (mixture): 100 right, lower is lean', 'needle', 80, 130, 1, cur.needlePct ?? 100, '%')}<p class="hint">Lean: a few percent more power, runs hot, and quits if you keep it loaded. Rich: soft, safe, thirsty.</p>` : ''}
       <button id="setup-reset">Reset to factory</button>`;
   }
 
@@ -180,6 +181,7 @@ export class SettingsPanel {
       gyroMode: (this.panel.querySelector('[data-setup="gmode"]') as HTMLSelectElement).value === 'rate' ? 'rate' : 'hh',
       governor: (this.panel.querySelector('[data-setup="gov"]') as HTMLSelectElement).value !== 'off',
       idleUpThrottlePct: g('thr'),
+      ...(this.panel.querySelector('[data-setup="needle"]') ? { needlePct: g('needle') } : {}),
     };
   }
 

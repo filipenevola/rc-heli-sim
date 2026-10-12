@@ -3,6 +3,11 @@
 All notable changes to RC Heli Sim. The version shown in the game (Help and Settings) matches the latest
 entry here; the commit hash next to it identifies the exact build.
 
+## 0.67.0
+
+- Nitro needle (mixture) in Model setup → Engine: lean gives a few percent more power but heats the engine under
+  load until it quits (HUD warns at 70% heat, then "ENGINE QUIT: autorotate"); rich is softer and burns more fuel.
+
 ## 0.66.0
 
 - Crashes that are a **dynamic rollover** (a blade strike right after pivoting on one planted skid) are reported as
