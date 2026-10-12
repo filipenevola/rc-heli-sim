@@ -86,6 +86,8 @@ export interface Telemetry {
   wag: number;
   /** Nitro engine heat 0..1 (0 on electric). */
   engineHeat: number;
+  /** Tail rotor vortex ring state 0..1: sliding sideways into the tail's own wake (loss of tail effectiveness). */
+  tailVrs: number;
 }
 
 export function initialState(model: HeliModel, yaw = 0): HeliState {
@@ -166,7 +168,7 @@ export class HelicopterSim {
 
   telemetry: Telemetry = {
     thrust: 0, torque: 0, tailThrust: 0, collectiveDeg: 0, headspeedRpm: 0, motorPower: 0,
-    altitude: 0, groundSpeed: 0, verticalSpeed: 0, groundEffect: 1, lambda: 0, battery: 1, vrs: 0, stall: 0, flightSeconds: 0, gLoad: 1, wake: 0, wag: 0, engineHeat: 0,
+    altitude: 0, groundSpeed: 0, verticalSpeed: 0, groundEffect: 1, lambda: 0, battery: 1, vrs: 0, stall: 0, flightSeconds: 0, gLoad: 1, wake: 0, wag: 0, engineHeat: 0, tailVrs: 0,
   };
 
   constructor(public model: HeliModel, public wind: Wind, public world: World = new World()) {
@@ -676,6 +678,7 @@ export class HelicopterSim {
     this.wagLevel += (Math.min(1, fast / 1.5) - this.wagLevel) * Math.min(1, dt / 0.3);
     t.wag = rotorAlive ? this.wagLevel : 0;
     t.engineHeat = s.engineHeat;
+    t.tailVrs = s.tailFailed ? 0 : tail.vrs;
     t.stall = rotorAlive ? main.stall : 0;
     if (motorTorque > 0.05) t.flightSeconds += dt;
   }

@@ -222,6 +222,11 @@ export const HELP_HTML_PT = `
   com a voz que o seu aparelho tem para o idioma escolhido, para os seus olhos ficarem no modelo. No Me ensine ele
   também fala correções quando um stick fica longe do stick fantasma por um ou dois segundos ("mais coletivo",
   "nariz para a direita"). Configurações → Som → Legendas faladas desliga.</p>
+  <h4>Perda de efetividade da cauda</h4>
+  <p>O rotor de cauda também é um rotor: deslize de lado na velocidade do próprio fluxo dele e ele entra em anel de
+  vórtice, a cauda amolece e o nariz passeia. O HUD avisa (ANEL DE VÓRTICE NA CAUDA). A cura é a mesma do rotor
+  principal: pare o deslize ou ganhe velocidade à frente. É por isso que o voo lateral lento a alguns metros por
+  segundo é nervoso em todo modelo de verdade.</p>
   <h4>Emergências: falha do rotor de cauda</h4>
   <p>Configurações → <b>Emergências</b> faz o rotor de cauda falhar na hora, ou aleatoriamente uma vez por voo acima de
   15 m. A fuselagem então segue o torque do rotor principal: com potência o nariz entra num giro em um segundo. O treino

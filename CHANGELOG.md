@@ -3,6 +3,11 @@
 All notable changes to RC Heli Sim. The version shown in the game (Help and Settings) matches the latest
 entry here; the commit hash next to it identifies the exact build.
 
+## 0.76.0
+
+- Loss of tail effectiveness is now surfaced: the tail rotor's vortex ring state (sliding sideways into its own
+  wake) is read into telemetry with a HUD warning and a manual section; the physics already lost tail thrust there.
+
 ## 0.75.0
 
 - Minimap (Settings → Camera, or N): top-down view with the pilot, the model's nose, pad and targets, obstacles and

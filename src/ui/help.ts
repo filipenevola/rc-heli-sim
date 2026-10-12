@@ -273,6 +273,11 @@ const HELP_HTML = `
   challenges), using the voice your device has for the chosen language, so your eyes stay on the model. In Teach me
   it also calls corrections when a stick sits far from the ghost stick for a second or two ("more collective",
   "nose right"). Settings → Sound → Spoken captions turns it off.</p>
+  <h4>Loss of tail effectiveness</h4>
+  <p>The tail rotor is a rotor too: slide sideways at the speed of its own downwash and it enters a vortex ring
+  state, the tail goes soft and the nose wanders. The HUD calls it out (TAIL VORTEX RING). The cure is the same as
+  for the main rotor: stop the slide or add forward speed. It is why slow sideways flight at a few metres per second
+  feels nervous on every real model.</p>
   <h4>Emergencies: tail rotor failure</h4>
   <p>Settings → <b>Emergencies</b> fails the tail rotor on demand, or at random once per flight above 15 m. The
   fuselage then follows the main rotor torque: under power the nose swings into a spin within a second. The drill is
