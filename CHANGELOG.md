@@ -3,6 +3,14 @@
 All notable changes to RC Heli Sim. The version shown in the game (Help and Settings) matches the latest
 entry here; the commit hash next to it identifies the exact build.
 
+## 0.24.0
+
+- **Governor off** (Settings → Helicopter → Model setup → ESC): an open-loop throttle curve instead of the
+  governor. The motor model loses torque with speed, so the head droops a few percent on a hard pull and the
+  Idle-Up throttle has to be matched to the pitch, as every throttle-curve pilot knows.
+- **Rate-mode tail gyro** (same panel): no heading hold. The tail damps but swings with every collective change
+  and the pilot holds the heading with the rudder. Both options are saved in the model setup (and to your account).
+
 ## 0.23.0
 
 - **Smoke trail** (T, or Settings → Smoke trail): a fading ribbon of the last 12 seconds of flight, so the shape

@@ -55,6 +55,12 @@ export interface HeliModel {
 
   /** Controller defaults: a modern flybarless (FBL) unit, or a mechanical flybar. */
   controller: ControllerParams;
+  /** ESC governor (true) or open-loop throttle curves. */
+  governor?: boolean;
+  /** Idle-Up throttle with the governor off, 0..1. */
+  idleUpThrottle?: number;
+  /** Tail gyro mode. */
+  gyroMode?: 'hh' | 'rate';
   /** Training gear fitted (cross of rods with balls): rendered and part of the physics when true. */
   trainingGear?: boolean;
 }
@@ -296,6 +302,12 @@ export interface ModelSetup {
   gyroGainPct?: number;
   /** Cyclic rate (stick-full roll/pitch rate) percentage. */
   cyclicRatePct?: number;
+  /** ESC governor on (default) or an open-loop throttle curve, where the head speed droops under load. */
+  governor?: boolean;
+  /** Idle-Up throttle with the governor off, percent (a flat curve, as most pilots run). */
+  idleUpThrottlePct?: number;
+  /** Tail gyro: heading hold (default) or plain rate damping, where the tail drifts with torque changes. */
+  gyroMode?: 'hh' | 'rate';
 }
 
 /**
@@ -344,6 +356,9 @@ export function applySetup(base: HeliModel, setup: ModelSetup | undefined): Heli
     m.controller.yawI = base.controller.yawI * (setup.gyroGainPct / 100);
   }
   if (setup.cyclicRatePct) m.controller.cyclicRate = base.controller.cyclicRate * (setup.cyclicRatePct / 100);
+  if (setup.governor !== undefined) m.governor = setup.governor;
+  if (setup.idleUpThrottlePct) m.idleUpThrottle = setup.idleUpThrottlePct / 100;
+  if (setup.gyroMode) m.gyroMode = setup.gyroMode;
   return m;
 }
 

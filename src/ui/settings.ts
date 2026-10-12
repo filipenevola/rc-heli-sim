@@ -92,6 +92,14 @@ export class SettingsPanel {
       <h5>Gyro / rates</h5>
       ${row('Tail gyro gain', 'gyro', 50, 400, 5, cur.gyroGainPct ?? 100, '%')}
       ${row('Cyclic rate', 'crate', 50, 130, 5, cur.cyclicRatePct ?? 100, '%')}
+      <label class="setup-row"><span>Tail gyro mode</span><select data-setup="gmode">
+        <option value="hh" ${(cur.gyroMode ?? 'hh') === 'hh' ? 'selected' : ''}>Heading hold</option>
+        <option value="rate" ${cur.gyroMode === 'rate' ? 'selected' : ''}>Rate (old-school: tail drifts with torque)</option></select></label>
+      <h5>ESC</h5>
+      <label class="setup-row"><span>Governor</span><select data-setup="gov">
+        <option value="on" ${cur.governor !== false ? 'selected' : ''}>On (holds head speed)</option>
+        <option value="off" ${cur.governor === false ? 'selected' : ''}>Off (throttle curve, head speed droops)</option></select></label>
+      ${row('Idle-Up throttle (governor off)', 'thr', 60, 100, 1, cur.idleUpThrottlePct ?? 90, '%')}
       <button id="setup-reset">Reset to factory</button>`;
   }
 
@@ -102,12 +110,15 @@ export class SettingsPanel {
       headspeedPct: [0, 1, 2].map((i) => g(`h${i}`)),
       gyroGainPct: g('gyro'),
       cyclicRatePct: g('crate'),
+      gyroMode: (this.panel.querySelector('[data-setup="gmode"]') as HTMLSelectElement).value === 'rate' ? 'rate' : 'hh',
+      governor: (this.panel.querySelector('[data-setup="gov"]') as HTMLSelectElement).value !== 'off',
+      idleUpThrottlePct: g('thr'),
     };
   }
 
   private bindSetup(): void {
-    for (const el of this.panel.querySelectorAll<HTMLInputElement>('[data-setup]')) {
-      el.addEventListener('input', () => {
+    for (const el of this.panel.querySelectorAll<HTMLInputElement | HTMLSelectElement>('[data-setup]')) {
+      el.addEventListener(el.tagName === 'SELECT' ? 'change' : 'input', () => {
         const v = this.panel.querySelector(`[data-setup-v="${el.dataset.setup}"]`);
         if (v) v.textContent = el.value + (el.dataset.setup?.startsWith('p') ? '°' : '%');
         this.cb.onSetup(this.currentModelId, this.readSetup());

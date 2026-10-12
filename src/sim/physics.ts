@@ -236,12 +236,17 @@ export class HelicopterSim {
     cycRollCmd = clamp(cycRollCmd, -m.maxCyclic, m.maxCyclic);
 
     // Heading-hold tail gyro: rudder commands a yaw rate; PI holds it against rotor torque changes.
+    // In plain rate mode (the old-school gyro) there is no integrator: the tail damps but drifts with every
+    // collective change, and the pilot holds the heading with the rudder trim and the thumb.
     const yawDes = ctl.rudder * c.yawRate;
     const eYaw = yawDes - yawRightRate;
+    const rateGyro = m.gyroMode === 'rate';
     // Heading-hold gyros integrate on the ground too; that is what keeps a spooled-up heli from pirouetting on its skids.
-    if (rotorAlive) s.iYaw = clamp(s.iYaw + eYaw * c.yawI * dt, -0.5, 0.5);
+    if (rotorAlive && !rateGyro) s.iYaw = clamp(s.iYaw + eYaw * c.yawI * dt, -0.5, 0.5);
     else s.iYaw *= 1 - dt * 3;
-    let tailCmd = eYaw * c.yawP + s.iYaw + ctl.rudder * 0.25;
+    // Rate mode carries a fixed anti-torque trim (the tail's "hover pitch") instead of the integrator.
+    const trim = rateGyro ? 0.45 * m.maxTailPitch * clamp(s.servoCollective / 0.15, -1, 1) : 0;
+    let tailCmd = eYaw * c.yawP * (rateGyro ? 0.6 : 1) + s.iYaw + trim + ctl.rudder * 0.25;
     tailCmd = clamp(tailCmd, -m.maxTailPitch, m.maxTailPitch);
 
     // Servo lag; the tail servo also gets a slew limit (full throw in about 80 ms), which is what turns excess
@@ -272,7 +277,20 @@ export class HelicopterSim {
     const soc = clamp(s.batteryWh / m.batteryWh, 0, 1);
     const voltageFactor = soc <= 0 ? 0 : 0.85 + 0.15 * Math.min(1, soc / 0.3) - (soc < 0.1 ? (0.1 - soc) * 3 : 0);
     const torqueCeiling = m.maxMotorTorque * Math.max(0, voltageFactor);
-    if (s.governorTarget > 1 && torqueCeiling > 0) {
+    if (s.governorTarget > 1 && torqueCeiling > 0 && m.governor === false) {
+      // Governor off: an open-loop throttle. The motor behaves like a brushless motor on a fixed voltage: torque
+      // falls with speed and is gone at the no-load speed, so the head droops as the load comes on (and the
+      // pitch curve has to be matched to it, as every throttle-curve pilot knows).
+      const thr = mode === 0 ? clamp((ctl.collective + 1) / 0.5, 0, 1) * 0.92 : (m.idleUpThrottle ?? 0.9);
+      const noLoad = (thr * m.headspeeds[mode]) / 0.86;
+      // Torque falls linearly to zero at the no-load speed; full torque at 60% slip. Soft enough that a hard pull
+      // costs a few percent of head speed, as a real throttle-curve setup does.
+      const kMotor = m.maxMotorTorque / (0.6 * m.headspeeds[1]);
+      // The spool ramp still applies (soft start in the ESC).
+      const target = Math.min(noLoad, s.governorTarget / 0.86);
+      motorTorque = clamp(kMotor * (target - s.rotorOmega), 0, torqueCeiling);
+      s.governorI = 0;
+    } else if (s.governorTarget > 1 && torqueCeiling > 0) {
       const kGov = m.maxMotorTorque / 30; // N m per rad/s of error
       const err = s.governorTarget - s.rotorOmega;
       // Integral term removes droop once the rotor is near target (ESC governors do the same).

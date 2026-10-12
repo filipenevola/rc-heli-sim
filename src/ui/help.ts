@@ -140,6 +140,11 @@ const HELP_HTML = `
   </ul>
   <p><b>Dual rates on the mode switch</b> (Settings → Input): real radios usually fly Normal with a lower cyclic rate
   and Idle-Up with full rate. The "Normal-mode rate" slider does that: 0.6 makes the hover gentle without touching 3D.</p>
+  <p><b>Governor off / rate gyro</b> (Settings → Helicopter → Model setup): switch the ESC governor off and the
+  head speed droops when you pull collective, as with a plain throttle curve; set the Idle-Up throttle to match your
+  pitch. Switch the tail gyro to rate mode and the tail no longer holds its heading: every collective change
+  swings it and you hold it with the rudder. Both are how helis were flown before heading-hold gyros and governors,
+  and both teach why the modern ones are worth the money.</p>
   <p><b>Training gear</b> (Settings → Helicopter): the cross of rods and balls every instructor fits to a first heli. It
   makes tip-overs almost impossible on landings, costs some weight and crispness, and the physics includes all of it.
   Use it for your first hovers, then take it off.</p>
