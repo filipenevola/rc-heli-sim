@@ -200,3 +200,4 @@ body.radio-page { background: #141618; }
 .replay-bar input[type=range] { flex: 1; }
 svg.progress { display: block; margin: 6px 0; background: rgba(0,0,0,0.25); border-radius: 6px; }
 .next-drill { display: flex; justify-content: space-between; align-items: center; gap: 8px; flex-wrap: wrap; background: rgba(190, 120, 0, 0.25); border: 1px solid rgba(255, 211, 77, 0.6); border-radius: 8px; padding: 8px 10px; margin: 6px 0 10px; font-size: 13px; }
+.drill-badge { position: absolute; top: calc(var(--topbar-h) + 20px + env(safe-area-inset-top)); left: 50%; transform: translateX(-50%); background: rgba(10, 60, 120, 0.85); border: 1px solid #9ec5ff; padding: 6px 14px; border-radius: 10px; font-size: 15px; pointer-events: none; white-space: nowrap; }

@@ -2,7 +2,7 @@ import type { HelicopterSim } from '../sim/physics';
 import { HILL_TERRAIN } from '../sim/world';
 import { eulerFromQ, rotate, v3 } from '../sim/math';
 import { Autopilot } from './autopilot';
-import { GATES, EIGHT_GATES } from './challenges';
+import { GATES, EIGHT_GATES, ORIENTATIONS, inOrientation } from './challenges';
 import { neutralFrame, type ControlFrame } from '../input/types';
 
 /**
@@ -98,6 +98,25 @@ const hoverFor = (seconds: number, caption: string, heading: 'keep' | 'toPilot' 
     return ap.goTo({ x: mem.x, y: mem.y, z: mem.z }, heading === 'toPilot' ? ap.headingToPilot() : ap.heading);
   },
   done: ({ t }) => t >= seconds,
+});
+
+/** Hover in place and point the nose the given way relative to the pilot, holding it for a few seconds. */
+const faceFor = (o: (typeof ORIENTATIONS)[number], seconds: number, caption: string): LessonStep => ({
+  caption,
+  run: ({ ap, sim, mem }) => {
+    mem.x ??= sim.state.pos.x;
+    mem.y ??= sim.state.pos.y;
+    mem.z ??= sim.state.pos.z;
+    // Yaw is positive nose-left; the pilot ends up on the heli's left when the nose turns right of them.
+    const offset = o === 'Nose-in' ? 0 : o === 'Tail-in' ? Math.PI : o === 'Left side-in' ? Math.PI / 2 : -Math.PI / 2;
+    return ap.goTo({ x: mem.x, y: mem.y, z: mem.z }, ap.headingToPilot() + offset);
+  },
+  done: ({ sim, t, mem }) => {
+    mem.held = inOrientation(sim, o) ? (mem.held ?? 0) + (t - (mem.lastT ?? t)) : 0;
+    mem.lastT = t;
+    return (mem.held ?? 0) >= seconds;
+  },
+  timeout: 40,
 });
 
 const landOn = (target: { x: number; y: number; z: number }, caption: string): LessonStep[] => [
@@ -280,6 +299,24 @@ export const LESSONS: Lesson[] = [
     title: 'Vault box landing',
     intro: 'The vault box is a 1.2 m square: the skids only just fit. Centre it from above before you commit.',
     steps: [spoolUp(0, 'Spool up.'), liftTo(3, 'Lift to 3 m.'), ...landOn({ x: -9, y: 1.2, z: -22 }, 'Fly over the vault box and stop above it, about 1.5 m up. Centre it exactly, then sink.')],
+  },
+  {
+    challengeId: 'orientation',
+    title: 'Orientation drill',
+    intro: 'Orientation is the whole game: the same stick does the opposite thing on screen depending on where the nose points. Hover, and walk the nose through the eight positions. The trick that works everywhere: push the stick under the low side, and think of yourself sitting in the heli.',
+    steps: [
+      spoolUp(0, 'Spool up.'),
+      liftTo(3, 'Lift to 3 m, tail-in.'),
+      faceFor('Tail-in', 3.5, 'Tail-in: the easy one, the heli moves the way the stick moves. Hold it.'),
+      faceFor('Left side-in', 3.5, 'Quarter turn: left side toward you. Aileron is now toward/away from you, elevator is left/right.'),
+      faceFor('Nose-in', 3.5, 'Nose-in: left and right are swapped. Push the stick under the low side.'),
+      faceFor('Right side-in', 3.5, 'Right side toward you. The same rule, mirrored.'),
+      faceFor('Tail-in', 3.5, 'Back to tail-in. Now the other way round.'),
+      faceFor('Right side-in', 3.5, 'Right side-in again, turning the other way.'),
+      faceFor('Nose-in', 3.5, 'Nose-in again. By now it should feel less strange.'),
+      faceFor('Left side-in', 3.5, 'Left side-in, the last one.'),
+      ...landOn({ x: PAD.x, y: 0, z: PAD.z }, 'Turn tail-in and land on the pad.'),
+    ],
   },
   {
     challengeId: 'land-slope',

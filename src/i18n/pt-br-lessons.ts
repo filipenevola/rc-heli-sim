@@ -1,5 +1,16 @@
 /** Brazilian Portuguese for the lesson intros and step captions. Keys are the English strings in lessons.ts. */
 export const PT_BR_LESSONS: Record<string, string> = {
+  'Orientation is the whole game: the same stick does the opposite thing on screen depending on where the nose points. Hover, and walk the nose through the eight positions. The trick that works everywhere: push the stick under the low side, and think of yourself sitting in the heli.': 'Orientação é o jogo inteiro: o mesmo stick faz o oposto na tela dependendo de para onde o nariz aponta. Paire e leve o nariz pelas oito posições. O truque que funciona em qualquer lugar: empurre o stick para baixo do lado baixo, e imagine-se sentado no heli.',
+  'Lift to 3 m, tail-in.': 'Suba a 3 m, cauda para você.',
+  'Tail-in: the easy one, the heli moves the way the stick moves. Hold it.': 'Cauda para você: a fácil, o heli se move como o stick se move. Segure.',
+  'Quarter turn: left side toward you. Aileron is now toward/away from you, elevator is left/right.': 'Um quarto de volta: lado esquerdo para você. Aileron agora é para perto/longe de você, profundor é esquerda/direita.',
+  'Nose-in: left and right are swapped. Push the stick under the low side.': 'Nariz para você: esquerda e direita trocam. Empurre o stick para baixo do lado baixo.',
+  'Right side toward you. The same rule, mirrored.': 'Lado direito para você. A mesma regra, espelhada.',
+  'Back to tail-in. Now the other way round.': 'De volta à cauda para você. Agora pelo outro lado.',
+  'Right side-in again, turning the other way.': 'Lado direito de novo, girando para o outro lado.',
+  'Nose-in again. By now it should feel less strange.': 'Nariz para você de novo. A essa altura deve parecer menos estranho.',
+  'Left side-in, the last one.': 'Lado esquerdo para você, a última.',
+  'Turn tail-in and land on the pad.': 'Vire cauda para você e pouse no heliponto.',
   'The emergency every heli pilot drills: the tail rotor quits and the fuselage starts spinning under the main rotor torque. There is one answer and it must be instant: throttle hold. With no torque the spin stops, the fin weathervanes in forward flight, and from there it is an autorotation.': 'A emergência que todo piloto de heli treina: o rotor de cauda para e a fuselagem começa a girar sob o torque do rotor principal. Há uma resposta e ela tem que ser instantânea: throttle hold. Sem torque o giro para, a deriva alinha o nariz no voo à frente, e dali é uma autorrotação.',
   'Idle-Up 1. Spool up.': 'Idle-Up 1. Acelere.',
   'Climb to about 40 m: an emergency needs more height than a planned auto.': 'Suba a uns 40 m: uma emergência precisa de mais altura do que uma autorrotação planejada.',

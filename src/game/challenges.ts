@@ -16,6 +16,21 @@ export interface Challenge {
   level: Level;
   /** Returns progress 0..1; 1 completes the challenge. Called every frame. */
   check(ctx: ChallengeContext): number;
+  /** A live instruction for the HUD while the challenge is under way (empty when nothing to say). */
+  hud?(mem: Record<string, number>): string;
+}
+
+/** The orientation drill: which way the nose points relative to the pilot, in this order. */
+export const ORIENTATIONS: ('Tail-in' | 'Left side-in' | 'Nose-in' | 'Right side-in')[] = ['Tail-in', 'Left side-in', 'Nose-in', 'Right side-in', 'Tail-in', 'Right side-in', 'Nose-in', 'Left side-in'];
+
+/** True when the heli sits in the named orientation (within 30°). */
+export function inOrientation(sim: HelicopterSim, o: (typeof ORIENTATIONS)[number]): boolean {
+  const a = noseToPilot(sim);
+  const tol = (30 * Math.PI) / 180;
+  if (o === 'Nose-in') return a < tol;
+  if (o === 'Tail-in') return a > Math.PI - tol;
+  const side = Math.abs(a - Math.PI / 2) < tol;
+  return side && (o === 'Left side-in' ? pilotSide(sim) < 0 : pilotSide(sim) > 0);
 }
 
 export interface GateSpec { id: string; x: number; y: number; z: number; r: number; order: number }
@@ -136,6 +151,31 @@ export const CHALLENGES: Challenge[] = [
     description: 'Hover 15 seconds between 1 and 5 m with the nose pointing at you (within 35°). Everything feels reversed.',
     points: 40,
     check: (ctx) => hold(ctx, 'h', hoverHeight(ctx.sim) > 1 && hoverHeight(ctx.sim) < 5 && noseToPilot(ctx.sim) < (35 * Math.PI) / 180 && !ctx.sim.state.crashed, 15),
+  },
+  {
+    id: 'orientation',
+    level: 'Intermediate',
+    title: 'Orientation drill',
+    description: 'Hover between 1 and 6 m and turn the nose through eight orientations in turn, 3 s each: tail-in, left side-in, nose-in, right side-in, then back the other way. The HUD tells you the next one.',
+    points: 50,
+    check: (ctx) => {
+      const s = ctx.sim.state;
+      if (s.crashed) { ctx.mem.step = 0; ctx.mem.held = 0; return 0; }
+      const step = ctx.mem.step ?? 0;
+      const ok = hoverHeight(ctx.sim) > 1 && hoverHeight(ctx.sim) < 6 && inOrientation(ctx.sim, ORIENTATIONS[step]);
+      ctx.mem.held = ok ? (ctx.mem.held ?? 0) + ctx.dt : 0;
+      if (ctx.mem.held >= 3) {
+        ctx.mem.step = step + 1;
+        ctx.mem.held = 0;
+        if (ctx.mem.step >= ORIENTATIONS.length) return 1;
+      }
+      return (ctx.mem.step ?? 0) / ORIENTATIONS.length;
+    },
+    hud: (mem) => {
+      const step = mem.step ?? 0;
+      if (step <= 0 || step >= ORIENTATIONS.length) return '';
+      return `${step + 1}/${ORIENTATIONS.length} · ${ORIENTATIONS[step]}${mem.held > 0.2 ? ` ${Math.ceil(3 - mem.held)}` : ''}`;
+    },
   },
   landing('table', 'Picnic table landing', 25, 'Land on the picnic table, all four skids inside the ring.', 'Beginner'),
   landing('truck', 'Pickup bed landing', 30, 'Land in the bed of the pickup truck. Mind the cab.'),
@@ -552,6 +592,16 @@ export class ChallengeTracker {
 
   resetTransient(): void {
     this.mem = {};
+  }
+
+  /** The live instruction of whichever unfinished challenge has something to say right now. */
+  hudLine(): string {
+    for (const c of CHALLENGES) {
+      if (this.completed.has(c.id) || !c.hud) continue;
+      const line = c.hud(this.mem[c.id] ?? {});
+      if (line) return `${c.title}: ${line}`;
+    }
+    return '';
   }
 }
 

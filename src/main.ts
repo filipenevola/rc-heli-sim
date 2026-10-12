@@ -235,6 +235,11 @@ function failTailNow(): void {
   hud.notify(`<b>⚠ ${t('TAIL ROTOR FAILURE')}</b><br>${t('Throttle hold now (H), then autorotate.')}`, 4000);
 }
 let rescueSwitchWas = false;
+const drillBadge = document.createElement('div');
+drillBadge.className = 'drill-badge';
+drillBadge.style.display = 'none';
+ui.appendChild(drillBadge);
+let drillLine = '';
 const rescueBadge = document.createElement('div');
 rescueBadge.className = 'rescue-badge';
 rescueBadge.style.display = 'none';
@@ -810,6 +815,15 @@ function frame(now: number): void {
   gates.update([tracker.nextGate('circuit'), tracker.nextGate('figure-eight')], [tracker.completed.has('circuit'), tracker.completed.has('figure-eight')]);
   challenges.tick();
   hud.update(sim, ctl, input.active.label, input.active.id, dt);
+  // A live instruction from a challenge in progress (the orientation drill's next heading).
+  {
+    const line = lesson ? '' : tracker.hudLine();
+    if (line !== drillLine) {
+      drillLine = line;
+      drillBadge.textContent = line ? `🧭 ${line.replace(/^([^:]+):/, (_, title: string) => `${t(title)}:`).replace(/(Tail-in|Left side-in|Nose-in|Right side-in)/, (m) => t(m))}` : '';
+      drillBadge.style.display = line ? '' : 'none';
+    }
+  }
   // Phone radio: a glance strip on the phone (head speed, height, battery) and a buzz when the heli crashes.
   if (input.remote.state === 'connected' && (telemetryClock += dt) > 0.1) {
     telemetryClock = 0;

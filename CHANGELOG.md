@@ -3,6 +3,12 @@
 All notable changes to RC Heli Sim. The version shown in the game (Help and Settings) matches the latest
 entry here; the commit hash next to it identifies the exact build.
 
+## 0.69.0
+
+- **Orientation drill** (50 pts, Intermediate): hover and walk the nose through eight orientations in sequence
+  (tail-in, left side-in, nose-in, right side-in and back), 3 s each; a HUD badge names the next one and counts the
+  hold down. Show me / Teach me lesson included. Challenges can now put a live instruction on the HUD.
+
 ## 0.68.0
 
 - Phone radio page: a 🛟 Rescue button (hold) and a ↺ Reset button, so the phone is a complete transmitter.
