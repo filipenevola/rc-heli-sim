@@ -21,7 +21,8 @@ export class HeliMesh {
     const m = model;
     const R = m.rotor.radius;
     const L = m.tailOffset.z;
-    const body = new THREE.MeshStandardMaterial({ color: 0xd8262a, roughness: 0.5, metalness: 0.2 });
+    const bodyColor = m.rotor.radius > 0.6 ? 0x1f5fd6 : m.rotor.radius < 0.3 ? 0xf2b705 : 0xd8262a;
+    const body = new THREE.MeshStandardMaterial({ color: bodyColor, roughness: 0.5, metalness: 0.2 });
     const dark = new THREE.MeshStandardMaterial({ color: 0x222222, roughness: 0.7 });
     const metal = new THREE.MeshStandardMaterial({ color: 0x8a8f99, roughness: 0.4, metalness: 0.8 });
     const bladeMat = new THREE.MeshStandardMaterial({ color: 0x111111, roughness: 0.6 });
@@ -37,16 +38,52 @@ export class HeliMesh {
       }
     }
 
-    // Canopy / frame.
-    const canopy = new THREE.Mesh(new THREE.SphereGeometry(1, 20, 14), body);
-    canopy.scale.set(sizes.bodyW * 0.6, sizes.bodyH * 0.5, sizes.bodyLen * 0.55);
-    canopy.position.set(0, -0.01, -sizes.bodyLen * 0.15);
+    // Canopy: a teardrop (lathe) with a two-tone scheme, bright on top and dark underneath, which is how real
+    // pilots paint them so the orientation reads at a distance. The frame is a dark box behind it.
+    const profile: THREE.Vector2[] = [];
+    const nP = 14;
+    for (let i = 0; i <= nP; i++) {
+      const u = i / nP; // 0 = nose, 1 = back of the canopy
+      // Nose rounded, widest at ~40%, tapering to the frame.
+      const r = Math.sin(Math.PI * Math.pow(u, 0.75)) * 0.5 + (u > 0.6 ? 0.12 * (u - 0.6) : 0);
+      // Profile along +y with increasing y (LatheGeometry's winding assumes that; reversing it turns the mesh
+      // inside out). The nose is at y = 0, the open back at y = 0.75 L.
+      profile.push(new THREE.Vector2(Math.max(0.001, r * sizes.bodyW), u * sizes.bodyLen * 0.75));
+    }
+    const canopyGeo = new THREE.LatheGeometry(profile, 24);
+    canopyGeo.rotateX(Math.PI / 2); // +y -> +z: nose at z = 0, back at z = +0.75 L; the mesh is then shifted forward
+    canopyGeo.scale(1, (sizes.bodyH / sizes.bodyW) * 0.9, 1);
+    const underside = new THREE.MeshStandardMaterial({ color: 0x1b1b1f, roughness: 0.6, metalness: 0.1 });
+    if (ghost) { underside.transparent = true; underside.opacity = 0.32; underside.depthWrite = false; underside.color.set(0x7fd4ff); }
+    // Two materials by face: vertices below the centreline get the dark underside.
+    const pos = canopyGeo.getAttribute('position');
+    const idx: number[] = [];
+    const idxDark: number[] = [];
+    const index = canopyGeo.getIndex();
+    const faces = index ? index.count / 3 : pos.count / 3;
+    for (let f = 0; f < faces; f++) {
+      const a = index ? index.getX(f * 3) : f * 3;
+      const b = index ? index.getX(f * 3 + 1) : f * 3 + 1;
+      const c2 = index ? index.getX(f * 3 + 2) : f * 3 + 2;
+      const yAvg = (pos.getY(a) + pos.getY(b) + pos.getY(c2)) / 3;
+      (yAvg < -0.08 * sizes.bodyH ? idxDark : idx).push(a, b, c2);
+    }
+    canopyGeo.setIndex([...idx, ...idxDark]);
+    canopyGeo.clearGroups();
+    canopyGeo.addGroup(0, idx.length, 0);
+    canopyGeo.addGroup(idx.length, idxDark.length, 1);
+    const canopy = new THREE.Mesh(canopyGeo, [body, underside]);
+    canopy.position.set(0, sizes.bodyH * 0.05, -sizes.bodyLen * 0.9);
     canopy.castShadow = !ghost;
     this.root.add(canopy);
-    const frame = new THREE.Mesh(new THREE.BoxGeometry(sizes.bodyW * 0.9, sizes.bodyH * 0.8, sizes.bodyLen * 0.6), dark);
+    const frame = new THREE.Mesh(new THREE.BoxGeometry(sizes.bodyW * 0.85, sizes.bodyH * 0.8, sizes.bodyLen * 0.55), dark);
     frame.position.set(0, 0.0, sizes.bodyLen * 0.1);
     frame.castShadow = !ghost;
     this.root.add(frame);
+    // A white stripe along the top of the frame carries the orientation cue back to the tail.
+    const stripe = new THREE.Mesh(new THREE.BoxGeometry(sizes.bodyW * 0.3, sizes.bodyH * 0.06, sizes.bodyLen * 0.5), new THREE.MeshStandardMaterial({ color: 0xf2f2f2, roughness: 0.5, transparent: ghost, opacity: ghost ? 0.3 : 1 }));
+    stripe.position.set(0, sizes.bodyH * 0.42, sizes.bodyLen * 0.1);
+    this.root.add(stripe);
 
     // Main shaft and rotor head.
     const shaft = new THREE.Mesh(new THREE.CylinderGeometry(R * 0.012, R * 0.012, m.hubOffset.y * 1.1, 8), metal);

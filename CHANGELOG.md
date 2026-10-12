@@ -3,6 +3,12 @@
 All notable changes to RC Heli Sim. The version shown in the game (Help and Settings) matches the latest
 entry here; the commit hash next to it identifies the exact build.
 
+## 0.27.0
+
+- **Canopy**: a proper teardrop canopy with a two-tone scheme, bright on top and dark underneath, plus a white
+  stripe along the frame, so the model's orientation reads at a distance the way a real paint scheme does. The 700
+  is blue, the micro yellow, the 450s red.
+
 ## 0.26.0
 
 - **Tail wag is detected, warned and heard**: a fast yaw oscillation now raises a HUD warning ("tail gyro gain too
