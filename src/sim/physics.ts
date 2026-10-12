@@ -433,7 +433,8 @@ export class HelicopterSim {
 
     // ---------- Rotor speed dynamics ----------
     const tailShaftTorque = (tail.torque * m.tailGearRatio) / 1.0;
-    const friction = 0.002 * s.rotorOmega;
+    // Drivetrain friction, scaled with the motor so a micro is not eaten by a 450's bearings.
+    const friction = 0.0007 * (m.maxMotorTorque / 2.4) * s.rotorOmega;
     let domega = (motorTorque - main.torque - tailShaftTorque - friction) / m.rotorInertia;
     if (s.crashed) domega = -s.rotorOmega * 4;
     s.rotorOmega = Math.max(0, s.rotorOmega + domega * dt);

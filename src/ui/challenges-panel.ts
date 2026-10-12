@@ -217,6 +217,7 @@ export class ChallengesPanel {
         p.token = r.token;
         if (r.name) p.name = r.name; // the account's callsign wins over whatever this device had
         importMappings(r.radio as Record<string, GamepadMapping> | null | undefined); // transmitter calibration follows the account too
+        if (r.setup) p.setup = { ...(p.setup ?? {}), ...r.setup }; // and the model setups
         // Merge what the server knows for this email with what this device has.
         for (const id of r.completed) this.tracker.completed.add(id);
         p.bestFlight = Math.max(p.bestFlight, r.bestFlight);

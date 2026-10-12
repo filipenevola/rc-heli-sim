@@ -17,6 +17,8 @@ export interface Profile {
   bestFlight: number;
   /** Transmitter mappings/calibration by gamepad id; synced with the account when signed in. */
   radio?: Record<string, unknown>;
+  /** Model setup (pitch curves, head speeds, gains) by model id; synced with the account. */
+  setup?: Record<string, unknown>;
 }
 
 export interface RankingEntry {
@@ -80,13 +82,13 @@ export class RankingClient {
     return this.call('/api/auth/request', { email, name });
   }
 
-  verifyCode(email: string, code: string, deviceId: string): Promise<{ token: string; name: string; completed: string[]; bestFlight: number; radio?: Record<string, unknown> | null }> {
+  verifyCode(email: string, code: string, deviceId: string): Promise<{ token: string; name: string; completed: string[]; bestFlight: number; radio?: Record<string, unknown> | null; setup?: Record<string, unknown> | null }> {
     return this.call('/api/auth/verify', { email, code, deviceId });
   }
 
   /** Push the current records. Unverified players are keyed by device id and shown unverified. */
   submit(p: Profile): Promise<{ ok: true }> {
-    return this.call('/api/scores', { name: p.name, deviceId: p.deviceId, completed: p.completed, bestFlight: Math.round(p.bestFlight), radio: p.radio ?? null }, p.token);
+    return this.call('/api/scores', { name: p.name, deviceId: p.deviceId, completed: p.completed, bestFlight: Math.round(p.bestFlight), radio: p.radio ?? null, setup: p.setup ?? null }, p.token);
   }
 
   sendRadioReport(report: unknown): Promise<{ ok: true }> {

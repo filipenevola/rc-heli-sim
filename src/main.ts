@@ -49,6 +49,7 @@ scene.add(gates.group);
 const pilotCam = new PilotCamera(window.innerWidth / window.innerHeight);
 
 const wind = new Wind();
+wind.obstacles = world.windObstacles();
 const sim = new HelicopterSim(HELI_MODELS[0], wind, world);
 let heliMesh = new HeliMesh(sim.model);
 scene.add(heliMesh.root);

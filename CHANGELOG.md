@@ -3,6 +3,14 @@
 All notable changes to RC Heli Sim. The version shown in the game (Help and Settings) matches the latest
 entry here; the commit hash next to it identifies the exact build.
 
+## 0.12.0 — 2026-10-12
+
+- Wind is now a field, not a number: a boundary layer (calmer at skid height than at tree height), wakes behind
+  trees and buildings (slower and rougher downwind, within a few obstacle heights), and position-dependent
+  turbulence. Hovering in the lee of the barn is a different job from the open field.
+- New challenge: Crosswind landing (Intermediate, 40 points) with a lesson that sets 5 m/s gusty wind from the
+  side and restores your setting afterwards. 27 challenges, 1,385 points.
+
 ## 0.11.0 — 2026-10-12
 
 - Crash replay: after a crash, "Replay last 10 s" on the crash banner plays your flight back with your own stick

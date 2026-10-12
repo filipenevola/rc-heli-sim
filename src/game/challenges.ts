@@ -351,6 +351,20 @@ export const CHALLENGES: Challenge[] = [
     },
   },
   {
+    id: 'crosswind-landing',
+    level: 'Intermediate',
+    title: 'Crosswind landing',
+    description: 'With the wind at 4 m/s or more (Settings → Wind), fly for 15 s and land on the helipad within 60 cm of the H. Nose into wind helps; expect the lee of the trees to be rough.',
+    points: 40,
+    check: (ctx) => {
+      const s = ctx.sim.state;
+      if (s.crashed) { ctx.mem.flew = 0; return 0; }
+      if (ctx.airTime > 15 && ctx.sim.wind.speed >= 4) ctx.mem.flew = 1;
+      if (ctx.mem.flew && s.landed?.target.id === 'pad' && s.landed.offset < 0.6 && ctx.sim.wind.speed >= 4) return 1;
+      return ctx.mem.flew ? 0.5 : ctx.sim.wind.speed >= 4 ? Math.min(0.5, ctx.airTime / 30) : 0;
+    },
+  },
+  {
     id: 'stall-turn',
     level: 'Advanced',
     title: 'Stall turn',

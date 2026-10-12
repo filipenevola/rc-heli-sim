@@ -212,7 +212,92 @@ export const HELI_700: HeliModel = {
   },
 };
 
-export const HELI_MODELS: HeliModel[] = [HELI_450_FLYBAR, HELI_450, HELI_700];
+/** 250-class collective-pitch micro (think Blade 230 S / 250 CFX): light, twitchy, flies in the garden. */
+export const HELI_250: HeliModel = {
+  id: '250-fbl',
+  name: '250 Micro CP (flybarless)',
+  mass: 0.21,
+  inertia: { x: 0.0009, y: 0.0011, z: 0.00035 },
+  rotor: { radius: 0.2, chord: 0.022, blades: 2, liftSlope: 5.3, cd0: 0.014, efficiency: 0.78 },
+  hubOffset: { x: 0, y: 0.065, z: 0 },
+  hubStiffness: 3.5,
+  lockNumber: 3.8,
+  maxCyclic: (11 * Math.PI) / 180,
+  rotorInertia: 0.0005,
+  clockwise: true,
+  tail: { radius: 0.038, chord: 0.012, blades: 2, liftSlope: 5.3, cd0: 0.018, efficiency: 0.75 },
+  tailOffset: { x: 0, y: 0.025, z: 0.3 },
+  tailGearRatio: 4.5,
+  maxTailPitch: (35 * Math.PI) / 180,
+  maxMotorTorque: 0.45,
+  batteryWh: 5.5, // 3S 800 mAh at 80%
+  headspeeds: [rpm(3600), rpm(4000), rpm(4300)],
+  spoolRate: 90,
+  pitchCurves: [
+    [-2, 2.5, 5.5, 8.5, 11],
+    [-12, -6, 0, 6, 12],
+    [-13, -6.5, 0, 6.5, 13],
+  ],
+  dragArea: { x: 0.008, y: 0.012, z: 0.005 },
+  finArea: 0.0012,
+  stabArea: 0.0009,
+  contacts: [
+    { p: { x: -0.05, y: -0.07, z: -0.09 }, kind: 'skid' },
+    { p: { x: 0.05, y: -0.07, z: -0.09 }, kind: 'skid' },
+    { p: { x: -0.05, y: -0.07, z: 0.08 }, kind: 'skid' },
+    { p: { x: 0.05, y: -0.07, z: 0.08 }, kind: 'skid' },
+    { p: { x: 0, y: -0.01, z: 0.33 }, kind: 'hard' },
+    { p: { x: 0, y: -0.02, z: -0.13 }, kind: 'hard' },
+    { p: { x: 0, y: 0.085, z: 0 }, kind: 'hard' },
+    { p: { x: 0, y: 0.06, z: 0.35 }, kind: 'hard' },
+  ],
+  controller: {
+    type: 'fbl',
+    cyclicRate: (420 * Math.PI) / 180,
+    yawRate: (600 * Math.PI) / 180,
+    cyclicP: 0.012,
+    cyclicI: 0.4,
+    yawP: 0.08,
+    yawI: 0.9,
+    flybarTau: 0.12,
+    flybarBellRatio: 0.45,
+    servoTau: 0.014,
+  },
+};
+
+export const HELI_MODELS: HeliModel[] = [HELI_450_FLYBAR, HELI_450, HELI_700, HELI_250];
+
+/** Pilot-adjustable radio/model setup, like the model memory of a transmitter. All optional overrides. */
+export interface ModelSetup {
+  /** Pitch curve end points and centre per flight mode, degrees: [low, mid, high]. */
+  pitch?: [number, number, number][];
+  /** Head speed per flight mode as a percentage of the model default. */
+  headspeedPct?: number[];
+  /** Tail gyro gain percentage (100 = default). */
+  gyroGainPct?: number;
+  /** Cyclic rate (stick-full roll/pitch rate) percentage. */
+  cyclicRatePct?: number;
+}
+
+/** A model with the pilot's setup applied. The base definitions are never mutated. */
+export function applySetup(base: HeliModel, setup: ModelSetup | undefined): HeliModel {
+  if (!setup) return base;
+  const m: HeliModel = { ...base, controller: { ...base.controller }, headspeeds: [...base.headspeeds] as [number, number, number], pitchCurves: base.pitchCurves.map((c) => [...c]) as [number[], number[], number[]] };
+  if (setup.pitch) {
+    setup.pitch.forEach((p, i) => {
+      if (!p) return;
+      const [lo, mid, hi] = p;
+      m.pitchCurves[i] = [lo, (lo + mid) / 2, mid, (mid + hi) / 2, hi];
+    });
+  }
+  if (setup.headspeedPct) setup.headspeedPct.forEach((pct, i) => { if (pct) m.headspeeds[i] = base.headspeeds[i] * (pct / 100); });
+  if (setup.gyroGainPct) {
+    m.controller.yawP = base.controller.yawP * (setup.gyroGainPct / 100);
+    m.controller.yawI = base.controller.yawI * (setup.gyroGainPct / 100);
+  }
+  if (setup.cyclicRatePct) m.controller.cyclicRate = base.controller.cyclicRate * (setup.cyclicRatePct / 100);
+  return m;
+}
 
 export function pitchFromCurve(curve: number[], stick: number): number {
   const t = ((Math.max(-1, Math.min(1, stick)) + 1) / 2) * (curve.length - 1);

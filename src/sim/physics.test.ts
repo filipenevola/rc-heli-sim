@@ -1,6 +1,6 @@
 import { describe, expect, it } from 'vitest';
 import { HelicopterSim, PHYSICS_DT } from './physics';
-import { HELI_450, HELI_450_FLYBAR, HELI_700, type HeliModel } from './heli-model';
+import { HELI_450, HELI_450_FLYBAR, HELI_700, HELI_250, type HeliModel } from './heli-model';
 import { Wind } from './wind';
 import { neutralFrame, type ControlFrame } from '../input/types';
 import { eulerFromQ } from './math';
@@ -19,7 +19,7 @@ function spoolUp(model: HeliModel) {
   return { sim, ctl };
 }
 
-describe.each([HELI_450, HELI_450_FLYBAR, HELI_700])('$name', (model) => {
+describe.each([HELI_450, HELI_450_FLYBAR, HELI_700, HELI_250])('$name', (model) => {
   it('rests on its skids with the rotor stopped', () => {
     const sim = new HelicopterSim(model, new Wind());
     run(sim, neutralFrame(), 3);
@@ -297,5 +297,25 @@ describe('boom strike', () => {
     ctl2.aileron = 1;
     run(sim2, ctl2, 0.6);
     expect(sim2.state.crashed).toBe(false);
+  });
+});
+
+describe('wind field', () => {
+  it('is weaker near the ground than at 10 m, and weaker and rougher in the lee of a tree', async () => {
+    const { Wind } = await import('./wind');
+    const w = new Wind();
+    w.speed = 6;
+    w.fromDeg = 0; // from north (-z), blowing toward +z
+    w.gustiness = 0;
+    const open10 = w.at({ x: 0, y: 10, z: 0 }, 1);
+    const open1 = w.at({ x: 0, y: 1, z: 0 }, 1);
+    expect(Math.hypot(open10.x, open10.z)).toBeGreaterThan(Math.hypot(open1.x, open1.z) * 1.3);
+    w.obstacles = [{ x: 0, z: -10, r: 2, h: 8 }];
+    const lee = w.at({ x: 0, y: 3, z: -2 }, 1); // 8 m downwind of the tree
+    const openSame = w.at({ x: 30, y: 3, z: -2 }, 1);
+    expect(Math.hypot(lee.x, lee.z)).toBeLessThan(Math.hypot(openSame.x, openSame.z) * 0.7);
+    // Upwind of the tree there is no wake.
+    const upwind = w.at({ x: 0, y: 3, z: -18 }, 1);
+    expect(Math.hypot(upwind.x, upwind.z)).toBeGreaterThan(Math.hypot(openSame.x, openSame.z) * 0.95);
   });
 });

@@ -33,7 +33,7 @@ const POINTS = {
   circuit: 50, roll: 70, autorotation: 80, 'endurance-5': 40, 'endurance-15': 100,
   'side-in-left': 20, 'side-in-right': 20, elevator: 25, 'spot-landing': 20, pirouette: 30, 'figure-eight': 50,
   loop: 70, 'inverted-hover': 90, 'nose-in-circuit': 80,
-  'landing-streak': 30, 'stall-turn': 60, funnel: 80, 'tic-toc': 90, 'piro-flip': 120,
+  'landing-streak': 30, 'stall-turn': 60, funnel: 80, 'tic-toc': 90, 'piro-flip': 120, 'crosswind-landing': 40,
 };
 const MAX_FLIGHT_SECONDS = 6 * 3600;
 
@@ -54,12 +54,14 @@ db.exec(`
   CREATE TABLE IF NOT EXISTS radio_reports (id INTEGER PRIMARY KEY, created_at TEXT NOT NULL DEFAULT (datetime('now')), report TEXT NOT NULL);
 `);
 try { db.exec('ALTER TABLE players ADD COLUMN radio TEXT'); } catch { /* column exists */ }
+try { db.exec('ALTER TABLE players ADD COLUMN setup TEXT'); } catch { /* column exists */ }
 
 const q = {
   playerByKey: db.prepare('SELECT * FROM players WHERE key = ?'),
   upsertPlayer: db.prepare(`INSERT INTO players (key, name, verified, completed, best_flight, updated_at) VALUES (?, ?, ?, ?, ?, datetime('now'))
     ON CONFLICT(key) DO UPDATE SET name = excluded.name, verified = MAX(players.verified, excluded.verified), completed = excluded.completed, best_flight = MAX(players.best_flight, excluded.best_flight), updated_at = datetime('now')`),
   setRadio: db.prepare('UPDATE players SET radio = ? WHERE key = ?'),
+  setSetup: db.prepare('UPDATE players SET setup = ? WHERE key = ?'),
   setCode: db.prepare('INSERT OR REPLACE INTO codes (email, code, name, expires_at, attempts) VALUES (?, ?, ?, ?, 0)'),
   getCode: db.prepare('SELECT * FROM codes WHERE email = ?'),
   bumpAttempts: db.prepare('UPDATE codes SET attempts = attempts + 1 WHERE email = ?'),
@@ -191,7 +193,7 @@ createServer(async (req, res) => {
       const player = q.playerByKey.get(key);
       const token = randomBytes(24).toString('base64url');
       q.addToken.run(hash(token), player.id);
-      return json(res, 200, { token, name: player.name, completed: JSON.parse(player.completed), bestFlight: player.best_flight, radio: player.radio ? JSON.parse(player.radio) : null });
+      return json(res, 200, { token, name: player.name, completed: JSON.parse(player.completed), bestFlight: player.best_flight, radio: player.radio ? JSON.parse(player.radio) : null, setup: player.setup ? JSON.parse(player.setup) : null });
     }
 
     if (req.method === 'POST' && url.pathname === '/api/scores') {
@@ -218,6 +220,9 @@ createServer(async (req, res) => {
       if (verified && body.radio && typeof body.radio === 'object') {
         const radio = JSON.stringify(body.radio).slice(0, 20000);
         q.setRadio.run(radio, key);
+      }
+      if (verified && body.setup && typeof body.setup === 'object') {
+        q.setSetup.run(JSON.stringify(body.setup).slice(0, 20000), key);
       }
       return json(res, 200, { ok: true });
     }

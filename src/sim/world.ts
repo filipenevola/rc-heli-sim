@@ -30,6 +30,16 @@ export class World {
   /** The helipad (flat on the ground, so not a collider). */
   pad: LandingTarget | null = null;
 
+  /** Trees and buildings as wind obstacles (footprint radius + height). */
+  windObstacles(): { x: number; z: number; r: number; h: number }[] {
+    const out: { x: number; z: number; r: number; h: number }[] = [];
+    for (const c of this.colliders) {
+      if (c.kind === 'cylinder' && c.y1 > 2.5) out.push({ x: c.x, z: c.z, r: c.r, h: c.y1 });
+      else if (c.kind === 'box' && c.max.y > 2.5 && c.max.x - c.min.x < 30) out.push({ x: (c.min.x + c.max.x) / 2, z: (c.min.z + c.max.z) / 2, r: Math.max(c.max.x - c.min.x, c.max.z - c.min.z) / 2, h: c.max.y });
+    }
+    return out;
+  }
+
   add(c: Collider): void {
     this.colliders.push(c);
     if (c.target) this.targets.push(c.target);

@@ -26,6 +26,8 @@ export interface StepContext {
   t: number;
   dt: number;
   mem: Record<string, number>;
+  /** Persists across the lesson's steps (mem is per step). */
+  shared: Record<string, number>;
 }
 
 export interface Lesson {
@@ -564,6 +566,36 @@ export const LESSONS: Lesson[] = [
     ],
   },
   {
+    challengeId: 'crosswind-landing',
+    title: 'Crosswind landing',
+    intro: 'Wind is the field\'s way of keeping you honest. The lesson sets 5 m/s from your right. Hover into wind when you can; near the ground the air is calmer, behind the trees it is rough.',
+    steps: [
+      {
+        caption: 'Wind on: 5 m/s from the right, gusty. Watch the windsock. Spool up.',
+        run: (ctx) => {
+          const { sim, shared } = ctx;
+          if (shared.set === undefined) { shared.prevSpeed = sim.wind.speed; shared.prevDir = sim.wind.fromDeg; shared.prevGust = sim.wind.gustiness; sim.wind.speed = 5; sim.wind.fromDeg = 90; sim.wind.gustiness = 0.5; shared.set = 1; }
+          return spoolUp(0, '').run(ctx);
+        },
+        done: (ctx) => spoolUp(0, '').done(ctx),
+        timeout: 30,
+      },
+      liftTo(3, 'Lift off. The heli wants to drift downwind: a little cyclic into the wind holds it. Note the bank.', 4),
+      goTo({ x: -10, y: 4, z: -16 }, 'Fly a leg across the wind. Crabbing: the nose points a bit into the wind to track straight.', { vmax: 3 }),
+      goTo({ x: 10, y: 4, z: -16 }, 'And back, now with the wind from the other side.', { vmax: 3 }),
+      hoverFor(4, 'Hold here. Feel the gusts: corrections are bigger and earlier than in calm air.'),
+      ...landOn({ x: 0, y: 0, z: -6 }, 'Back over the H, 1.5 m up, into wind. Let the drift die before you sink.'),
+      {
+        caption: 'Down. Wind back to what it was.',
+        run: ({ ap, sim, shared }) => {
+          if (shared.restored === undefined) { sim.wind.speed = shared.prevSpeed ?? 0; sim.wind.fromDeg = shared.prevDir ?? 0; sim.wind.gustiness = shared.prevGust ?? 0.3; shared.restored = 1; }
+          return ap.hold(-1);
+        },
+        done: ({ t }) => t > 1,
+      },
+    ],
+  },
+  {
     challengeId: 'stall-turn',
     title: 'Stall turn',
     intro: 'Energy management: speed becomes height, the nose pivots on the rudder at the top, height becomes speed again. Idle-Up, lots of room.',
@@ -781,6 +813,7 @@ export class LessonRunner {
   stepIndex = 0;
   private t = 0;
   private mem: Record<string, number> = {};
+  private shared: Record<string, number> = {};
   readonly ap: Autopilot;
   finished = false;
   failed: string | null = null;
@@ -803,6 +836,7 @@ export class LessonRunner {
     this.stepIndex = 0;
     this.t = 0;
     this.mem = {};
+    this.shared = {};
     this.finished = false;
     this.failed = null;
     this.crashed = false;
@@ -812,7 +846,7 @@ export class LessonRunner {
   update(dt: number): ControlFrame {
     const step = this.step;
     if (!step || this.finished) return this.frame;
-    const ctx: StepContext = { sim: this.sim, ap: this.ap, t: this.t, dt, mem: this.mem };
+    const ctx: StepContext = { sim: this.sim, ap: this.ap, t: this.t, dt, mem: this.mem, shared: this.shared };
     this.frame = { ...step.run(ctx) };
     this.t += dt;
     if (this.sim.state.crashed) {
@@ -839,7 +873,7 @@ export class LessonRunner {
       return;
     }
     const assistBefore = this.sim.assist;
-    const ctx: StepContext = { sim: this.sim, ap: this.ap, t: this.t, dt, mem: this.mem };
+    const ctx: StepContext = { sim: this.sim, ap: this.ap, t: this.t, dt, mem: this.mem, shared: this.shared };
     // Let the step compute what the pilot would do (it may switch assist for the roll; keep that, it is advice for the player too).
     this.ap.usedGoTo = false;
     const h = step.run(ctx);
