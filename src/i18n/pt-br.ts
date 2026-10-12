@@ -286,6 +286,12 @@ export const PT_BR: Record<string, string> = {
   'best {cm} cm': 'recorde {cm} cm',
   'Your longest clean flight': 'Seu voo limpo mais longo',
   '▶ Replay flight': '▶ Rever o voo',
+  'Save flight': 'Salvar voo',
+  'Load a saved flight (.json)': 'Carregar um voo salvo (.json)',
+  'Save flight on the debrief card writes the file; load it here, on any machine, to watch it with the sticks shown.': 'Salvar voo no cartão de debrief grava o arquivo; carregue-o aqui, em qualquer máquina, para assistir com os sticks na tela.',
+  'Loaded flight: {model}': 'Voo carregado: {model}',
+  'Replaying with its sticks. Close replay to fly.': 'Reproduzindo com os sticks dele. Feche o replay para voar.',
+  'That file is not a saved flight.': 'Esse arquivo não é um voo salvo.',
   // ---- Debrief / logbook ----
   'Clean flight: {time}': 'Voo limpo: {time}',
   'Flight ended in a crash: {time}': 'Voo terminou em queda: {time}',

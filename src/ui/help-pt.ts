@@ -81,7 +81,9 @@ export const HELP_HTML_PT = `
   (suave é abaixo de 0,25 m/s; os esquis de um heli de verdade reclamam acima de 1 m/s), a altitude, velocidade e G máximos, o tempo
   em anel de vórtice ou estol das pás, bateria usada, e os desafios que você completou no caminho. Busque pousos mais macios
   e menos avisos; é isso que um instrutor observaria. <b>Rever o voo</b> no cartão reproduz o voo inteiro
-  com os seus sticks na tela; troque de câmera enquanto roda para ver o seu pairado de lado ou de cima.</p>
+  com os seus sticks na tela; troque de câmera enquanto roda para ver o seu pairado de lado ou de cima.
+  <b>Salvar voo</b> grava o voo num arquivo .json; Configurações → Carregar um voo salvo reproduz em qualquer máquina,
+  para você mandar um voo para um instrutor ou guardar um bom.</p>
   <p><b>Caderneta de voo</b> (aba Piloto): os últimos sessenta voos neste aparelho com duração, nota do pouso, altitude
   e G máximos, e uma linha que compara os seus últimos dez voos com os dez anteriores: taxa de voos limpos e
   suavidade dos pousos. É esse o número para acompanhar de semana em semana.</p>

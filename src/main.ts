@@ -27,6 +27,7 @@ import { installTypingGuard } from './input/typing-guard';
 import { lessonFor, LessonRunner } from './game/lessons';
 import { recordGhost, type GhostFrame } from './game/ghost';
 import { Trail } from './render/trail';
+import { parseFlight, serializeFlight } from './game/replay-file';
 import { buildCustomModel, normalizeSpec, type CustomSpec } from './sim/custom-model';
 import { detectLang, onLangChange, setLang, t, type Lang } from './i18n';
 import { LessonOverlay } from './ui/lesson-overlay';
@@ -203,7 +204,7 @@ flightTimer.onFlightEnd = (seconds, crashed) => {
   if (d && seconds > 8) {
     flightLog.add(d, sim.model.name);
     const extra = !crashed && seconds >= flightTimer.best ? `<br>${t('Your longest clean flight')}` : '';
-    hud.notify(debriefHtml(d, fmtTime, (id) => t(CHALLENGES.find((c) => c.id === id)?.title ?? id)) + extra + `<br><button data-action="replay-flight">${t('▶ Replay flight')}</button>`, 12000);
+    hud.notify(debriefHtml(d, fmtTime, (id) => t(CHALLENGES.find((c) => c.id === id)?.title ?? id)) + extra + `<br><button data-action="replay-flight">${t('▶ Replay flight')}</button> <button data-action="save-flight">${t('Save flight')}</button>`, 12000);
   }
   if (!crashed) void challenges.sync();
 };
@@ -295,6 +296,15 @@ const settings = new SettingsPanel(ui, input, wind, audio, {
   onTimeOfDay(t) {
     field.setTimeOfDay(t);
   },
+  onLoadFlight(file) {
+    file.text().then((text) => {
+      try {
+        loadFlightText(text);
+      } catch (e) {
+        hud.notify(`<b>${t('That file is not a saved flight.')}</b><br>${(e as Error).message}`, 4000);
+      }
+    });
+  },
   onCamera(mode) {
     if (mode) pilotCam.mode = mode;
     else pilotCam.cycle();
@@ -363,7 +373,7 @@ challenges.onProfileChange = () => settings.setPilotLabel(profile.name, profile.
 }
 
 // Exposed for automated checks and tinkering from the devtools console.
-(window as unknown as { rcHeli: unknown }).rcHeli = { sim, input, wind, audio, camera: pilotCam, clouds, scene, world, layout, tracker, flightTimer, profile, flightLog, challengesList: CHALLENGES };
+(window as unknown as { rcHeli: unknown }).rcHeli = { sim, input, wind, audio, camera: pilotCam, clouds, scene, world, layout, loadFlightText, exportFlight, tracker, flightTimer, profile, flightLog, challengesList: CHALLENGES };
 
 function reset(): void {
   if (replay) stopReplay();
@@ -461,16 +471,40 @@ function flightFrames(): Frame[] {
   const n = Math.min(recording.length, recFrameNo - flightStartFrame + 60);
   return recording.slice(recording.length - n);
 }
-function startReplay(kind: 'crash' | 'flight' = 'crash'): void {
-  const frames = kind === 'crash' ? recording.slice(-60 * REC_SECONDS) : lastFlight ?? [];
+function startReplay(kind: 'crash' | 'flight' = 'crash', loaded: Frame[] | null = null): void {
+  const frames = loaded ?? (kind === 'crash' ? recording.slice(-60 * REC_SECONDS) : lastFlight ?? []);
   if (frames.length < 10) return;
   replay = { frames, i: 0, acc: 0, kind };
   trail.clear();
   lessonOverlay.showReplay(kind);
   lessonOverlay.onStop = stopReplay;
 }
+/** Download the last flight as a .json the Settings panel can load back, here or on another machine. */
+function exportFlight(): void {
+  const frames = lastFlight ?? [];
+  if (frames.length < 10) return;
+  const text = serializeFlight(frames, sim.model.name, __VERSION__);
+  const blob = new Blob([text], { type: 'application/json' });
+  const url = URL.createObjectURL(blob);
+  const a = document.createElement('a');
+  const stamp = new Date().toISOString().slice(0, 19).replace(/[:T]/g, '-');
+  a.href = url;
+  a.download = `rc-heli-flight-${stamp}.json`;
+  document.body.appendChild(a);
+  a.click();
+  a.remove();
+  setTimeout(() => URL.revokeObjectURL(url), 2000);
+}
+/** Replay a saved flight from its JSON text. Returns the model it was flown on. */
+function loadFlightText(text: string): string {
+  const file = parseFlight(text);
+  startReplay('flight', file.frames);
+  hud.notify(`<b>${t('Loaded flight: {model}', { model: file.model || '?' })}</b><br>${t('Replaying with its sticks. Close replay to fly.')}`, 4000);
+  return file.model;
+}
 hud.onAction = (id) => {
   if (id === 'replay-flight') startReplay('flight');
+  if (id === 'save-flight') exportFlight();
   // 'welcome-ok' just closes the card.
 };
 function stopReplay(): void {

@@ -45,6 +45,8 @@ export interface SettingsCallbacks {
   onArrow(on: boolean): void;
   onTrail(on: boolean): void;
   onTimeOfDay(t: 'morning' | 'noon' | 'evening'): void;
+  /** A saved flight (.json from the debrief's Save flight) to replay. */
+  onLoadFlight(file: File): void;
   onGraph(on: boolean): void;
 }
 
@@ -397,6 +399,8 @@ export class SettingsPanel {
         <label><input type="checkbox" id="graph" ${this.graphOn ? 'checked' : ''}> Telemetry graph: head speed, collective, altitude and G over the last 30 s (Y)</label>
       </section>
       <section>
+        <label>Load a saved flight (.json) <input type="file" id="load-flight" accept="application/json,.json"></label>
+        <p class="hint">Save flight on the debrief card writes the file; load it here, on any machine, to watch it with the sticks shown.</p>
         <h4>Sound</h4>
         ${slider('volume', 'Volume', 0, 1, 0.05, this.audio.volume)}
       </section>
@@ -477,6 +481,12 @@ export class SettingsPanel {
       this.tod = (e.target as HTMLSelectElement).value as 'morning' | 'noon' | 'evening';
       this.cb.onTimeOfDay(this.tod);
       savePrefs({ tod: this.tod });
+    });
+    q<HTMLInputElement>('#load-flight').addEventListener('change', (e) => {
+      const f = (e.target as HTMLInputElement).files?.[0];
+      if (f) this.cb.onLoadFlight(f);
+      (e.target as HTMLInputElement).value = '';
+      this.toggle();
     });
     q<HTMLInputElement>('#graph').addEventListener('change', (e) => {
       this.setGraph((e.target as HTMLInputElement).checked);

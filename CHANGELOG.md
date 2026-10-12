@@ -3,6 +3,12 @@
 All notable changes to RC Heli Sim. The version shown in the game (Help and Settings) matches the latest
 entry here; the commit hash next to it identifies the exact build.
 
+## 0.45.0
+
+- **Save and load flights**: the debrief card's Save flight writes the whole flight (pose and sticks at 60 Hz) to a
+  .json file; Settings → Load a saved flight replays it on any machine with the sticks shown. Send a flight to an
+  instructor, or keep a good one.
+
 ## 0.44.0
 
 - **Time of day** (Settings → Time of day, field only): morning, noon or evening. Evening puts the sun low with
