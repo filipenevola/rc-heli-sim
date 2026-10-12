@@ -21,7 +21,8 @@ export function createGymScene(layout: FieldLayout): SceneHandles {
   sun.position.set(4, 40, cz0 + 4);
   sun.target.position.set(0, 0, cz0);
   sun.castShadow = true;
-  sun.shadow.mapSize.set(4096, 4096);
+  const isMobile = typeof navigator !== 'undefined' && navigator.maxTouchPoints > 0 && window.innerWidth < 1100;
+  sun.shadow.mapSize.set(isMobile ? 2048 : 4096, isMobile ? 2048 : 4096);
   sun.shadow.camera.near = 20;
   sun.shadow.camera.far = 60;
   sun.shadow.camera.left = -hall.halfW - 2;

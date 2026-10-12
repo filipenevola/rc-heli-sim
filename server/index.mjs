@@ -254,11 +254,24 @@ createServer(async (req, res) => {
 
     if (req.method === 'GET' && url.pathname === '/api/rankings') {
       const kind = url.searchParams.get('kind');
-      if (kind === 'flight') return json(res, 200, q.topFlight.all().map((r) => ({ name: r.name, value: r.value, verified: !!r.verified, at: r.at })));
+      // A callsign that belongs to a verified account hides the anonymous rows that still carry the same name
+      // (devices played on before signing in, or someone typing a famous callsign); one row per name otherwise.
+      const dedupe = (rows) => {
+        const verifiedNames = new Set(rows.filter((r) => r.verified).map((r) => r.name.toLowerCase()));
+        const seen = new Set();
+        return rows.filter((r) => {
+          const k = r.name.toLowerCase();
+          if (!r.verified && verifiedNames.has(k)) return false;
+          if (seen.has(k)) return false;
+          seen.add(k);
+          return true;
+        });
+      };
+      if (kind === 'flight') return json(res, 200, dedupe(q.topFlight.all().map((r) => ({ name: r.name, value: r.value, verified: !!r.verified, at: r.at }))).slice(0, 100));
       if (kind === 'challenge') {
         const rows = q.all.all().map((r) => ({ name: r.name, value: points(JSON.parse(r.completed)), verified: !!r.verified, at: r.at })).filter((r) => r.value > 0);
         rows.sort((a, b) => b.value - a.value || a.at.localeCompare(b.at));
-        return json(res, 200, rows.slice(0, 100));
+        return json(res, 200, dedupe(rows).slice(0, 100));
       }
       return json(res, 400, { error: 'kind must be flight or challenge' });
     }

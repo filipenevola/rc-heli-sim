@@ -3,6 +3,12 @@
 All notable changes to RC Heli Sim. The version shown in the game (Help and Settings) matches the latest
 entry here; the commit hash next to it identifies the exact build.
 
+## 0.42.0
+
+- Rankings: a callsign that belongs to a signed-in account no longer shows the anonymous rows that still carry
+  the same name (devices played on before signing in), and each name appears once.
+- The gym uses the smaller shadow map on phones, like the field.
+
 ## 0.41.0
 
 - **Telemetry graph** (Y, or Settings → Telemetry graph): a strip chart of the last 30 s of head speed,
