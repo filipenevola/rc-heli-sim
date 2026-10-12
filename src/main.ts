@@ -161,7 +161,7 @@ function startLesson(challengeId: string, mode: 'show' | 'teach' = 'show'): void
     modelBeforeLesson = sim.model;
     setModel(HELI_450);
     hud.notify(`<b>${t('3D lesson: switched to the flybarless 450')}</b><br>${t('The flybar trainer cannot take full cyclic at negative G. Your model comes back after the lesson.')}`, 6000);
-  } else if (challengeId === 'autorotation' && (sim.model.rotor.radius < 0.3 || sim.model.controller.type === 'flybar')) {
+  } else if ((challengeId === 'autorotation' || challengeId === 'tail-failure') && (sim.model.rotor.radius < 0.3 || sim.model.controller.type === 'flybar')) {
     // A micro's rotor stores almost no energy to cushion with, and the demo pilot's hold entry (collective dumped
     // with cyclic in) boom-strikes a flybar head. The demo flies the flybarless 450; the challenge is open to any model.
     modelBeforeLesson = sim.model;
@@ -225,6 +225,14 @@ const stats = new FlightStats();
 let telemetryClock = 0;
 // Rescue (buddy box): hold Space or the 🛟 button and the demo pilot levels the heli and holds a hover.
 const rescue = new Rescue(sim);
+// Emergencies: a tail rotor failure on demand, or once per flight at a random moment above 15 m.
+let randomFailures = false;
+let failureAt = Infinity;
+function failTailNow(): void {
+  if (sim.state.onGround || sim.state.crashed || sim.state.tailFailed || lesson || replay) return;
+  sim.failTail();
+  hud.notify(`<b>⚠ ${t('TAIL ROTOR FAILURE')}</b><br>${t('Throttle hold now (H), then autorotate.')}`, 4000);
+}
 let rescueSwitchWas = false;
 const rescueBadge = document.createElement('div');
 rescueBadge.className = 'rescue-badge';
@@ -307,6 +315,12 @@ const settings = new SettingsPanel(ui, input, wind, audio, {
   },
   onRescue(on) {
     setRescue(on);
+  },
+  onFailTail() {
+    failTailNow();
+  },
+  onRandomFailures(on) {
+    randomFailures = on;
   },
   onPilotSpot(spot) {
     // The road spot stands beside the cerradoX billboard (x = 0, z = 56), not behind it.
@@ -555,6 +569,7 @@ function startReplay(kind: 'crash' | 'flight' = 'crash', loaded: Frame[] | null 
   const frames = loaded ?? (kind === 'crash' ? recording.slice(-60 * REC_SECONDS) : lastFlight ?? []);
   if (frames.length < 10) return;
   replay = { frames, i: 0, acc: 0, kind, speed: 1, playing: true };
+  hud.crashHidden = true;
   trail.clear();
   lessonOverlay.showReplay(kind);
   lessonOverlay.onStop = stopReplay;
@@ -605,6 +620,7 @@ function loadFlightGhostText(text: string): string {
 }
 function stopReplay(): void {
   replay = null;
+  hud.crashHidden = false;
   trail.clear();
   lessonOverlay.hide();
   lessonOverlay.restoreStopLabel();
@@ -785,7 +801,8 @@ function frame(now: number): void {
   if (!paused && (!lesson || lesson.mode === 'teach')) {
     const wasFlying = flightTimer.flying;
     flightTimer.update(sim, dt);
-    if (flightTimer.flying && !wasFlying) { stats.begin(sim); flightStartFrame = recFrameNo; }
+    if (flightTimer.flying && !wasFlying) { stats.begin(sim); flightStartFrame = recFrameNo; failureAt = 10 + Math.random() * 40; }
+    if (randomFailures && flightTimer.flying && flightTimer.airTime > failureAt && sim.telemetry.altitude > 15) { failureAt = Infinity; failTailNow(); }
     if (flightTimer.flying) stats.update(sim, dt, ctl);
     tracker.update(sim, dt, flightTimer.flying ? flightTimer.airTime : 0);
   }

@@ -36,7 +36,7 @@ const POINTS = {
   'side-in-left': 20, 'side-in-right': 20, elevator: 25, 'spot-landing': 20, pirouette: 30, 'figure-eight': 50,
   loop: 70, 'inverted-hover': 90, 'nose-in-circuit': 80,
   'landing-streak': 30, 'stall-turn': 60, funnel: 80, 'tic-toc': 90, 'piro-flip': 120, 'crosswind-landing': 40,
-  'land-container': 35, 'land-mat': 15, 'land-vault': 30, 'land-slope': 40, 'land-bank': 70, 'slope-takeoff': 60,
+  'land-container': 35, 'land-mat': 15, 'land-vault': 30, 'land-slope': 40, 'land-bank': 70, 'slope-takeoff': 60, 'tail-failure': 80,
 };
 const MAX_FLIGHT_SECONDS = 6 * 3600;
 

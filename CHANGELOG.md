@@ -3,6 +3,18 @@
 All notable changes to RC Heli Sim. The version shown in the game (Help and Settings) matches the latest
 entry here; the commit hash next to it identifies the exact build.
 
+## 0.63.0
+
+- **Tail rotor failure**: Settings → Emergencies fails the tail on demand or at random once per flight above 15 m.
+  The physics drops tail thrust and torque, so under power the fuselage spins with the main rotor torque; throttle
+  hold stops it and the fin weathervanes in forward flight. New Advanced challenge (80 pts) and a Show me / Teach me
+  lesson that shares the autorotation descent, flare and pull with the auto drill. HUD warning and the tail sound stops.
+- Physics: the fuselage only feels the main rotor's torque while the rotor is driven. Through the one-way bearing an
+  autorotating rotor (throttle hold, flat pack, or the rotor overrunning the drive) pushes nothing back, so a real
+  auto needs opposite pedal and a tail-less heli stops spinning the moment the throttle is held. Before this the
+  reaction reversed sign in an auto, which the tail gyro quietly masked.
+- Replay hides the crash banner while it plays.
+
 ## 0.62.0
 
 - Replay transport: play/pause (Space), step 1 s (← →), slow motion ½× and ¼×, and a scrub slider on every replay

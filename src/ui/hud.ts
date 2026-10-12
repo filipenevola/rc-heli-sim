@@ -120,6 +120,8 @@ export class Hud {
   }
 
   onReplay: (() => void) | null = null;
+  /** Hide the crash banner (while its replay plays). */
+  crashHidden = false;
   private pausedEl: HTMLElement | null = null;
   setPaused(p: boolean): void {
     if (!this.pausedEl) {
@@ -196,7 +198,7 @@ export class Hud {
     this.sticks.style.display = sourceId === 'touch' || sourceId === 'motion' ? 'none' : '';
     this.drawSticks(ctl);
     if (this.graphOnFlag) this.drawGraph(sim, dt);
-    this.warn(t.vrs > 0.3 ? tr('VORTEX RING: descending into your own downwash. Forward cyclic or less collective.') : t.stall > 0.2 ? tr('BLADE STALL: too much collective for this head speed. Ease it off.') : t.wag > 0.5 ? tr('TAIL WAG: tail gyro gain too high. Lower it in Settings → Model setup.') : t.battery <= 0 ? (sim.model.power === 'nitro' ? tr('FUEL OUT: engine quit. Autorotate!') : tr('BATTERY FLAT: motor off. Autorotate!')) : t.battery < 0.1 ? (sim.model.power === 'nitro' ? tr('Fuel low: land soon.') : tr('Battery low: land soon.')) : '');
+    this.warn(sim.state.tailFailed && !sim.state.onGround ? tr('TAIL ROTOR FAILURE: throttle hold now and autorotate.') : t.vrs > 0.3 ? tr('VORTEX RING: descending into your own downwash. Forward cyclic or less collective.') : t.stall > 0.2 ? tr('BLADE STALL: too much collective for this head speed. Ease it off.') : t.wag > 0.5 ? tr('TAIL WAG: tail gyro gain too high. Lower it in Settings → Model setup.') : t.battery <= 0 ? (sim.model.power === 'nitro' ? tr('FUEL OUT: engine quit. Autorotate!') : tr('BATTERY FLAT: motor off. Autorotate!')) : t.battery < 0.1 ? (sim.model.power === 'nitro' ? tr('Fuel low: land soon.') : tr('Battery low: land soon.')) : '');
     if (!s.onGround && s.pos.y > 0.3) this.airborne = true;
     if (s.landed && s.landed !== this.lastLanding) {
       this.lastLanding = s.landed;
@@ -223,7 +225,7 @@ export class Hud {
       this.toast.style.display = 'none';
       this.toastUntil = 0;
     }
-    if (s.crashed) {
+    if (s.crashed && !this.crashHidden) {
       if (this.crash.style.display === 'none') {
         this.crash.innerHTML = `<h2>${tr('Crash')}</h2><p>${s.crashReason}</p><p class="hint">${tr('Press R or tap Reset')}</p><button id="btn-replay">${tr('▶ Replay last 10 s')}</button>`;
         this.crash.querySelector('#btn-replay')!.addEventListener('click', () => this.onReplay?.());

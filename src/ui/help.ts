@@ -261,6 +261,11 @@ const HELP_HTML = `
   light poles, a few parked cars, two warehouses along the back and a shipping container whose roof is a landing
   target (2.6 m up, almost no ground effect). Open sky and wind, like a real club lot; the poles are the usual
   surprise. The field's picnic table, truck, pontoon and tower challenges are marked "Field only" there.</p>
+  <h4>Emergencies: tail rotor failure</h4>
+  <p>Settings → <b>Emergencies</b> fails the tail rotor on demand, or at random once per flight above 15 m. The
+  fuselage then follows the main rotor torque: under power the nose swings into a spin within a second. The drill is
+  the real one: <b>throttle hold immediately</b> (no torque, no spin), keep airspeed so the fin holds the nose, and
+  autorotate to a landing. "Tail rotor failure" is a challenge and a Show me / Teach me lesson.</p>
   <h4>Replay transport</h4>
   <p>Every replay (crash, flight, loaded file) has a transport bar: play/pause (Space), 1 s back and forward (← →),
   speed 1× / ½× / ¼×, and a scrub slider. Slow motion is how you see what the sticks did in the half second before

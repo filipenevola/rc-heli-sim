@@ -43,6 +43,8 @@ export interface HeliState {
   batteryWh: number;
   crashed: boolean;
   crashReason: string;
+  /** Tail rotor gone (drive or blades): no tail thrust, no tail torque. Set by failTail(); cleared by reset. */
+  tailFailed: boolean;
   /** Landing-target bookkeeping: which target every skid rests on, for how long, and the last confirmed landing. */
   restingOn: string | null;
   restingTime: number;
@@ -107,6 +109,7 @@ export function initialState(model: HeliModel, yaw = 0): HeliState {
     governorI: 0,
     batteryWh: model.batteryWh,
     crashed: false,
+    tailFailed: false,
     crashReason: '',
     restingOn: null,
     restingTime: 0,
@@ -175,6 +178,11 @@ export class HelicopterSim {
    * "reset to hover" in every RC simulator, for drilling 3D figures without spooling up each time. The pilot must
    * hold the collective near the hover point (about half stick in Idle-Up) or it will sink.
    */
+  /** Tail rotor failure: belt, gear or blades gone. The fuselage follows the main rotor torque from now on. */
+  failTail(): void {
+    this.state.tailFailed = true;
+  }
+
   resetInAir(height = 6, yaw = 0): void {
     this.reset(this.model);
     const s = this.state;
@@ -378,8 +386,11 @@ export class HelicopterSim {
     let moment = cross(m.hubOffset, force);
     // Hub spring moment from TPP tilt.
     moment = add(moment, v3(m.hubStiffness * a1, 0, -m.hubStiffness * b1));
-    // Torque reaction on the fuselage (clockwise rotor pushes the nose left = +y).
-    moment = add(moment, v3(0, spin * main.torque, 0));
+    // Torque reaction on the fuselage (clockwise rotor pushes the nose left = +y). Only a driven rotor reacts on
+    // the fuselage: through the one-way bearing an autorotating rotor (motor off, or the rotor overrunning the drive)
+    // pushes nothing back, which is why a real auto needs opposite pedal and a tail-less heli stops spinning the
+    // moment the throttle is held.
+    moment = add(moment, v3(0, spin * (motorTorque > 0 ? Math.max(main.torque, 0) : 0), 0));
     // Vortex ring state is rough: the disc sheds asymmetric lift, felt as random pitch/roll kicks.
     if (main.vrs > 0.05) {
       const kick = main.vrs * m.hubStiffness * 0.15;
@@ -448,7 +459,8 @@ export class HelicopterSim {
     const tailAlong = -tailVelB.x; // velocity along thrust direction
     const tailPlane = Math.hypot(tailVelB.y, tailVelB.z);
     solveRotor(m.tail, s.servoTail, tailAlong, tailPlane, s.rotorOmega * m.tailGearRatio, tail);
-    if (wakeEdge > 0) {
+    if (s.tailFailed) { tail.thrust = 0; tail.torque = 0; }
+    if (wakeEdge > 0 && !s.tailFailed) {
       // Tip vortices through the tail disc: less thrust and a rough, unsteady yaw moment.
       tail.thrust *= 1 - 0.3 * wakeEdge;
       const rough = wakeEdge * main.vi * m.tail.radius * m.tail.radius * 0.8;

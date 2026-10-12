@@ -290,7 +290,7 @@ export class AudioEngine {
     const tailFrac = Math.min(1, Math.abs(tel.tailThrust) / (m.mass * 2));
     // A wagging tail is audible as a fast flutter in the tail rotor's whine (the blades load and unload 5-10x a second).
     const wagTremolo = tel.wag > 0.2 ? tel.wag * 0.8 * (0.5 + 0.5 * Math.sin(t * 2 * Math.PI * 7)) : 0;
-    this.tailGain.gain.setTargetAtTime(rpmFrac * (0.015 + 0.05 * tailFrac) * (1 + 1.5 * wagTremolo), t, tau);
+    this.tailGain.gain.setTargetAtTime(s.tailFailed ? 0 : rpmFrac * (0.015 + 0.05 * tailFrac) * (1 + 1.5 * wagTremolo), t, tau);
 
     // Wind at the pilot plus the rush of the model's own airspeed (audible when it flies past fast).
     const airspeed = Math.hypot(s.vel.x, s.vel.y, s.vel.z);

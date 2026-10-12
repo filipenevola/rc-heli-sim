@@ -1,5 +1,10 @@
 /** Brazilian Portuguese for the lesson intros and step captions. Keys are the English strings in lessons.ts. */
 export const PT_BR_LESSONS: Record<string, string> = {
+  'The emergency every heli pilot drills: the tail rotor quits and the fuselage starts spinning under the main rotor torque. There is one answer and it must be instant: throttle hold. With no torque the spin stops, the fin weathervanes in forward flight, and from there it is an autorotation.': 'A emergência que todo piloto de heli treina: o rotor de cauda para e a fuselagem começa a girar sob o torque do rotor principal. Há uma resposta e ela tem que ser instantânea: throttle hold. Sem torque o giro para, a deriva alinha o nariz no voo à frente, e dali é uma autorrotação.',
+  'Idle-Up 1. Spool up.': 'Idle-Up 1. Acelere.',
+  'Climb to about 40 m: an emergency needs more height than a planned auto.': 'Suba a uns 40 m: uma emergência precisa de mais altura do que uma autorrotação planejada.',
+  'Forward flight, 8-9 m/s. Airspeed is what keeps the nose straight once the tail is gone.': 'Voo à frente, 8-9 m/s. A velocidade é o que mantém o nariz reto quando a cauda se for.',
+  'TAIL ROTOR FAILURE. Feel the nose swing with the torque. Half a second of hesitation is a full turn.': 'FALHA DO ROTOR DE CAUDA. Sinta o nariz girar com o torque. Meio segundo de hesitação é uma volta inteira.',
   'Taking off from a slope is where dynamic rollover bites: the uphill skid stays planted while the downhill one lifts, and any cyclic pushed into the hill with the skid still down pivots the heli about it. Spool up with the cyclic held a little into the hill, raise the collective smoothly, and the instant the downhill skid comes free, level the disc and climb straight up.': 'Decolar de uma rampa é onde o capotamento dinâmico morde: o esqui de cima fica plantado enquanto o de baixo levanta, e qualquer cíclico empurrado contra o morro com o esqui ainda no chão faz o heli pivotar nele. Acelere com o cíclico um pouco contra o morro, suba o coletivo suavemente e, no instante em que o esqui de baixo soltar, nivele o disco e suba reto.',
   'First a bank landing: fly to the bank, nose along the hill.': 'Primeiro um pouso no barranco: voe até o barranco, nariz ao longo do morro.',
   'Land on the bank mark, skids across the slope.': 'Pouse na marca do barranco, esquis atravessados na rampa.',
@@ -99,7 +104,6 @@ export const PT_BR_LESSONS: Record<string, string> = {
   'Idle-Up 1 for negative pitch. Spool up.': 'Idle-Up 1 para passo negativo. Acelere.',
   'Climb high; height is your safety margin. 14 m is plenty.': 'Suba alto; altura é a sua margem de segurança. 14 m é bastante.',
   'Settle the hover. Centre everything. Breathe.': 'Estabilize o pairado. Centre tudo. Respire.',
-  'Idle-Up 1. Spool up.': 'Idle-Up 1. Acelere.',
   'Climb to about 30 m. Autos need height.': 'Suba a uns 30 m. Autorrotação precisa de altura.',
   'Relax the hands. Fix drift early with tiny inputs; the less you move the stick the longer you last.': 'Relaxe as mãos. Corrija a deriva cedo com toques mínimos; quanto menos você mexe o stick, mais tempo dura.',
   'Smooth, small, early. Fly a slow lap now and then to keep yourself awake.': 'Suave, pequeno, cedo. Dê uma volta lenta de vez em quando para não dormir.',

@@ -210,6 +210,11 @@ export const HELP_HTML_PT = `
   postes de luz, alguns carros estacionados, dois galpões no fundo e um contêiner cujo teto é um alvo de
   pouso (a 2,6 m, quase sem efeito solo). Céu aberto e vento, como um estacionamento de clube de verdade; os postes são a
   surpresa de sempre. Os desafios da mesa, picape, pontão e torre do campo aparecem como "Só no campo" lá.</p>
+  <h4>Emergências: falha do rotor de cauda</h4>
+  <p>Configurações → <b>Emergências</b> faz o rotor de cauda falhar na hora, ou aleatoriamente uma vez por voo acima de
+  15 m. A fuselagem então segue o torque do rotor principal: com potência o nariz entra num giro em um segundo. O treino
+  é o de verdade: <b>throttle hold imediatamente</b> (sem torque, sem giro), mantenha velocidade para a deriva segurar
+  o nariz, e autorrotação até o pouso. "Falha do rotor de cauda" é um desafio e uma lição Me mostre / Me ensine.</p>
   <h4>Transporte do replay</h4>
   <p>Todo replay (queda, voo, arquivo carregado) tem uma barra de transporte: tocar/pausar (Espaço), 1 s para trás e
   para a frente (← →), velocidade 1× / ½× / ¼× e um controle para arrastar no tempo. Câmera lenta é como você vê o que

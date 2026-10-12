@@ -35,6 +35,16 @@ export const PT_BR: Record<string, string> = {
   'Front': 'Frente',
   'Top': 'De cima',
   'Drone': 'Drone',
+  // ---- Emergencies ----
+  'Tail rotor failure': 'Falha do rotor de cauda',
+  'Emergency: the tail rotor quits in flight (Settings → Emergencies, or the drill lesson). Throttle hold at once, autorotate, and land upright touching down slower than 1.5 m/s.': 'Emergência: o rotor de cauda para em voo (Configurações → Emergências, ou a lição de treino). Throttle hold na hora, autorrotação, e pouse de pé tocando a menos de 1,5 m/s.',
+  'TAIL ROTOR FAILURE: throttle hold now and autorotate.': 'FALHA DO ROTOR DE CAUDA: throttle hold agora e autorrotação.',
+  'TAIL ROTOR FAILURE': 'FALHA DO ROTOR DE CAUDA',
+  'Throttle hold now (H), then autorotate.': 'Throttle hold agora (H), depois autorrotação.',
+  'Emergencies': 'Emergências',
+  'Tail rotor failure now': 'Falha do rotor de cauda agora',
+  'Random tail failure: once per flight, somewhere above 15 m': 'Falha de cauda aleatória: uma por voo, em algum momento acima de 15 m',
+  'The fix is always the same: throttle hold at once, then autorotate. Counts for the Tail rotor failure challenge.': 'A solução é sempre a mesma: throttle hold na hora, depois autorrotação. Vale para o desafio Falha do rotor de cauda.',
   // ---- Replay transport ----
   'Back 1 s (←)': 'Voltar 1 s (←)',
   'Play / pause (Space)': 'Tocar / pausar (Espaço)',

@@ -209,6 +209,23 @@ export const CHALLENGES: Challenge[] = [
     },
   },
   {
+    id: 'tail-failure',
+    level: 'Advanced',
+    title: 'Tail rotor failure',
+    description: 'Emergency: the tail rotor quits in flight (Settings → Emergencies, or the drill lesson). Throttle hold at once, autorotate, and land upright touching down slower than 1.5 m/s.',
+    points: 80,
+    check: (ctx) => {
+      const s = ctx.sim.state;
+      if (s.crashed) { ctx.mem.armed = 0; return 0; }
+      if (s.tailFailed && !s.onGround) ctx.mem.armed = 1;
+      if (ctx.mem.armed && s.onGround && slow(ctx.sim, 1.5)) {
+        const e = eulerFromQ(s.ori);
+        if (Math.abs(e.roll) < 0.4 && Math.abs(e.pitch) < 0.4) return 1;
+      }
+      return ctx.mem.armed ? 0.5 : 0;
+    },
+  },
+  {
     id: 'endurance-5',
     level: 'Beginner',
     title: 'Five minutes up',

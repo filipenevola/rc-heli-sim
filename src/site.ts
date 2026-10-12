@@ -12,7 +12,7 @@ export function getSite(): SiteId {
 }
 
 /** Challenges that need the outdoor field (altitude, wind or its landing targets). */
-export const FIELD_ONLY = new Set(['land-table', 'land-truck', 'land-pontoon', 'land-tower', 'crosswind-landing', 'autorotation', 'stall-turn', 'loop', 'funnel', 'tic-toc', 'piro-flip']);
+export const FIELD_ONLY = new Set(['land-table', 'land-truck', 'land-pontoon', 'land-tower', 'crosswind-landing', 'autorotation', 'tail-failure', 'stall-turn', 'loop', 'funnel', 'tic-toc', 'piro-flip']);
 /** Challenges tied to one site's landing targets. Everything else is available on every site that can host it. */
 const SITE_OF: Record<string, SiteId> = { 'land-table': 'field', 'land-truck': 'field', 'land-pontoon': 'field', 'land-tower': 'field', 'land-container': 'lot', 'land-mat': 'gym', 'land-vault': 'gym', 'land-slope': 'hill', 'land-bank': 'hill', 'slope-takeoff': 'hill' };
 
