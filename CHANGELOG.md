@@ -3,6 +3,11 @@
 All notable changes to RC Heli Sim. The version shown in the game (Help and Settings) matches the latest
 entry here; the commit hash next to it identifies the exact build.
 
+## 0.83.0
+
+- Phones: the minimap and the live badges (drill, rescue) hide while a panel is open and sit between the gimbals,
+  clear of the compact HUD line.
+
 ## 0.82.0
 
 - The helipad carries a dashed 50 cm ring around the H: the spot-landing target you are aiming for.

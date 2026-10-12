@@ -204,5 +204,16 @@ svg.progress { display: block; margin: 6px 0; background: rgba(0,0,0,0.25); bord
 .challenges h5 button.small { font-size: 11px; padding: 2px 8px; margin-left: 8px; vertical-align: middle; }
 .crash-banner .crash-note { font-size: 14px; color: #ffe08a; margin: 6px 0; }
 .minimap { position: absolute; right: calc(10px + env(safe-area-inset-right)); bottom: calc(200px + env(safe-area-inset-bottom)); width: 150px; height: 150px; pointer-events: none; }
-@media (max-width: 760px), (max-height: 500px) { .minimap { width: 110px; height: 110px; bottom: calc(210px + env(safe-area-inset-bottom)); } }
+@media (max-width: 760px) and (orientation: portrait) { .minimap { width: 110px; height: 110px; bottom: auto; top: 45%; } }
+@media (max-height: 500px) and (orientation: landscape) { .minimap { width: 100px; height: 100px; bottom: auto; top: 50%; transform: translateY(-50%); } }
 .challenge-list i.score { font-style: normal; background: rgba(126, 200, 255, 0.25); border: 1px solid rgba(126, 200, 255, 0.6); border-radius: 6px; padding: 1px 6px; font-size: 11px; }
+
+/* Panels on top: the minimap and the live badges step aside while Challenges, Settings or Help are open. */
+body:has(.challenges:not([style*="display: none"])) .minimap, body:has(.settings:not([style*="display: none"])) .minimap, body:has(.help:not([style*="display: none"])) .minimap,
+body:has(.challenges:not([style*="display: none"])) .drill-badge, body:has(.settings:not([style*="display: none"])) .drill-badge, body:has(.help:not([style*="display: none"])) .drill-badge,
+body:has(.challenges:not([style*="display: none"])) .rescue-badge, body:has(.settings:not([style*="display: none"])) .rescue-badge, body:has(.help:not([style*="display: none"])) .rescue-badge { display: none !important; }
+/* Phones: the badges sit low, between the gimbals, where nothing else lives. */
+@media (max-width: 760px), (max-height: 500px) {
+  .drill-badge { top: auto; bottom: calc(185px + env(safe-area-inset-bottom)); font-size: 13px; padding: 5px 10px; max-width: 68vw; white-space: normal; text-align: center; }
+  .rescue-badge { top: auto; bottom: calc(228px + env(safe-area-inset-bottom)); font-size: 13px; padding: 5px 10px; max-width: 68vw; white-space: normal; text-align: center; }
+}
