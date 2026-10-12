@@ -87,6 +87,28 @@ export function fmtAgo(at: number, now = Date.now()): string {
   return `${Math.round(s / 86400)} ${t('d ago')}`;
 }
 
+/** What an instructor would say after looking at the last twenty flights: the most common way they ended, and one tip. */
+export function coachTip(log: FlightLog): { reason: string; tip: string } | null {
+  const recent = log.entries.slice(0, 20);
+  const crashes = recent.filter((e) => e.crashed);
+  if (crashes.length < 2) return null;
+  const counts = new Map<string, number>();
+  for (const e of crashes) {
+    const key = e.reason.split(':')[0].replace(/\s+(the|a)\s+.*$/, '').trim();
+    counts.set(key, (counts.get(key) ?? 0) + 1);
+  }
+  const [reason] = [...counts.entries()].sort((a, b) => b[1] - a[1])[0];
+  const tips: [RegExp, string][] = [
+    [/blade strike/i, 'Most blade strikes come from a low hover with drift: hold 1.5 m until the drift is dead, then come down straight.'],
+    [/hard landing/i, 'Slow the last metre right down: a touch more collective early, and let it settle in ground effect before the final sink.'],
+    [/boom strike/i, 'Keep the collective positive when you use a lot of cyclic on a flybar head; 3D belongs on a flybarless model.'],
+    [/hit .*tree|hit .*fence|hit .*billboard|hit .*house|hit .*barn|hit .*wall|hit .*ceiling|hit .*bleachers/i, 'Fly the circuits higher and look at the next ring, not at the heli; obstacles are easy to lose from the pilot spot.'],
+    [/rotor head hit|hard contact/i, 'Those are upside-down arrivals: more height before you try a figure, and Show me until the stick pattern is yours.'],
+  ];
+  const tip = tips.find(([re]) => re.test(reason))?.[1] ?? 'Fly the challenge one level below the one that bites you, until it is boring; then come back.';
+  return { reason, tip };
+}
+
 /** The logbook table and its progress line, as HTML. */
 export function logbookHtml(log: FlightLog, fmtTime: (s: number) => string): string {
   const st = log.stats();
@@ -97,8 +119,10 @@ export function logbookHtml(log: FlightLog, fmtTime: (s: number) => string): str
   const rows = log.entries.slice(0, 20).map((e) =>
     `<div class="log-row ${e.crashed ? 'crash' : ''}"><span>${fmtAgo(e.at)}</span><span>${t(e.model)}</span><b>${fmtTime(e.seconds)}</b><span>${e.crashed ? `✖ ${e.reason.split(':')[0]}` : `${t(landingWord(e.touchdown))} ${e.touchdown.toFixed(1)} m/s`}</span><span>${e.maxAltitude.toFixed(0)} m · ${e.maxG.toFixed(1)} g${e.tricks.length ? ` · ${e.tricks.length} ✓` : ''}</span></div>`,
   ).join('');
+  const coach = coachTip(log);
+  const coachLine = coach ? `<p class="coach">${t('Most of your recent crashes:')} <b>${coach.reason}</b>. ${t(coach.tip)}</p>` : '';
   return `<h5>${t('Logbook')}</h5>
     <p class="hint">${st.flights} ${t('flights')}, ${st.clean} ${t('clean')} (${Math.round((100 * st.clean) / st.flights)}%), ${fmtTime(st.airtime)} ${t('in the air, landings average')} ${st.avgTouchdown.toFixed(1)} m/s.</p>
-    ${trend}
+    ${trend}${coachLine}
     <div class="logbook">${rows}</div>`;
 }

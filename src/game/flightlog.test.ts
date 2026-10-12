@@ -1,5 +1,5 @@
 import { beforeAll, describe, expect, it } from 'vitest';
-import { FlightLog, logbookHtml, fmtAgo } from './flightlog';
+import { FlightLog, logbookHtml, fmtAgo, coachTip } from './flightlog';
 import type { FlightSummary } from './debrief';
 
 // Node 26 exposes a `localStorage` global that is undefined without --localstorage-file, and that shadows the
@@ -38,6 +38,20 @@ describe('logbook', () => {
     expect(html).toContain('soft 0.3 m/s');
     expect(html).toContain('Blade strike');
     expect(fmtAgo(Date.now() - 5 * 60000)).toBe('5 min ago');
+  });
+
+  it('names the most common recent crash and gives one tip', () => {
+    localStorage.clear();
+    const log = new FlightLog();
+    expect(coachTip(log)).toBeNull();
+    log.add(flight({ crashed: true, crashReason: 'Blade strike' }), 'A');
+    log.add(flight({ crashed: true, crashReason: 'Hard landing: 3.1 m/s onto the ground. The skids folded.' }), 'A');
+    log.add(flight({ crashed: true, crashReason: 'Blade strike' }), 'A');
+    log.add(flight({}), 'A');
+    const c = coachTip(log)!;
+    expect(c.reason).toBe('Blade strike');
+    expect(c.tip).toContain('drift');
+    expect(logbookHtml(log, (s) => `${s}s`)).toContain('Most of your recent crashes');
   });
 
   it('keeps at most sixty entries', () => {

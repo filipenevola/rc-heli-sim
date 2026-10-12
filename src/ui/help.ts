@@ -264,6 +264,31 @@ const HELP_HTML = `
 </section>
 
 <section>
+  <h4>Before you fly the real one</h4>
+  <p>What transfers from here to the field, and what does not. The sim is honest about physics, but it cannot
+  check your model. Before the first real flight of a day:</p>
+  <ul>
+    <li><b>Blade tracking and balance</b>: a wobble in the sim is a setup slider; on the real heli it is a loose blade or a
+      bent shaft. Hover at eye level and look at the disc edge: one line, not two.</li>
+    <li><b>Head speed and pitch range</b>: match the sim's model setup to your radio (Settings → Model setup). A hover at
+      about 5–6° of pitch and the head speed your blades are rated for; too much pitch at too little head speed is the
+      blade stall you met in here.</li>
+    <li><b>Gyro gain</b>: set it just under the wag, the way you found it in Model setup. Tail wag on the real heli means
+      the same thing: too much gain, or a slack belt or servo.</li>
+    <li><b>Range check and failsafe</b>: a real transmitter has a range-check mode; use it, and know what the receiver
+      does on signal loss (throttle hold is the right answer for a heli).</li>
+    <li><b>Wind</b>: your limit in the sim is a number; outside, the lee of buildings and trees is rough and the hover
+      drifts the way the crosswind challenge showed. First real flights: calm air, early morning.</li>
+    <li><b>Battery and timer</b>: set a timer to land with 30% left. The sag you felt here below 30% is real and comes
+      with a bogging head.</li>
+    <li><b>Your stance</b>: stand where the pilot stands in the sim, model 5–10 m in front, tail toward you, and do
+      exactly the first lesson: spool, light on the skids, lift to knee height, hold, set it down. Nothing else that day.</li>
+  </ul>
+  <p>Keep the sim honest too: fly it in Pilot camera, with Rate assist, with your own transmitter, in the same
+  orientations you intend to fly outside.</p>
+</section>
+
+<section>
   <h4>Learning path</h4>
   <p>The challenges follow the progression every RC heli instructor teaches, grouped by level:</p>
   <ol>

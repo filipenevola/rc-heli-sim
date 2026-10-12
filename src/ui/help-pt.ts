@@ -217,6 +217,31 @@ export const HELP_HTML_PT = `
 </section>
 
 <section>
+  <h4>Antes de voar o de verdade</h4>
+  <p>O que transfere daqui para o campo, e o que não. O simulador é honesto com a física, mas não consegue
+  checar o seu modelo. Antes do primeiro voo real do dia:</p>
+  <ul>
+    <li><b>Tracking e balanceamento das pás</b>: uma vibração no simulador é um controle de ajuste; no heli de verdade é uma pá
+      frouxa ou um eixo torto. Paire na altura dos olhos e olhe a borda do disco: uma linha só, não duas.</li>
+    <li><b>Rotação e faixa de passo</b>: iguale os ajustes do modelo no simulador aos do seu rádio (Configurações → Ajustes do
+      modelo). Um pairado em uns 5–6° de passo e a rotação para a qual suas pás são especificadas; passo demais com rotação de
+      menos é o estol das pás que você conheceu aqui.</li>
+    <li><b>Ganho do giro</b>: ajuste logo abaixo do balanço, como você achou nos Ajustes do modelo. Cauda balançando no heli de verdade
+      significa a mesma coisa: ganho demais, ou correia ou servo folgados.</li>
+    <li><b>Teste de alcance e failsafe</b>: um rádio de verdade tem modo de teste de alcance; use, e saiba o que o receptor
+      faz ao perder sinal (throttle hold é a resposta certa para um heli).</li>
+    <li><b>Vento</b>: seu limite no simulador é um número; lá fora, a sombra de construções e árvores é turbulenta e o pairado
+      deriva do jeito que o desafio de vento cruzado mostrou. Primeiros voos reais: ar calmo, de manhã cedo.</li>
+    <li><b>Bateria e timer</b>: programe um timer para pousar com 30% restantes. A queda de tensão que você sentiu aqui abaixo de 30% é real e vem
+      com o rotor afogando.</li>
+    <li><b>Sua posição</b>: fique onde o piloto fica no simulador, modelo 5–10 m à frente, cauda para você, e faça
+      exatamente a primeira lição: acelerar, leve nos esquis, subir até a altura do joelho, segurar, pousar. Nada mais naquele dia.</li>
+  </ul>
+  <p>Mantenha o simulador honesto também: voe na câmera Piloto, com assistência Rate, com o seu próprio rádio, nas mesmas
+  orientações que pretende voar lá fora.</p>
+</section>
+
+<section>
   <h4>Trilha de aprendizado</h4>
   <p>Os desafios seguem a progressão que todo instrutor de helimodelo ensina, agrupados por nível:</p>
   <ol>

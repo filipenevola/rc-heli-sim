@@ -3,6 +3,14 @@
 All notable changes to RC Heli Sim. The version shown in the game (Help and Settings) matches the latest
 entry here; the commit hash next to it identifies the exact build.
 
+## 0.39.0
+
+- **Coach line in the logbook**: after a couple of crashes it names the most common way your recent flights
+  ended and gives the one tip an instructor would, for blade strikes, hard landings, boom strikes, obstacles and
+  upside-down arrivals.
+- Manual: a **"Before you fly the real one"** checklist of what transfers from the sim to the field and what the
+  sim cannot check (tracking, head speed and pitch, gyro gain, range check, wind, timer, stance).
+
 ## 0.38.0
 
 - **Canopy colour** for your own helicopter (My helicopter → Canopy colour), so it looks like yours on the field.
