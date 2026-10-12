@@ -29,6 +29,10 @@ export class AudioEngine {
   private windFilter!: BiquadFilterNode;
   private heliBus!: GainNode;
   private noiseBuffer!: AudioBuffer;
+  private stallOsc!: OscillatorNode;
+  private stallGain!: GainNode;
+  private beepGain!: GainNode;
+  private nextBeep = 0;
   private crashedBefore = false;
   private started = false;
   muted = false;
@@ -129,6 +133,26 @@ export class AudioEngine {
     windNoise.connect(this.windFilter).connect(this.windGain).connect(this.master);
     windNoise.start();
 
+    // Blade stall: a rough low buzz at the blade-pass frequency, only when the physics reports separated flow.
+    this.stallOsc = ctx.createOscillator();
+    this.stallOsc.type = 'square';
+    const stallFilter = ctx.createBiquadFilter();
+    stallFilter.type = 'lowpass';
+    stallFilter.frequency.value = 400;
+    this.stallGain = ctx.createGain();
+    this.stallGain.gain.value = 0;
+    this.stallOsc.connect(stallFilter).connect(this.stallGain).connect(this.heliBus);
+    this.stallOsc.start();
+
+    // Radio-style low-battery alarm, heard at the pilot (not from the heli).
+    const beep = ctx.createOscillator();
+    beep.type = 'sine';
+    beep.frequency.value = 2200;
+    this.beepGain = ctx.createGain();
+    this.beepGain.gain.value = 0;
+    beep.connect(this.beepGain).connect(this.master);
+    beep.start();
+
     this.motorOsc.start();
     this.motorOsc2.start();
     this.rotorChop.start();
@@ -193,12 +217,18 @@ export class AudioEngine {
     this.motorGain.gain.setTargetAtTime(rpmFrac > 0.02 ? 0.06 + 0.14 * powerFrac : 0, t, tau);
 
     // Main rotor chop: blade-pass frequency; depth and level grow with thrust (loaded blades slap harder).
+    // High G (pulling hard, aerobatics) and vortex ring state make the chop harsher and rougher.
     const bladePass = Math.max(0.5, (rpm * m.rotor.blades) / 60) * doppler;
     this.rotorChop.frequency.setTargetAtTime(bladePass, t, tau);
-    const thrustFrac = Math.min(1.5, tel.thrust / (m.mass * 9.81));
-    this.rotorFilter.frequency.setTargetAtTime(150 + 250 * rpmFrac + 200 * thrustFrac, t, tau);
-    this.rotorChopDepth.gain.setTargetAtTime(0.3 + 0.4 * thrustFrac, t, tau);
-    this.rotorNoiseGain.gain.setTargetAtTime(rpmFrac * (0.25 + 0.45 * thrustFrac), t, tau);
+    const thrustFrac = Math.min(2.5, Math.abs(tel.thrust) / (m.mass * 9.81));
+    const slap = Math.max(0, thrustFrac - 1.2); // blade slap beyond ~1.2 g
+    const rough = tel.vrs * (0.6 + 0.4 * Math.sin(t * 13.7) * Math.sin(t * 5.1));
+    this.rotorFilter.frequency.setTargetAtTime(150 + 250 * rpmFrac + 200 * thrustFrac + 400 * slap, t, tau);
+    this.rotorChopDepth.gain.setTargetAtTime(Math.min(0.95, 0.3 + 0.4 * thrustFrac + 0.3 * slap + 0.3 * rough), t, tau);
+    this.rotorNoiseGain.gain.setTargetAtTime(rpmFrac * (0.25 + 0.45 * thrustFrac + 0.25 * rough), t, tau);
+    // Stall buzz.
+    this.stallOsc.frequency.setTargetAtTime(bladePass * 2, t, tau);
+    this.stallGain.gain.setTargetAtTime(rpmFrac * tel.stall * 0.08, t, tau);
 
     // Tail rotor whine.
     const tailHz = Math.max(1, (rpm * m.tailGearRatio * m.tail.blades) / 60) * doppler;
@@ -213,24 +243,65 @@ export class AudioEngine {
     this.windGain.gain.setTargetAtTime(windLevel * gust, t, 0.2);
     this.windFilter.frequency.setTargetAtTime(200 + 500 * windLevel + 150 * Math.sin(t * 0.6), t, 0.2);
 
-    if (s.crashed && !this.crashedBefore) this.crashThump();
+    // Low battery: double beep every 2 s under 10%, continuous fast beeps at 0% (the radio's timer alarm style).
+    if (tel.battery < 0.1 && rpmFrac > 0.1) {
+      if (t > this.nextBeep) {
+        const period = tel.battery <= 0 ? 0.5 : 2;
+        this.nextBeep = t + period;
+        for (const off of [0, 0.15]) {
+          this.beepGain.gain.setValueAtTime(0.12, t + off);
+          this.beepGain.gain.setValueAtTime(0, t + off + 0.08);
+        }
+      }
+    }
+    if (s.crashed && !this.crashedBefore) this.crashThump(s.crashReason);
     this.crashedBefore = s.crashed;
   }
 
-  private crashThump(): void {
+  /** Crash sounds by cause: blades (a sharp crack, then bits), the frame (a dull thump), a boom strike (crack + thump). */
+  private crashThump(reason: string): void {
     const ctx = this.ctx!;
-    const src = ctx.createBufferSource();
-    src.buffer = this.noiseBuffer;
-    const f = ctx.createBiquadFilter();
-    f.type = 'lowpass';
-    f.frequency.value = 400;
-    const g = ctx.createGain();
     const t = ctx.currentTime;
-    g.gain.setValueAtTime(0.9, t);
-    g.gain.exponentialRampToValueAtTime(0.001, t + 0.7);
-    src.connect(f).connect(g).connect(this.master);
-    src.start(t);
-    src.stop(t + 0.8);
+    const blades = /blade|boom/i.test(reason);
+    const frame = !/^blade/i.test(reason) || /boom/i.test(reason);
+    if (blades) {
+      // Crack: short bright noise burst.
+      const src = ctx.createBufferSource();
+      src.buffer = this.noiseBuffer;
+      const f = ctx.createBiquadFilter();
+      f.type = 'highpass';
+      f.frequency.value = 1800;
+      const g = ctx.createGain();
+      g.gain.setValueAtTime(0.8, t);
+      g.gain.exponentialRampToValueAtTime(0.001, t + 0.18);
+      src.connect(f).connect(g).connect(this.master);
+      src.start(t);
+      src.stop(t + 0.25);
+      // Debris: a few quieter clicks.
+      for (const off of [0.25, 0.4, 0.62]) {
+        const d = ctx.createBufferSource();
+        d.buffer = this.noiseBuffer;
+        const dg = ctx.createGain();
+        dg.gain.setValueAtTime(0.25, t + off);
+        dg.gain.exponentialRampToValueAtTime(0.001, t + off + 0.08);
+        d.connect(dg).connect(this.master);
+        d.start(t + off);
+        d.stop(t + off + 0.1);
+      }
+    }
+    if (frame) {
+      const src = ctx.createBufferSource();
+      src.buffer = this.noiseBuffer;
+      const f = ctx.createBiquadFilter();
+      f.type = 'lowpass';
+      f.frequency.value = 400;
+      const g = ctx.createGain();
+      g.gain.setValueAtTime(0.9, t + (blades ? 0.08 : 0));
+      g.gain.exponentialRampToValueAtTime(0.001, t + 0.7);
+      src.connect(f).connect(g).connect(this.master);
+      src.start(t);
+      src.stop(t + 0.8);
+    }
   }
 }
 

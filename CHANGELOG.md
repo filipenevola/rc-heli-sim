@@ -3,6 +3,14 @@
 All notable changes to RC Heli Sim. The version shown in the game (Help and Settings) matches the latest
 entry here; the commit hash next to it identifies the exact build.
 
+## 0.15.0 — 2026-10-12
+
+- Sound follows the physics: blade slap sharpens above ~1.2 g, vortex ring state makes the chop rough, blade
+  stall adds a low buzz, and the radio's low-battery alarm beeps under 10% (fast at 0%). Crashes sound like
+  their cause: a crack and debris for blades and boom strikes, a thump for the frame.
+- Deploys: the rankings API (single container with a volume) only redeploys when server code changed, so a
+  game update no longer takes the rankings down for a minute.
+
 ## 0.14.0 — 2026-10-12
 
 - Walk around the field: Settings → Camera lets the pilot stand at the helipad, the barn, the pond, the tower or the

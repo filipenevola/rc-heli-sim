@@ -11,6 +11,18 @@ jobs:
     runs-on: ubuntu-latest
     steps:
       - uses: actions/checkout@v4
+        with:
+          fetch-depth: 2
+      - name: Did the server change?
+        id: changes
+        # The API has a volume (single container, no blue-green), so every API deploy is ~a minute of downtime.
+        # Only redeploy it when server/ actually changed; the web app is stateless and always deploys.
+        run: |
+          if git diff --name-only HEAD~1 HEAD 2>/dev/null | grep -q '^server/' || [ "${{ github.event_name }}" = "workflow_dispatch" ]; then
+            echo "server=true" >> "$GITHUB_OUTPUT"
+          else
+            echo "server=false" >> "$GITHUB_OUTPUT"
+          fi
       - name: Stamp version
         run: git rev-parse --short HEAD > public/version.txt
       - name: Install Quave ONE CLI
@@ -28,6 +40,7 @@ jobs:
         env:
           QUAVEONE_WEB_ENV_TOKEN: ${{ secrets.QUAVEONE_WEB_ENV_TOKEN }}
       - name: Deploy rankings API
+        if: steps.changes.outputs.server == 'true'
         run: quaveone deploy -env filipenevola-rc-heli-sim-rankings-production -env-token "$QUAVEONE_API_ENV_TOKEN" -dir .
         env:
           QUAVEONE_API_ENV_TOKEN: ${{ secrets.QUAVEONE_API_ENV_TOKEN }}
