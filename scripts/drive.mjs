@@ -4,6 +4,7 @@
 //   wait:<js expression>      poll (1 Hz) until truthy, up to --timeout seconds (default 120)
 //   eval:<js expression>      run once and print the result
 //   shot:<file.png>           save a screenshot
+//   touch:<x>,<y>,<dx>,<dy>[,<ms>]  press at (x,y) CSS px, drag by (dx,dy) over ms (default 600), hold; touchend:<x>,<y> lifts
 // Exits 1 on any uncaught exception in the page, a timeout, or a step that throws.
 const args = process.argv.slice(2);
 const timeoutIdx = args.indexOf('--timeout');
@@ -66,6 +67,18 @@ try {
     const expr = rest.join(':');
     if (kind === 'eval') {
       console.log('eval', expr, '=>', JSON.stringify(await evaluate(expr)));
+    } else if (kind === 'touch') {
+      const [x, y, dx, dy, ms = 600] = expr.split(',').map(Number);
+      await send('Input.dispatchTouchEvent', { type: 'touchStart', touchPoints: [{ x, y, id: 1 }] });
+      const steps = 12;
+      for (let i = 1; i <= steps; i++) {
+        await new Promise((r) => setTimeout(r, ms / steps));
+        await send('Input.dispatchTouchEvent', { type: 'touchMove', touchPoints: [{ x: x + (dx * i) / steps, y: y + (dy * i) / steps, id: 1 }] });
+      }
+      console.log('touch held at', x + dx, y + dy);
+    } else if (kind === 'touchend') {
+      await send('Input.dispatchTouchEvent', { type: 'touchEnd', touchPoints: [] });
+      console.log('touch released');
     } else if (kind === 'shot') {
       const r = await send('Page.captureScreenshot', { format: 'png' });
       const { writeFileSync } = await import('node:fs');
