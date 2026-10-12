@@ -3,6 +3,11 @@
 All notable changes to RC Heli Sim. The version shown in the game (Help and Settings) matches the latest
 entry here; the commit hash next to it identifies the exact build.
 
+## 0.80.0
+
+- CI runs the browser smoke (every entry URL loads in headless Chrome without an uncaught exception) against the
+  built app; the smoke script now finds Chrome on Linux and renders through SwiftShader without a GPU.
+
 ## 0.79.0
 
 - Radio link latency: every input source now trails the thumbs by a configurable 0–80 ms (default 20 ms), the delay
