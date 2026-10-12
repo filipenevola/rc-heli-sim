@@ -3,6 +3,16 @@
 All notable changes to RC Heli Sim. The version shown in the game (Help and Settings) matches the latest
 entry here; the commit hash next to it identifies the exact build.
 
+## 0.16.0 — 2026-10-12
+
+- Teach me shows a ghost: the demo pilot's flight for the current step, pre-flown in a hidden simulation when
+  the lesson starts, plays as a translucent blue helicopter next to yours so you see the shape of the move while
+  you fly it.
+- Settings are remembered across reloads: helicopter, input device, stick mode, expo and rates, assist, camera,
+  pilot spot, orientation arrow, wind, volume and mute.
+- Ghost helicopters cast no shadows and never collide; they are only a hint.
+- Release smoke test (`scripts/smoke.sh`) loads the game in headless Chrome and fails on any uncaught error.
+
 ## 0.15.0 — 2026-10-12
 
 - Sound follows the physics: blade slap sharpens above ~1.2 g, vortex ring state makes the chop rough, blade

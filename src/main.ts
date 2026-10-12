@@ -21,6 +21,7 @@ import { GateMeshes } from './render/gates';
 import { ChallengesPanel } from './ui/challenges-panel';
 import { installTypingGuard } from './input/typing-guard';
 import { lessonFor, LessonRunner } from './game/lessons';
+import { recordGhost, type GhostFrame } from './game/ghost';
 import { LessonOverlay } from './ui/lesson-overlay';
 import type { AssistMode } from './sim/physics';
 
@@ -81,6 +82,9 @@ let lesson: LessonRunner | null = null;
 let assistBeforeLesson: AssistMode = 'rate';
 let lessonEndTimer: number | null = null;
 let modelBeforeLesson: HeliModel | null = null;
+let ghostFrames: GhostFrame[][] | null = null;
+let ghostMesh: HeliMesh | null = null;
+let ghostClock = 0;
 const lessonOverlay = new LessonOverlay(ui);
 const challenges = new ChallengesPanel(ui, profile, tracker, flightTimer, rankingClient, startLesson);
 
@@ -101,6 +105,17 @@ function startLesson(challengeId: string, mode: 'show' | 'teach' = 'show'): void
   assistBeforeLesson = sim.assist;
   if (mode === 'show') sim.assist = 'attitude'; // the demo pilot flies with the self-levelling assist; the roll step switches to rate itself
   lesson = new LessonRunner(l, sim, mode);
+  if (mode === 'teach') {
+    // Pre-fly the lesson in a hidden sim so a translucent ghost can show each step while the player flies it.
+    try {
+      ghostFrames = recordGhost(l, sim.model, world, wind);
+      ghostMesh = new HeliMesh(sim.model, true);
+      scene.add(ghostMesh.root);
+      ghostClock = 0;
+    } catch {
+      ghostFrames = null;
+    }
+  }
   lessonOverlay.show(lesson);
   hud.notify(
     mode === 'show'
@@ -116,6 +131,11 @@ function stopLesson(resetHeli = true): void {
   lessonEndTimer = null;
   lesson = null;
   lessonOverlay.hide();
+  if (ghostMesh) {
+    scene.remove(ghostMesh.root);
+    ghostMesh = null;
+    ghostFrames = null;
+  }
   sim.assist = assistBeforeLesson;
   if (modelBeforeLesson) {
     setModel(modelBeforeLesson);
@@ -207,6 +227,7 @@ window.addEventListener('keydown', (e) => {
   if (e.code === 'KeyC') settings.cycleCamera();
 });
 settings.setPilotLabel(profile.name, profile.verified);
+settings.restore();
 settings.onRadioReport = (r) => rankingClient.sendRadioReport(r);
 settings.onMappingChanged = () => void challenges.sync();
 // Auto-calibration widened a range while flying: persist it to the account too (throttled).
@@ -329,13 +350,24 @@ const heliQuat = new THREE.Quaternion();
 const MAX_FRAME = 0.1;
 
 function frame(now: number): void {
-  const dt = Math.min((now - last) / 1000, MAX_FRAME);
+  const dt = Math.max(0, Math.min((now - last) / 1000, MAX_FRAME)); // never negative, even with odd clocks
   last = now;
   let ctl = input.poll(dt);
   if (lesson && lesson.mode === 'teach') {
     // The player flies; the runner judges the step and computes the ghost-stick hint.
     lesson.coach(dt, ctl);
     lessonOverlay.update(lesson, ctl, lesson.hint);
+    // Ghost: loop the demo pilot's recording of the current step.
+    if (ghostFrames && ghostMesh) {
+      const frames = ghostFrames[lesson.stepIndex] ?? [];
+      if (frames.length > 1) {
+        ghostClock += dt;
+        const idx = ((Math.floor(ghostClock * 20) % frames.length) + frames.length) % frames.length;
+        const f = frames[idx] ?? frames[0];
+        ghostMesh.root.visible = true;
+        ghostMesh.update({ ...sim.state, pos: f.pos, ori: f.ori, a1: f.a1, b1: f.b1, rotorOmega: f.rotorOmega, crashed: false }, dt);
+      } else ghostMesh.root.visible = false;
+    }
     if (lesson.crashed && lessonEndTimer === null) {
       const l = lesson;
       lessonEndTimer = window.setTimeout(() => {

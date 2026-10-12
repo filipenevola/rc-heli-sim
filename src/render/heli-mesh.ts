@@ -17,7 +17,7 @@ export class HeliMesh {
   private bladeAngle = 0;
   private tailAngle = 0;
 
-  constructor(private model: HeliModel) {
+  constructor(private model: HeliModel, ghost = false) {
     const m = model;
     const R = m.rotor.radius;
     const L = m.tailOffset.z;
@@ -26,16 +26,26 @@ export class HeliMesh {
     const metal = new THREE.MeshStandardMaterial({ color: 0x8a8f99, roughness: 0.4, metalness: 0.8 });
     const bladeMat = new THREE.MeshStandardMaterial({ color: 0x111111, roughness: 0.6 });
     const sizes = { bodyLen: R * 0.95, bodyH: R * 0.36, bodyW: R * 0.25 };
+    if (ghost) {
+      // Translucent, unlit-looking, no shadows: a hint of a helicopter, not a second one.
+      for (const mat of [body, dark, metal, bladeMat]) {
+        mat.transparent = true;
+        mat.opacity = 0.32;
+        mat.depthWrite = false;
+        mat.color.set(0x7fd4ff);
+        mat.emissive.set(0x2a6a8a);
+      }
+    }
 
     // Canopy / frame.
     const canopy = new THREE.Mesh(new THREE.SphereGeometry(1, 20, 14), body);
     canopy.scale.set(sizes.bodyW * 0.6, sizes.bodyH * 0.5, sizes.bodyLen * 0.55);
     canopy.position.set(0, -0.01, -sizes.bodyLen * 0.15);
-    canopy.castShadow = true;
+    canopy.castShadow = !ghost;
     this.root.add(canopy);
     const frame = new THREE.Mesh(new THREE.BoxGeometry(sizes.bodyW * 0.9, sizes.bodyH * 0.8, sizes.bodyLen * 0.6), dark);
     frame.position.set(0, 0.0, sizes.bodyLen * 0.1);
-    frame.castShadow = true;
+    frame.castShadow = !ghost;
     this.root.add(frame);
 
     // Main shaft and rotor head.
@@ -49,7 +59,7 @@ export class HeliMesh {
     for (const side of [-1, 1]) {
       const blade = new THREE.Mesh(new THREE.BoxGeometry(R * 0.95, R * 0.008, m.rotor.chord), bladeMat);
       blade.position.x = side * R * 0.52;
-      blade.castShadow = true;
+      blade.castShadow = !ghost;
       this.blades.add(blade);
     }
     this.head.add(this.blades);
@@ -65,11 +75,11 @@ export class HeliMesh {
     const boom = new THREE.Mesh(new THREE.CylinderGeometry(R * 0.035, R * 0.028, L * 0.95, 10), metal);
     boom.rotation.x = Math.PI / 2;
     boom.position.set(0, m.tailOffset.y * 0.6, L * 0.5);
-    boom.castShadow = true;
+    boom.castShadow = !ghost;
     this.root.add(boom);
     const fin = new THREE.Mesh(new THREE.BoxGeometry(R * 0.012, R * 0.3, R * 0.16), body);
     fin.position.set(0, m.tailOffset.y + R * 0.02, L * 1.02);
-    fin.castShadow = true;
+    fin.castShadow = !ghost;
     this.root.add(fin);
     const stab = new THREE.Mesh(new THREE.BoxGeometry(R * 0.32, R * 0.012, R * 0.12), body);
     stab.position.set(0, m.tailOffset.y * 0.6, L * 0.78);
@@ -102,7 +112,7 @@ export class HeliMesh {
       const skid = new THREE.Mesh(new THREE.CylinderGeometry(R * 0.012, R * 0.012, zMax - zMin + R * 0.1, 8), metal);
       skid.rotation.x = Math.PI / 2;
       skid.position.set(x, y + R * 0.012, (zMin + zMax) / 2);
-      skid.castShadow = true;
+      skid.castShadow = !ghost;
       this.root.add(skid);
       for (const z of [zMin + R * 0.08, zMax - R * 0.08]) {
         const strut = new THREE.Mesh(new THREE.CylinderGeometry(R * 0.01, R * 0.01, -y - sizes.bodyH * 0.3, 6), metal);

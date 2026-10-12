@@ -52,6 +52,15 @@ const AXIS_HINT: Record<AxisName | SwitchName, string> = {
   throttleHoldSwitch: 'start with the THROTTLE HOLD switch off, then flip it on',
 };
 
+const PREFS_KEY = 'rc-heli-sim.prefs.v1';
+interface Prefs { model?: string; source?: string; stickMode?: number; expo?: number; rate?: number; rexpo?: number; assist?: string; camera?: string; spot?: string; arrow?: boolean; wind?: number; windDir?: number; gust?: number; volume?: number; muted?: boolean; tilt?: number }
+function loadPrefs(): Prefs {
+  try { return JSON.parse(localStorage.getItem(PREFS_KEY) ?? '{}') as Prefs; } catch { return {}; }
+}
+function savePrefs(patch: Prefs): void {
+  localStorage.setItem(PREFS_KEY, JSON.stringify({ ...loadPrefs(), ...patch }));
+}
+
 /** Plain-DOM settings drawer: model, input device, stick mode, rates/expo, wind, and the transmitter mapping wizard. */
 export class SettingsPanel {
   private panel: HTMLElement;
@@ -160,6 +169,7 @@ export class SettingsPanel {
     const soundBtn = bar.querySelector('#btn-sound') as HTMLButtonElement;
     const toggleSound = () => {
       audio.setMuted(!audio.muted);
+      savePrefs({ muted: audio.muted });
       soundBtn.textContent = audio.muted ? '🔇' : '🔊';
       soundBtn.classList.toggle('active', audio.muted);
     };
@@ -178,6 +188,32 @@ export class SettingsPanel {
   flightMode: 0 | 1 | 2 = -1 as unknown as 0 | 1 | 2; // forces the first reflect() to paint
   hold = false;
   assist: AssistMode = 'rate';
+
+  /** Re-apply what the pilot set last time (model, input, assist, camera, wind, sound...). Call once after wiring. */
+  restore(): void {
+    const p = loadPrefs();
+    const im = this.input;
+    if (p.model) {
+      const m = HELI_MODELS.find((x) => x.id === p.model);
+      if (m) { this.currentModelId = m.id; this.cb.onModel(m); }
+    }
+    if (p.source && p.source !== 'motion') im.choice = p.source as SourceChoice; // motion needs a permission tap
+    if (p.stickMode) im.touch.setMode(p.stickMode as StickMode);
+    if (p.expo !== undefined) { im.shaping.aileron.expo = p.expo; im.shaping.elevator.expo = p.expo; }
+    if (p.rate !== undefined) { im.shaping.aileron.rate = p.rate; im.shaping.elevator.rate = p.rate; }
+    if (p.rexpo !== undefined) im.shaping.rudder.expo = p.rexpo;
+    if (p.tilt !== undefined) im.motion.maxTiltDeg = p.tilt;
+    if (p.assist === 'rate' || p.assist === 'attitude') this.setAssist(p.assist);
+    if (p.camera && (CAMERA_MODES as string[]).includes(p.camera)) this.setCamera(p.camera as CameraMode);
+    if (p.spot) { this.spot = p.spot; this.cb.onPilotSpot(p.spot); }
+    if (p.arrow !== undefined) { this.arrowOn = p.arrow; this.cb.onArrow(p.arrow); }
+    if (p.wind !== undefined) this.wind.speed = p.wind;
+    if (p.windDir !== undefined) this.wind.fromDeg = p.windDir;
+    if (p.gust !== undefined) this.wind.gustiness = p.gust;
+    if (p.volume !== undefined) this.audio.setVolume(p.volume);
+    if (p.muted) { this.audio.setMuted(true); const b = this.bar.querySelector('#btn-sound') as HTMLElement; b.textContent = '🔇'; b.classList.add('active'); }
+    this.render();
+  }
 
   /** Keep the top bar in sync with whatever the active source says. */
   reflect(mode: 0 | 1 | 2, hold: boolean): void {
@@ -274,12 +310,14 @@ export class SettingsPanel {
       const m = HELI_MODELS.find((x) => x.id === (e.target as HTMLSelectElement).value)!;
       this.currentModelId = m.id;
       this.cb.onModel(m);
+      savePrefs({ model: m.id });
       this.render();
     });
     this.bindSetup();
     q<HTMLSelectElement>('#source').addEventListener('change', (e) => {
       const choice = (e.target as HTMLSelectElement).value as SourceChoice;
       const status = q('#source-status');
+      savePrefs({ source: choice });
       void im.select(choice).then((ok) => {
         if (choice === 'motion' && ok) {
           this.setAssist('attitude');
@@ -292,7 +330,7 @@ export class SettingsPanel {
       });
     });
     q<HTMLSelectElement>('#assist').addEventListener('change', (e) => this.setAssist((e.target as HTMLSelectElement).value as AssistMode));
-    q<HTMLSelectElement>('#stickmode').addEventListener('change', (e) => im.touch.setMode(Number((e.target as HTMLSelectElement).value) as StickMode));
+    q<HTMLSelectElement>('#stickmode').addEventListener('change', (e) => { const v = Number((e.target as HTMLSelectElement).value) as StickMode; im.touch.setMode(v); savePrefs({ stickMode: v }); });
     const bind = (id: string, f: (v: number) => void) => {
       const el = q<HTMLInputElement>(`#${id}`);
       el.addEventListener('input', () => {
@@ -300,18 +338,20 @@ export class SettingsPanel {
         f(Number(el.value));
       });
     };
-    bind('expo', (v) => { im.shaping.aileron.expo = v; im.shaping.elevator.expo = v; });
-    bind('rate', (v) => { im.shaping.aileron.rate = v; im.shaping.elevator.rate = v; });
-    bind('rexpo', (v) => (im.shaping.rudder.expo = v));
+    bind('expo', (v) => { im.shaping.aileron.expo = v; im.shaping.elevator.expo = v; savePrefs({ expo: v }); });
+    bind('rate', (v) => { im.shaping.aileron.rate = v; im.shaping.elevator.rate = v; savePrefs({ rate: v }); });
+    bind('rexpo', (v) => { im.shaping.rudder.expo = v; savePrefs({ rexpo: v }); });
     bind('tilt', (v) => (im.motion.maxTiltDeg = v));
     q<HTMLSelectElement>('#spot').addEventListener('change', (e) => {
       this.spot = (e.target as HTMLSelectElement).value;
       this.cb.onPilotSpot(this.spot);
+      savePrefs({ spot: this.spot });
     });
     q('#walk').addEventListener('click', () => this.cb.onPilotSpot('heli'));
     q<HTMLInputElement>('#arrow').addEventListener('change', (e) => {
       this.arrowOn = (e.target as HTMLInputElement).checked;
       this.cb.onArrow(this.arrowOn);
+      savePrefs({ arrow: this.arrowOn });
     });
     q<HTMLSelectElement>('#camera').addEventListener('change', (e) => {
       this.cameraMode = (e.target as HTMLSelectElement).value as CameraMode;
@@ -412,6 +452,7 @@ export class SettingsPanel {
   }
 
   private applyCamera(): void {
+    savePrefs({ camera: this.cameraMode });
     const label = this.cb.onCamera(this.cameraMode);
     (this.bar.querySelector('#btn-camera') as HTMLElement).textContent = `🎥 ${{ pilot: 'Pilot', chase: 'Chase', front: 'Front', top: 'Top', drone: 'Drone' }[this.cameraMode]}`;
     void label;
@@ -432,6 +473,7 @@ export class SettingsPanel {
 
   setAssist(mode: AssistMode): void {
     this.assist = mode;
+    savePrefs({ assist: mode });
     const sel = this.panel.querySelector('#assist') as HTMLSelectElement | null;
     if (sel) sel.value = mode;
     this.cb.onAssist(mode);

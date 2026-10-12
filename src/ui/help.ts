@@ -182,7 +182,8 @@ const HELP_HTML = `
   real physics while two big gimbals show exactly where its sticks are, with a caption per step and the switch states. Nothing
   the demo does counts for your score. <b>Teach me</b>: you fly it. The same steps and captions, but now a dashed ring on each
   gimbal shows where your stick should be at this instant (computed from what the helicopter is doing right now), the switches
-  tell you when to flip Idle-Up or Hold, and a step only advances when you make it. A crash resets to the pad and restarts the
+  tell you when to flip Idle-Up or Hold, a translucent blue <b>ghost</b> flies the current step next to you, and a step only
+  advances when you make it. A crash resets to the pad and restarts the
   lesson. What you fly in Teach me counts for the challenges and rankings.</p>
 </section>
 
