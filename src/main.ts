@@ -26,6 +26,7 @@ import { lessonFor, LessonRunner } from './game/lessons';
 import { recordGhost, type GhostFrame } from './game/ghost';
 import { Trail } from './render/trail';
 import { buildCustomModel, normalizeSpec, type CustomSpec } from './sim/custom-model';
+import { detectLang, onLangChange, setLang, t, type Lang } from './i18n';
 import { LessonOverlay } from './ui/lesson-overlay';
 import type { AssistMode } from './sim/physics';
 
@@ -87,6 +88,12 @@ const input: InputManager = new InputManager(ui);
 const hud = new Hud(ui);
 const help = new HelpPanel(ui);
 const profile = loadProfile();
+// Language: the saved preference, else the browser's. Set before any panel renders.
+{
+  let saved: Lang | undefined;
+  try { saved = (JSON.parse(localStorage.getItem('rc-heli-sim.prefs.v1') ?? '{}') as { lang?: Lang }).lang; } catch { /* no prefs */ }
+  setLang(saved ?? detectLang());
+}
 if (profile.setup?.[baseModel.id]) setModel(baseModel);
 const tracker = new ChallengeTracker(profile.completed);
 const flightTimer = new FlightTimer();
@@ -112,15 +119,15 @@ function startLesson(challengeId: string, mode: 'show' | 'teach' = 'show'): void
   if (level === '3D' && sim.model.controller.type === 'flybar') {
     modelBeforeLesson = sim.model;
     setModel(HELI_450);
-    hud.notify('<b>3D lesson: switched to the flybarless 450</b><br>The flybar trainer cannot take full cyclic at negative G. Your model comes back after the lesson.', 6000);
+    hud.notify(`<b>${t('3D lesson: switched to the flybarless 450')}</b><br>${t('The flybar trainer cannot take full cyclic at negative G. Your model comes back after the lesson.')}`, 6000);
   } else if (challengeId === 'autorotation' && (sim.model.rotor.radius < 0.3 || sim.model.controller.type === 'flybar')) {
     // A micro's rotor stores almost no energy to cushion with, and the demo pilot's hold entry (collective dumped
     // with cyclic in) boom-strikes a flybar head. The demo flies the flybarless 450; the challenge is open to any model.
     modelBeforeLesson = sim.model;
     setModel(HELI_450);
     hud.notify(sim.model.rotor.radius < 0.3
-      ? '<b>Autorotation: switched to the flybarless 450</b><br>A micro\'s light blades store too little energy to cushion a landing. Your model comes back after the lesson.'
-      : '<b>Autorotation: switched to the flybarless 450</b><br>The demo\'s hold entry would boom-strike the flybar head. Your model comes back after the lesson.', 6000);
+      ? `<b>${t('Autorotation: switched to the flybarless 450')}</b><br>${t("A micro's light blades store too little energy to cushion a landing. Your model comes back after the lesson.")}`
+      : `<b>${t('Autorotation: switched to the flybarless 450')}</b><br>${t("The demo's hold entry would boom-strike the flybar head. Your model comes back after the lesson.")}`, 6000);
   }
   sim.reset();
   tracker.resetTransient();
@@ -141,8 +148,8 @@ function startLesson(challengeId: string, mode: 'show' | 'teach' = 'show'): void
   lessonOverlay.show(lesson);
   hud.notify(
     mode === 'show'
-      ? `<b>Show me: ${l.title}</b><br>Watch the sticks. Press Stop lesson to take over at any time.`
-      : `<b>Teach me: ${l.title}</b><br>You fly. Match the dashed ring with your sticks; each step advances when you make it.`,
+      ? `<b>${t('Show me: {title}', { title: t(l.title) })}</b><br>${t('Watch the sticks. Press Stop lesson to take over at any time.')}`
+      : `<b>${t('Teach me: {title}', { title: t(l.title) })}</b><br>${t('You fly. Match the dashed ring with your sticks; each step advances when you make it.')}`,
     5000,
   );
 }
@@ -170,7 +177,7 @@ function stopLesson(resetHeli = true): void {
 lessonOverlay.onStop = () => stopLesson();
 tracker.onComplete = (c) => {
   stats.trick(c.id);
-  hud.notify(`<b>Challenge complete: ${c.title}</b><br>+${c.points} points · ${tracker.points} total`, 5000);
+  hud.notify(`<b>${t('Challenge complete: {title}', { title: t(c.title) })}</b><br>${t('+{points} points · {total} total', { points: c.points, total: tracker.points })}`, 5000);
   void challenges.sync();
 };
 const stats = new FlightStats();
@@ -179,8 +186,8 @@ flightTimer.onFlightEnd = (seconds, crashed) => {
   lastFlight = flightFrames();
   if (d && seconds > 8) {
     flightLog.add(d, sim.model.name);
-    const extra = !crashed && seconds >= flightTimer.best ? '<br>Your longest clean flight' : '';
-    hud.notify(debriefHtml(d, fmtTime, (id) => CHALLENGES.find((c) => c.id === id)?.title ?? id) + extra + '<br><button data-action="replay-flight">▶ Replay flight</button>', 12000);
+    const extra = !crashed && seconds >= flightTimer.best ? `<br>${t('Your longest clean flight')}` : '';
+    hud.notify(debriefHtml(d, fmtTime, (id) => t(CHALLENGES.find((c) => c.id === id)?.title ?? id)) + extra + `<br><button data-action="replay-flight">${t('▶ Replay flight')}</button>`, 12000);
   }
   if (!crashed) void challenges.sync();
 };
@@ -198,7 +205,7 @@ const settings = new SettingsPanel(ui, input, wind, audio, {
   onTrainingGear(on) {
     trainingGear = on;
     setModel(baseModel);
-    hud.notify(on ? '<b>Training gear fitted</b><br>Nearly tip-proof. A bit heavier and slower; remove it when hovering is boring.' : '<b>Training gear removed</b>', 3500);
+    hud.notify(on ? `<b>${t('Training gear fitted')}</b><br>${t('Nearly tip-proof. A bit heavier and slower; remove it when hovering is boring.')}` : `<b>${t('Training gear removed')}</b>`, 3500);
   },
   onSetup(modelId, setup) {
     profile.setup = { ...(profile.setup ?? {}), [modelId]: setup };
@@ -256,7 +263,7 @@ const settings = new SettingsPanel(ui, input, wind, audio, {
     } else [x, z] = spots[spot] ?? [0, 0];
     pilotCam.setEye(x, z);
     field.pilotMarker.position.set(x, 0, z);
-    hud.notify(spot === 'heli' ? '<b>Walked to the heli</b>' : `<b>Pilot moved</b><br>${spot}`, 2000);
+    hud.notify(spot === 'heli' ? `<b>${t('Walked to the heli')}</b>` : `<b>${t('Pilot moved')}</b><br>${spot}`, 2000);
   },
   onArrow(on) {
     field.arrow.visible = on;
@@ -282,15 +289,19 @@ if (accountSpec && typeof accountSpec === 'object') {
   settings.setCustom(spec, customModel);
 }
 settings.restore();
+onLangChange(() => {
+  challenges.refresh();
+  help.setLanguage();
+});
 // First visit: a short welcome card with the three things a newcomer needs. Dismissed by its button or by flying.
 if (settings.firstVisit && !new URLSearchParams(location.search).get('lesson')) {
   const touch = matchMedia('(pointer: coarse)').matches;
   hud.notify(
-    `<b>Welcome to RC Heli Sim</b><br>${touch
-      ? 'Left stick: throttle and rudder. Right stick: cyclic. Raise the throttle slowly.'
-      : 'W / S collective, arrow keys cyclic, A / D rudder. Raise W slowly to lift off.'}<br>` +
-      'New to helis? Open <b>Challenges</b> and press <b>Show me</b> on First hover. The <b>?</b> button is the manual.' +
-      '<br><button data-action="welcome-ok">Got it</button>',
+    `<b>${t('Welcome to RC Heli Sim')}</b><br>${touch
+      ? t('Left stick: throttle and rudder. Right stick: cyclic. Raise the throttle slowly.')
+      : t('W / S collective, arrow keys cyclic, A / D rudder. Raise W slowly to lift off.')}<br>` +
+      t('New to helis? Open <b>Challenges</b> and press <b>Show me</b> on First hover. The <b>?</b> button is the manual.') +
+      `<br><button data-action="welcome-ok">${t('Got it')}</button>`,
     60000,
   );
   settings.markWelcomed();
@@ -355,7 +366,7 @@ function resetHover(): void {
   // Freeze until the collective is near the hover point, so a transmitter stick left at the bottom does not
   // dump the heli from 6 m the instant it appears.
   hoverArmed = true;
-  hud.notify('<b>Hover reset</b><br>Idle-Up 1, 6 m up, rotor at speed. Frozen until your collective is near the middle.', 4500);
+  hud.notify(`<b>${t('Hover reset')}</b><br>${t('Idle-Up 1, 6 m up, rotor at speed. Frozen until your collective is near the middle.')}`, 4500);
 }
 let hoverArmed = false;
 /** Stick position where the Idle-Up 1 pitch curve gives roughly the hover pitch (about 5.5 degrees). */
@@ -521,11 +532,11 @@ function frame(now: number): void {
   }
   settings.reflect(ctl.flightMode, ctl.throttleHold);
   if (ctl.flightMode !== lastMode) {
-    if (lastMode !== -1) hud.notify(`<b>${['Normal', 'Idle-Up 1', 'Idle-Up 2'][ctl.flightMode]}</b><br>${MODE_HELP[ctl.flightMode].replace(/^[^:]+: /, '')}`);
+    if (lastMode !== -1) hud.notify(`<b>${['Normal', 'Idle-Up 1', 'Idle-Up 2'][ctl.flightMode]}</b><br>${t(MODE_HELP[ctl.flightMode]).replace(/^[^:]+: /, '')}`);
     lastMode = ctl.flightMode;
   }
   if (ctl.throttleHold !== lastHold) {
-    hud.notify(`<b>Throttle hold ${ctl.throttleHold ? 'ON' : 'off'}</b><br>${(ctl.throttleHold ? HOLD_HELP.on : HOLD_HELP.off).replace(/^[^:]+: /, '')}`);
+    hud.notify(`<b>${ctl.throttleHold ? t('Throttle hold ON') : t('Throttle hold off')}</b><br>${t(ctl.throttleHold ? HOLD_HELP.on : HOLD_HELP.off).replace(/^[^:]+: /, '')}`);
     lastHold = ctl.throttleHold;
   }
 
@@ -552,7 +563,7 @@ function frame(now: number): void {
   if (hoverArmed) {
     if (Math.abs(ctl.collective - hoverStick(sim.model)) < 0.2) {
       hoverArmed = false;
-      hud.notify('<b>Go</b>', 800);
+      hud.notify(`<b>${t('Go')}</b>`, 800);
     } else {
       accumulator = 0;
     }

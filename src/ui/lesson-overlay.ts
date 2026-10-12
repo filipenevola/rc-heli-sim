@@ -1,5 +1,6 @@
 import type { ControlFrame } from '../input/types';
 import type { LessonRunner } from '../game/lessons';
+import { localizeDom, t, tDyn } from '../i18n';
 
 /**
  * Shown while a lesson plays: the step caption, big transmitter gimbals mirroring the demo pilot's
@@ -30,6 +31,7 @@ export class LessonOverlay {
         <div class="lesson-switches"></div>
       </div>`;
     container.appendChild(this.el);
+    localizeDom(this.el);
     this.caption = this.el.querySelector('.lesson-caption')!;
     this.intro = this.el.querySelector('.lesson-intro')!;
     this.sticks = this.el.querySelector('canvas')!;
@@ -40,11 +42,11 @@ export class LessonOverlay {
 
   show(runner: LessonRunner): void {
     this.el.style.display = '';
-    (this.el.querySelector('.lesson-title span') as HTMLElement).textContent = runner.mode === 'teach' ? 'Teach me' : 'Show me';
-    (this.el.querySelector('#lesson-name') as HTMLElement).textContent = runner.lesson.title;
+    (this.el.querySelector('.lesson-title span') as HTMLElement).textContent = runner.mode === 'teach' ? t('Teach me') : t('Show me');
+    (this.el.querySelector('#lesson-name') as HTMLElement).textContent = t(runner.lesson.title);
     this.intro.textContent = runner.mode === 'teach'
-      ? `${runner.lesson.intro} You fly: the hollow ring shows where the stick should be right now; match it.`
-      : runner.lesson.intro;
+      ? t(`${runner.lesson.intro} You fly: the hollow ring shows where the stick should be right now; match it.`)
+      : t(runner.lesson.intro);
   }
 
   hide(): void {
@@ -57,41 +59,41 @@ export class LessonOverlay {
   showReplay(kind: 'crash' | 'flight' = 'crash'): void {
     this.replayKind = kind;
     this.el.style.display = '';
-    (this.el.querySelector('.lesson-title span') as HTMLElement).textContent = 'Replay';
-    (this.el.querySelector('#lesson-name') as HTMLElement).textContent = kind === 'crash' ? 'your last 10 seconds' : 'your whole flight';
-    (this.el.querySelector('#lesson-stop') as HTMLElement).textContent = 'Close replay';
+    (this.el.querySelector('.lesson-title span') as HTMLElement).textContent = t('Replay');
+    (this.el.querySelector('#lesson-name') as HTMLElement).textContent = kind === 'crash' ? t('your last 10 seconds') : t('your whole flight');
+    (this.el.querySelector('#lesson-stop') as HTMLElement).textContent = t('Close replay');
     this.intro.textContent = kind === 'crash'
-      ? 'These were your sticks, exactly as you flew them. Watch what happened just before the crash.'
-      : 'Your sticks, exactly as you flew them, from lift-off to touchdown. Change the camera while it plays (keys 1-6).';
+      ? t('These were your sticks, exactly as you flew them. Watch what happened just before the crash.')
+      : t('Your sticks, exactly as you flew them, from lift-off to touchdown. Change the camera while it plays (keys 1-6).');
     this.coach?.style.setProperty('display', 'none');
   }
 
   updateReplay(ctl: ControlFrame, secondsLeft: number, elapsed = 0): void {
     this.caption.textContent = this.replayKind === 'crash'
-      ? secondsLeft > 0 ? `${secondsLeft.toFixed(1)} s before the crash` : 'Crash'
-      : `${elapsed.toFixed(1)} s · ${secondsLeft.toFixed(1)} s to go`;
+      ? secondsLeft > 0 ? `${secondsLeft.toFixed(1)} ${t('s before the crash')}` : t('Crash')
+      : `${elapsed.toFixed(1)} s · ${secondsLeft.toFixed(1)} ${t('s to go')}`;
     this.progress.textContent = '';
     this.switches.innerHTML = `<span class="${ctl.flightMode > 0 ? 'on' : ''}">Mode: ${['Normal', 'Idle-Up 1', 'Idle-Up 2'][ctl.flightMode]}</span><span class="${ctl.throttleHold ? 'on' : ''}">Throttle hold: ${ctl.throttleHold ? 'ON' : 'off'}</span>`;
     this.draw(ctl, null);
   }
 
   restoreStopLabel(): void {
-    (this.el.querySelector('#lesson-stop') as HTMLElement).textContent = 'Stop lesson';
+    (this.el.querySelector('#lesson-stop') as HTMLElement).textContent = t('Stop lesson');
   }
 
   update(runner: LessonRunner, ctl: ControlFrame, hint: ControlFrame | null = null): void {
     const step = runner.step;
     const teach = runner.mode === 'teach';
-    let caption = step?.caption ?? '';
-    if (runner.finished) caption = runner.failed ?? (teach ? 'You did it. Lesson complete!' : 'Lesson complete. Your turn: press Reset and try it.');
-    else if (teach && runner.crashed) caption = 'Crashed. Resetting to the pad; the lesson starts again.';
+    let caption = tDyn(step?.caption ?? '');
+    if (runner.finished) caption = runner.failed ? tDyn(runner.failed) : teach ? t('You did it. Lesson complete!') : t('Lesson complete. Your turn: press Reset and try it.');
+    else if (teach && runner.crashed) caption = t('Crashed. Resetting to the pad; the lesson starts again.');
     this.caption.textContent = caption;
-    this.progress.textContent = `Step ${Math.min(runner.stepIndex + 1, runner.lesson.steps.length)} of ${runner.lesson.steps.length}`;
+    this.progress.textContent = t('Step {n} of {total}', { n: Math.min(runner.stepIndex + 1, runner.lesson.steps.length), total: runner.lesson.steps.length });
     const modeWanted = hint ? hint.flightMode : ctl.flightMode;
     const holdWanted = hint ? hint.throttleHold : ctl.throttleHold;
     const modeMismatch = hint && hint.flightMode !== ctl.flightMode;
     const holdMismatch = hint && hint.throttleHold !== ctl.throttleHold;
-    this.switches.innerHTML = `<span class="${modeWanted > 0 ? 'on' : ''} ${modeMismatch ? 'want' : ''}">Mode: ${['Normal', 'Idle-Up 1', 'Idle-Up 2'][modeWanted]}${modeMismatch ? ' ← set this' : ''}</span><span class="${holdWanted ? 'on' : ''} ${holdMismatch ? 'want' : ''}">Throttle hold: ${holdWanted ? 'ON' : 'off'}${holdMismatch ? ' ← set this' : ''}</span>`;
+    this.switches.innerHTML = `<span class="${modeWanted > 0 ? 'on' : ''} ${modeMismatch ? 'want' : ''}">${t('Mode:')} ${['Normal', 'Idle-Up 1', 'Idle-Up 2'][modeWanted]}${modeMismatch ? ` ${t('← set this')}` : ''}</span><span class="${holdWanted ? 'on' : ''} ${holdMismatch ? 'want' : ''}">${t('Throttle hold:')} ${holdWanted ? t('ON') : t('off')}${holdMismatch ? ` ${t('← set this')}` : ''}</span>`;
     this.draw(ctl, hint);
     this.coachLine(ctl, hint, teach && !runner.finished);
   }

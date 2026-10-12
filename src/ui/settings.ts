@@ -1,5 +1,6 @@
 import { HELI_MODELS, type HeliModel, type ModelSetup } from '../sim/heli-model';
 import { DEFAULT_CUSTOM, normalizeSpec, type CustomSpec } from '../sim/custom-model';
+import { getLang, localizeDom, setLang, t, type Lang } from '../i18n';
 import type { InputManager, SourceChoice } from '../input/manager';
 import { saveMapping, builtinName, readAxis, type AxisMapping, type GamepadMapping, type SwitchMapping } from '../input/gamepad';
 import type { StickMode } from '../input/types';
@@ -58,7 +59,7 @@ const AXIS_HINT: Record<AxisName | SwitchName, string> = {
 };
 
 const PREFS_KEY = 'rc-heli-sim.prefs.v1';
-interface Prefs { welcomed?: boolean; custom?: CustomSpec; trail?: boolean; gear?: boolean; nrate?: number; model?: string; source?: string; stickMode?: number; expo?: number; rate?: number; rexpo?: number; assist?: string; camera?: string; spot?: string; arrow?: boolean; wind?: number; windDir?: number; gust?: number; volume?: number; muted?: boolean; tilt?: number }
+interface Prefs { lang?: Lang; welcomed?: boolean; custom?: CustomSpec; trail?: boolean; gear?: boolean; nrate?: number; model?: string; source?: string; stickMode?: number; expo?: number; rate?: number; rexpo?: number; assist?: string; camera?: string; spot?: string; arrow?: boolean; wind?: number; windDir?: number; gust?: number; volume?: number; muted?: boolean; tilt?: number }
 function loadPrefs(): Prefs {
   try { return JSON.parse(localStorage.getItem(PREFS_KEY) ?? '{}') as Prefs; } catch { return {}; }
 }
@@ -331,6 +332,7 @@ export class SettingsPanel {
 
     this.panel.innerHTML = `
       <h3>Settings <button id="close">×</button></h3>
+      <label>Language ${sel('lang', [['en', 'English'], ['pt-BR', 'Português (Brasil)']], getLang())}</label>
       <p class="hint">v${__VERSION__} · build <code>${__COMMIT__}</code> (${__BUILD__.split(' ').slice(1).join(' ')}) · <a href="https://github.com/filipenevola/rc-heli-sim/blob/main/CHANGELOG.md" target="_blank" rel="noopener">Release log</a></p>
       <section>
         <h4>Helicopter</h4>
@@ -392,6 +394,12 @@ export class SettingsPanel {
 
     const q = <T extends HTMLElement>(s: string) => this.panel.querySelector(s) as T;
     q('#close').addEventListener('click', () => this.toggle());
+    q<HTMLSelectElement>('#lang').addEventListener('change', (e) => {
+      const lang = (e.target as HTMLSelectElement).value as Lang;
+      savePrefs({ lang });
+      setLang(lang);
+      this.render();
+    });
     q<HTMLSelectElement>('#model').addEventListener('change', (e) => {
       const m = this.models.find((x) => x.id === (e.target as HTMLSelectElement).value)!;
       this.currentModelId = m.id;
@@ -480,6 +488,8 @@ export class SettingsPanel {
         this.wizardStatus!.textContent = 'Mapping saved for this transmitter (and to your account when signed in).';
       }
     });
+    localizeDom(this.panel);
+    localizeDom(this.bar);
   }
 
   private startAssign(axis: AxisName | SwitchName): void {
@@ -560,7 +570,7 @@ export class SettingsPanel {
   private applyCamera(): void {
     savePrefs({ camera: this.cameraMode });
     const label = this.cb.onCamera(this.cameraMode);
-    (this.bar.querySelector('#btn-camera') as HTMLElement).textContent = `🎥 ${{ pilot: 'Pilot', chase: 'Chase', front: 'Front', top: 'Top', drone: 'Drone' }[this.cameraMode]}`;
+    (this.bar.querySelector('#btn-camera') as HTMLElement).textContent = `🎥 ${t({ pilot: 'Pilot', chase: 'Chase', front: 'Front', top: 'Top', drone: 'Drone' }[this.cameraMode])}`;
     void label;
     const sel = this.panel.querySelector('#camera') as HTMLSelectElement | null;
     if (sel) sel.value = this.cameraMode;

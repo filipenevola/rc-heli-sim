@@ -3,6 +3,12 @@
 All notable changes to RC Heli Sim. The version shown in the game (Help and Settings) matches the latest
 entry here; the commit hash next to it identifies the exact build.
 
+## 0.34.0
+
+- **Português (Brasil)**: the whole interface, the 27 challenges, every lesson caption and the manual are
+  available in Brazilian Portuguese (Settings → Language, or automatically for browsers set to Portuguese).
+  English remains the source text; anything not yet translated shows in English.
+
 ## 0.33.0
 
 - The distant hills are gentler and haze-coloured (0.32.0 made them too tall and dark from some angles).

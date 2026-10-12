@@ -35,6 +35,7 @@ pilot-on-the-field camera are all about model helicopters.
 - **Procedural sound** (Web Audio, no samples): motor, blade chop, tail whine with wag flutter, wind,
   Doppler, slap at high G, VRS roughness, stall buzz, battery alarm, crash sounds, birds and field ambience.
 - Wind with a log boundary layer, obstacle wakes and turbulence; a windsock shows the mean.
+- Interface, challenges, lessons and manual in English and Brazilian Portuguese.
 
 ## Versions
 
@@ -96,7 +97,6 @@ helicopters is the main realism lever; see the test file for the quantities that
 - [ ] Sampled sound layer (real nitro / electric recordings) on top of the synth.
 - [ ] Multi-blade heads, collective-pitch coaxial trainers, nitro engines with a clutch.
 - [ ] WebHID path for dongles that are not exposed as gamepads; Bluetooth transmitters.
-- [ ] Portuguese (pt-BR) interface.
 - [ ] Optional Rust/wasm physics core in a Worker (the TypeScript core runs 40–57x real time on a laptop).
 
 ## Origins

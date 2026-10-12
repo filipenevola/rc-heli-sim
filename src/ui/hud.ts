@@ -1,4 +1,5 @@
 import type { ControlFrame } from '../input/types';
+import { t as tr } from '../i18n';
 import type { HelicopterSim } from '../sim/physics';
 
 const MODE_NAMES = ['Normal', 'Idle-Up 1', 'Idle-Up 2'];
@@ -92,19 +93,19 @@ export class Hud {
     const t = sim.telemetry;
     const s = sim.state;
     const rows: [string, string][] = [
-      ['Model', sim.model.name],
-      ['Input', sourceLabel],
-      ['Mode', ctl.throttleHold ? 'THROTTLE HOLD' : MODE_NAMES[ctl.flightMode]],
-      ['Head speed', `${t.headspeedRpm.toFixed(0)} rpm`],
-      ['Collective', `${t.collectiveDeg.toFixed(1)}°`],
-      ['Altitude', `${t.altitude.toFixed(1)} m`],
-      ['Climb', `${t.verticalSpeed.toFixed(1)} m/s`],
-      ['Speed', `${(t.groundSpeed * 3.6).toFixed(0)} km/h`],
-      ['Distance', `${Math.hypot(s.pos.x, s.pos.z).toFixed(0)} m`],
-      ['Power', `${t.motorPower.toFixed(0)} W`],
-      ['G load', `${t.gLoad.toFixed(1)} g`],
-      ['Ground effect', `${((t.groundEffect - 1) * 100).toFixed(0)}%`],
-      ['Battery', `${(t.battery * 100).toFixed(0)}%${t.battery < 0.1 ? ' ⚠' : ''}`],
+      [tr('Model'), tr(sim.model.name)],
+      [tr('Input'), tr(sourceLabel)],
+      [tr('Mode'), ctl.throttleHold ? tr('THROTTLE HOLD') : MODE_NAMES[ctl.flightMode]],
+      [tr('Head speed'), `${t.headspeedRpm.toFixed(0)} rpm`],
+      [tr('Collective'), `${t.collectiveDeg.toFixed(1)}°`],
+      [tr('Altitude'), `${t.altitude.toFixed(1)} m`],
+      [tr('Climb'), `${t.verticalSpeed.toFixed(1)} m/s`],
+      [tr('Speed'), `${(t.groundSpeed * 3.6).toFixed(0)} km/h`],
+      [tr('Distance'), `${Math.hypot(s.pos.x, s.pos.z).toFixed(0)} m`],
+      [tr('Power'), `${t.motorPower.toFixed(0)} W`],
+      [tr('G load'), `${t.gLoad.toFixed(1)} g`],
+      [tr('Ground effect'), `${((t.groundEffect - 1) * 100).toFixed(0)}%`],
+      [tr('Battery'), `${(t.battery * 100).toFixed(0)}%${t.battery < 0.1 ? ' ⚠' : ''}`],
       ['FPS', this.fps.toFixed(0)],
     ];
     const html = this.compact
@@ -117,7 +118,7 @@ export class Hud {
     // The on-screen gimbals already show stick position; the mini display would only cover them.
     this.sticks.style.display = sourceId === 'touch' || sourceId === 'motion' ? 'none' : '';
     this.drawSticks(ctl);
-    this.warn(t.vrs > 0.3 ? 'VORTEX RING: descending into your own downwash. Forward cyclic or less collective.' : t.stall > 0.2 ? 'BLADE STALL: too much collective for this head speed. Ease it off.' : t.wag > 0.5 ? 'TAIL WAG: tail gyro gain too high. Lower it in Settings → Model setup.' : t.battery <= 0 ? 'BATTERY FLAT: motor off. Autorotate!' : t.battery < 0.1 ? 'Battery low: land soon.' : '');
+    this.warn(t.vrs > 0.3 ? tr('VORTEX RING: descending into your own downwash. Forward cyclic or less collective.') : t.stall > 0.2 ? tr('BLADE STALL: too much collective for this head speed. Ease it off.') : t.wag > 0.5 ? tr('TAIL WAG: tail gyro gain too high. Lower it in Settings → Model setup.') : t.battery <= 0 ? tr('BATTERY FLAT: motor off. Autorotate!') : t.battery < 0.1 ? tr('Battery low: land soon.') : '');
     if (!s.onGround && s.pos.y > 0.3) this.airborne = true;
     if (s.landed && s.landed !== this.lastLanding) {
       this.lastLanding = s.landed;
@@ -129,7 +130,7 @@ export class Hud {
         const best = Number(localStorage.getItem(key) ?? Infinity);
         const record = cm < best;
         if (record) localStorage.setItem(key, String(cm));
-        const line = `<b>Landed on the ${s.landed.target.name}</b>: ${cm} cm from centre${record ? ' · new best!' : best < Infinity ? ` · best ${best} cm` : ''}`;
+        const line = `<b>${tr('Landed on the {name}', { name: s.landed.target.name })}</b>: ${cm} ${tr('cm from centre')}${record ? ` · ${tr('new best!')}` : best < Infinity ? ` · ${tr('best {cm} cm', { cm: best })}` : ''}`;
         if (this.toast.style.display !== 'none' && this.toast.querySelector('button[data-action]')) {
           // The debrief card is up: add the landing line to it rather than replacing it.
           this.toast.insertAdjacentHTML('afterbegin', `${line}<br>`);
@@ -146,7 +147,7 @@ export class Hud {
     }
     if (s.crashed) {
       if (this.crash.style.display === 'none') {
-        this.crash.innerHTML = `<h2>Crash</h2><p>${s.crashReason}</p><p class="hint">Press R or tap Reset</p><button id="btn-replay">▶ Replay last 10 s</button>`;
+        this.crash.innerHTML = `<h2>${tr('Crash')}</h2><p>${s.crashReason}</p><p class="hint">${tr('Press R or tap Reset')}</p><button id="btn-replay">${tr('▶ Replay last 10 s')}</button>`;
         this.crash.querySelector('#btn-replay')!.addEventListener('click', () => this.onReplay?.());
       }
       this.crash.style.display = '';

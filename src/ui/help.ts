@@ -1,4 +1,6 @@
 import { BILLBOARDS } from '../sim/ads';
+import { HELP_HTML_PT } from './help-pt';
+import { getLang } from '../i18n';
 
 /** In-game manual. Plain HTML so it works on every device and can be read while paused. */
 export class HelpPanel {
@@ -8,7 +10,24 @@ export class HelpPanel {
     this.el = document.createElement('div');
     this.el.className = 'help';
     this.el.style.display = 'none';
-    this.el.innerHTML = HELP_HTML;
+    this.build();
+    container.appendChild(this.el);
+    window.addEventListener('keydown', (e) => {
+      if (e.key === '?' || e.code === 'F1') {
+        e.preventDefault();
+        this.toggle();
+      }
+      if (e.code === 'Escape' && this.el.style.display !== 'none') this.toggle();
+    });
+  }
+
+  /** Re-render in the current language (English or Portuguese manual). */
+  setLanguage(): void {
+    this.build();
+  }
+
+  private build(): void {
+    this.el.innerHTML = getLang() === 'pt-BR' ? HELP_HTML_PT : HELP_HTML;
     // Table of contents from the section headings, so the long manual is navigable on a phone.
     const heads = [...this.el.querySelectorAll('h4')];
     heads.forEach((h, i) => (h.id = `help-${i}`));
@@ -22,15 +41,7 @@ export class HelpPanel {
       this.el.querySelector(a.getAttribute('href')!)?.scrollIntoView({ behavior: 'smooth', block: 'start' });
     });
     this.el.querySelector('.version-line')?.after(toc);
-    container.appendChild(this.el);
     this.el.querySelector('#help-close')!.addEventListener('click', () => this.toggle());
-    window.addEventListener('keydown', (e) => {
-      if (e.key === '?' || e.code === 'F1') {
-        e.preventDefault();
-        this.toggle();
-      }
-      if (e.code === 'Escape' && this.el.style.display !== 'none') this.toggle();
-    });
   }
 
   toggle(): void {

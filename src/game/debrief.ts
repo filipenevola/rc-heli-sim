@@ -1,5 +1,6 @@
 import type { HelicopterSim } from '../sim/physics';
 import { len } from '../sim/math';
+import { t } from '../i18n';
 
 /** What one flight looked like, gathered every frame from lift-off to touchdown or crash. */
 export interface FlightSummary {
@@ -77,16 +78,16 @@ const f1 = (v: number) => v.toFixed(1);
 
 /** The debrief card: an instructor's two lines after you land. */
 export function debriefHtml(d: FlightSummary, fmtTime: (s: number) => string, trickTitle: (id: string) => string): string {
-  const head = d.crashed ? `Flight ended in a crash: ${fmtTime(d.seconds)}` : `Clean flight: ${fmtTime(d.seconds)}`;
+  const head = d.crashed ? t('Flight ended in a crash: {time}', { time: fmtTime(d.seconds) }) : t('Clean flight: {time}', { time: fmtTime(d.seconds) });
   const rows: string[] = [];
-  if (!d.crashed) rows.push(`Landing: <b>${landingWord(d.touchdown)}</b> (${f1(d.touchdown)} m/s)`);
+  if (!d.crashed) rows.push(`${t('Landing:')} <b>${t(landingWord(d.touchdown))}</b> (${f1(d.touchdown)} m/s)`);
   else rows.push(d.crashReason);
   rows.push(`Max ${f1(d.maxAltitude)} m · ${f1(d.maxSpeed * 3.6)} km/h · ${f1(d.maxG)} g${d.minG < 0.3 ? ` / ${f1(d.minG)} g` : ''}`);
   const warnings: string[] = [];
-  if (d.vrsSeconds > 0.5) warnings.push(`${f1(d.vrsSeconds)} s in vortex ring state`);
-  if (d.stallSeconds > 0.5) warnings.push(`${f1(d.stallSeconds)} s of blade stall`);
+  if (d.vrsSeconds > 0.5) warnings.push(`${f1(d.vrsSeconds)} s ${t('in vortex ring state')}`);
+  if (d.stallSeconds > 0.5) warnings.push(`${f1(d.stallSeconds)} s ${t('of blade stall')}`);
   if (warnings.length) rows.push(warnings.join(' · '));
-  if (d.batteryUsed > 0.005) rows.push(`Battery used: ${Math.round(d.batteryUsed * 100)}%`);
-  if (d.tricks.length) rows.push(`Done: ${d.tricks.map(trickTitle).join(', ')}`);
+  if (d.batteryUsed > 0.005) rows.push(`${t('Battery used:')} ${Math.round(d.batteryUsed * 100)}%`);
+  if (d.tricks.length) rows.push(`${t('Done:')} ${d.tricks.map(trickTitle).join(', ')}`);
   return `<b>${head}</b><br>${rows.join('<br>')}`;
 }

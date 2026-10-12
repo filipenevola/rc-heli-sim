@@ -1,5 +1,6 @@
 import type { FlightSummary } from './debrief';
 import { landingWord } from './debrief';
+import { t } from '../i18n';
 
 /** One line in the pilot's logbook. */
 export interface LogEntry {
@@ -80,24 +81,24 @@ export class FlightLog {
 
 export function fmtAgo(at: number, now = Date.now()): string {
   const s = Math.max(0, (now - at) / 1000);
-  if (s < 90) return 'just now';
-  if (s < 3600) return `${Math.round(s / 60)} min ago`;
-  if (s < 86400) return `${Math.round(s / 3600)} h ago`;
-  return `${Math.round(s / 86400)} d ago`;
+  if (s < 90) return t('just now');
+  if (s < 3600) return `${Math.round(s / 60)} ${t('min ago')}`;
+  if (s < 86400) return `${Math.round(s / 3600)} ${t('h ago')}`;
+  return `${Math.round(s / 86400)} ${t('d ago')}`;
 }
 
 /** The logbook table and its progress line, as HTML. */
 export function logbookHtml(log: FlightLog, fmtTime: (s: number) => string): string {
   const st = log.stats();
-  if (!st.flights) return '<h5>Logbook</h5><p class="hint">No flights yet. Every flight longer than a few seconds is logged here with its landing grade.</p>';
+  if (!st.flights) return `<h5>${t('Logbook')}</h5><p class="hint">${t('No flights yet. Every flight longer than a few seconds is logged here with its landing grade.')}</p>`;
   const trend = st.earlierClean || st.earlierTouchdown
-    ? `<p class="hint">Last 10 flights: ${Math.round(st.recentClean * 100)}% clean (before: ${Math.round(st.earlierClean * 100)}%), landings ${st.recentTouchdown.toFixed(1)} m/s (before: ${st.earlierTouchdown.toFixed(1)}).</p>`
+    ? `<p class="hint">${t('Last 10 flights:')} ${Math.round(st.recentClean * 100)}% ${t('clean (before:')} ${Math.round(st.earlierClean * 100)}%), ${t('landings')} ${st.recentTouchdown.toFixed(1)} m/s (${t('before:')} ${st.earlierTouchdown.toFixed(1)}).</p>`
     : '';
   const rows = log.entries.slice(0, 20).map((e) =>
-    `<div class="log-row ${e.crashed ? 'crash' : ''}"><span>${fmtAgo(e.at)}</span><span>${e.model}</span><b>${fmtTime(e.seconds)}</b><span>${e.crashed ? `✖ ${e.reason.split(':')[0]}` : `${landingWord(e.touchdown)} ${e.touchdown.toFixed(1)} m/s`}</span><span>${e.maxAltitude.toFixed(0)} m · ${e.maxG.toFixed(1)} g${e.tricks.length ? ` · ${e.tricks.length} ✓` : ''}</span></div>`,
+    `<div class="log-row ${e.crashed ? 'crash' : ''}"><span>${fmtAgo(e.at)}</span><span>${t(e.model)}</span><b>${fmtTime(e.seconds)}</b><span>${e.crashed ? `✖ ${e.reason.split(':')[0]}` : `${t(landingWord(e.touchdown))} ${e.touchdown.toFixed(1)} m/s`}</span><span>${e.maxAltitude.toFixed(0)} m · ${e.maxG.toFixed(1)} g${e.tricks.length ? ` · ${e.tricks.length} ✓` : ''}</span></div>`,
   ).join('');
-  return `<h5>Logbook</h5>
-    <p class="hint">${st.flights} flights, ${st.clean} clean (${Math.round((100 * st.clean) / st.flights)}%), ${fmtTime(st.airtime)} in the air, landings average ${st.avgTouchdown.toFixed(1)} m/s.</p>
+  return `<h5>${t('Logbook')}</h5>
+    <p class="hint">${st.flights} ${t('flights')}, ${st.clean} ${t('clean')} (${Math.round((100 * st.clean) / st.flights)}%), ${fmtTime(st.airtime)} ${t('in the air, landings average')} ${st.avgTouchdown.toFixed(1)} m/s.</p>
     ${trend}
     <div class="logbook">${rows}</div>`;
 }

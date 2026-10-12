@@ -3,6 +3,7 @@ import { lessonFor } from '../game/lessons';
 import { importMappings, loadMappings, type GamepadMapping } from '../input/gamepad';
 import { fmtTime, localRankings, saveLocalRanking, saveProfile, type Profile, type RankingClient } from '../game/player';
 import { logbookHtml, type FlightLog } from '../game/flightlog';
+import { localizeDom, t } from '../i18n';
 
 /**
  * Challenges + rankings drawer. Tabs: Challenges (list with live progress), Rankings (longest flight,
@@ -99,6 +100,11 @@ export class ChallengesPanel {
     if (t) t.textContent = this.timer.flying ? fmtTime(this.timer.airTime) : '—';
   }
 
+  /** Re-render (language change). */
+  refresh(): void {
+    this.render();
+  }
+
   private render(): void {
     const p = this.profile;
     const tabs = (['challenges', 'rankings', 'pilot'] as const)
@@ -107,15 +113,15 @@ export class ChallengesPanel {
     let body = '';
     if (this.tab === 'challenges') {
       body = `
-        <p class="hint">${this.tracker.points} / ${TOTAL_POINTS} points · ${this.tracker.completed.size} / ${CHALLENGES.length} done · current flight <b id="air-time">${this.timer.flying ? fmtTime(this.timer.airTime) : '—'}</b> · best clean flight <b>${fmtTime(Math.max(p.bestFlight, this.timer.best))}</b></p>
-        ${LEVELS.map((lv) => `<h5 class="level">${lv} · ${CHALLENGES.filter((c) => c.level === lv && this.tracker.completed.has(c.id)).length}/${CHALLENGES.filter((c) => c.level === lv).length}</h5><ul class="challenge-list">
+        <p class="hint">${this.tracker.points} / ${TOTAL_POINTS} ${t('points')} · ${this.tracker.completed.size} / ${CHALLENGES.length} ${t('done')} · ${t('current flight')} <b id="air-time">${this.timer.flying ? fmtTime(this.timer.airTime) : '—'}</b> · ${t('best clean flight')} <b>${fmtTime(Math.max(p.bestFlight, this.timer.best))}</b></p>
+        ${LEVELS.map((lv) => `<h5 class="level">${t(lv)} · ${CHALLENGES.filter((c) => c.level === lv && this.tracker.completed.has(c.id)).length}/${CHALLENGES.filter((c) => c.level === lv).length}</h5><ul class="challenge-list">
           ${CHALLENGES.filter((c) => c.level === lv).map((c) => {
             const done = this.tracker.completed.has(c.id);
             const pr = done ? 1 : this.tracker.progress[c.id] ?? 0;
             const teach = lessonFor(c.id)
-              ? `<button class="teach" data-teach="${c.id}" data-mode="show" title="Watch a demo pilot do the whole challenge; the sticks are shown">Show me</button><button class="teach" data-teach="${c.id}" data-mode="teach" title="You fly it step by step with a ghost stick guiding you">Teach me</button>`
+              ? `<button class="teach" data-teach="${c.id}" data-mode="show" title="${t('Watch a demo pilot do the whole challenge; the sticks are shown')}">${t('Show me')}</button><button class="teach" data-teach="${c.id}" data-mode="teach" title="${t('You fly it step by step with a ghost stick guiding you')}">${t('Teach me')}</button>`
               : '';
-            return `<li class="${done ? 'done' : ''}"><div class="row"><b>${done ? '✓ ' : ''}${c.title}</b><span>${c.points} pts ${teach}</span></div><div class="desc">${c.description}</div><div class="bar"><i data-bar="${c.id}" style="width:${Math.round(pr * 100)}%"></i></div></li>`;
+            return `<li class="${done ? 'done' : ''}"><div class="row"><b>${done ? '✓ ' : ''}${t(c.title)}</b><span>${c.points} pts ${teach}</span></div><div class="desc">${t(c.description)}</div><div class="bar"><i data-bar="${c.id}" style="width:${Math.round(pr * 100)}%"></i></div></li>`;
           }).join('')}
         </ul>`).join('')}`;
     } else if (this.tab === 'rankings') {
@@ -164,6 +170,7 @@ export class ChallengesPanel {
         ${this.log ? logbookHtml(this.log, fmtTime) : ''}`;
     }
     this.el.innerHTML = `<h3>Challenges & rankings <button id="ch-close">×</button></h3><div class="tabs">${tabs}</div>${body}${this.status ? `<p class="hint status">${esc(this.status)}</p>` : ''}`;
+    localizeDom(this.el);
     this.el.querySelector('#ch-close')!.addEventListener('click', () => this.toggle());
     for (const b of this.el.querySelectorAll<HTMLButtonElement>('[data-teach]')) {
       b.addEventListener('click', () => {
