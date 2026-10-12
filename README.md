@@ -36,6 +36,7 @@ pilot-on-the-field camera are all about model helicopters.
   Doppler, slap at high G, VRS roughness, stall buzz, battery alarm, crash sounds, birds and field ambience.
 - Wind with a log boundary layer, obstacle wakes and turbulence; a windsock shows the mean.
 - Interface, challenges, lessons and manual in English and Brazilian Portuguese.
+- Two flying sites: the outdoor field and an indoor gym (walls, ceiling, bleachers and hoops all solid, no wind).
 
 ## Versions
 
@@ -93,7 +94,7 @@ helicopters is the main realism lever; see the test file for the quantities that
 
 ## Roadmap
 
-- [ ] A second flying site (indoor gym for the micro, or a parking lot) and model skins.
+- [ ] Model skins; a third site (parking lot, slope).
 - [ ] Sampled sound layer (real nitro / electric recordings) on top of the synth.
 - [ ] Multi-blade heads, collective-pitch coaxial trainers, nitro engines with a clutch.
 - [ ] WebHID path for dongles that are not exposed as gamepads; Bluetooth transmitters.

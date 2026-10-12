@@ -93,11 +93,16 @@ export class HeliMesh {
     this.root.add(this.head);
     const hub = new THREE.Mesh(new THREE.BoxGeometry(R * 0.12, R * 0.05, R * 0.06), metal);
     this.blades.add(hub);
-    for (const side of [-1, 1]) {
+    // Blades spaced evenly round the hub: two opposite, or three at 120 degrees.
+    const nB = Math.max(2, Math.round(m.rotor.blades));
+    for (let i = 0; i < nB; i++) {
       const blade = new THREE.Mesh(new THREE.BoxGeometry(R * 0.95, R * 0.008, m.rotor.chord), bladeMat);
-      blade.position.x = side * R * 0.52;
+      const pivot = new THREE.Group();
+      blade.position.x = R * 0.52;
       blade.castShadow = !ghost;
-      this.blades.add(blade);
+      pivot.add(blade);
+      pivot.rotation.y = (i / nB) * Math.PI * 2;
+      this.blades.add(pivot);
     }
     this.head.add(this.blades);
     this.disc = new THREE.Mesh(

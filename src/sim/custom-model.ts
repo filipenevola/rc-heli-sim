@@ -18,6 +18,8 @@ export interface CustomSpec {
   /** Head speed per flight mode, rpm. */
   headspeedRpm: [number, number, number];
   flybar: boolean;
+  /** Main blades: 2 (most helis) or 3 (many 3D machines and scale models). More solidity, more thrust at the same pitch. */
+  blades?: 2 | 3;
 }
 
 export const DEFAULT_CUSTOM: CustomSpec = { name: 'My heli', bladeMm: 500, massG: 1900, cells: 6, mah: 3300, headspeedRpm: [1900, 2100, 2300], flybar: false };
@@ -57,7 +59,7 @@ export function buildCustomModel(spec: CustomSpec): HeliModel {
     rotor: {
       radius: R,
       chord: law(HELI_450.rotor.chord, HELI_700.rotor.chord, R),
-      blades: 2,
+      blades: spec.blades === 3 ? 3 : 2,
       liftSlope: law(HELI_450.rotor.liftSlope, HELI_700.rotor.liftSlope, R),
       cd0: law(HELI_450.rotor.cd0, HELI_700.rotor.cd0, R),
       efficiency: law(HELI_450.rotor.efficiency, HELI_700.rotor.efficiency, R),
@@ -66,7 +68,7 @@ export function buildCustomModel(spec: CustomSpec): HeliModel {
     hubStiffness: law(HELI_450.hubStiffness, HELI_700.hubStiffness, R) * mk,
     lockNumber: law(HELI_450.lockNumber, HELI_700.lockNumber, R),
     maxCyclic: base.maxCyclic,
-    rotorInertia: law(HELI_450.rotorInertia, HELI_700.rotorInertia, R),
+    rotorInertia: law(HELI_450.rotorInertia, HELI_700.rotorInertia, R) * (spec.blades === 3 ? 1.5 : 1),
     clockwise: true,
     tail: {
       radius: law(HELI_450.tail.radius, HELI_700.tail.radius, R),
@@ -112,5 +114,6 @@ export function normalizeSpec(s: Partial<CustomSpec>): CustomSpec {
     mah: n(s.mah, DEFAULT_CUSTOM.mah, 100, 20000),
     headspeedRpm: [n(hs[0], 1900, 600, 4500), n(hs[1], 2100, 600, 4500), n(hs[2], 2300, 600, 4500)],
     flybar: Boolean(s.flybar),
+    blades: Number(s.blades) === 3 ? 3 : 2,
   };
 }

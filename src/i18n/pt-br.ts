@@ -99,6 +99,7 @@ export const PT_BR: Record<string, string> = {
   'Head speed Idle-Up 1 (rpm)': 'Rotação Idle-Up 1 (rpm)',
   'Head speed Idle-Up 2 (rpm)': 'Rotação Idle-Up 2 (rpm)',
   'Mechanical flybar head': 'Cabeça com flybar mecânico',
+  'Main blades': 'Pás principais',
   'Build it and fly it': 'Montar e voar',
   "Model setup (pitch curves, head speed, gyro) — like your radio's model memory": 'Ajustes do modelo (curvas de passo, rotação, giro) — como a memória de modelo do seu rádio',
   'Changes apply at once and are saved for this helicopter (and to your account when signed in).': 'As mudanças valem na hora e ficam salvas para este helicóptero (e na sua conta quando logado).',

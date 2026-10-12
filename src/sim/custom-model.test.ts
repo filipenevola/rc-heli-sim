@@ -11,6 +11,26 @@ function run(sim: HelicopterSim, ctl: ReturnType<typeof neutralFrame>, seconds: 
 }
 
 describe('custom helicopter from the numbers on the box', () => {
+  it('a three-blade head makes more thrust at the same pitch and carries more rotor inertia', () => {
+    const two = buildCustomModel(normalizeSpec({ bladeMm: 500, massG: 1900, cells: 6, mah: 3300, headspeedRpm: [1900, 2100, 2300], blades: 2 }));
+    const three = buildCustomModel(normalizeSpec({ bladeMm: 500, massG: 1900, cells: 6, mah: 3300, headspeedRpm: [1900, 2100, 2300], blades: 3 }));
+    expect(three.rotor.blades).toBe(3);
+    expect(three.rotorInertia).toBeGreaterThan(two.rotorInertia);
+    const hover = (m: typeof two) => {
+      const sim = new HelicopterSim(m, new Wind());
+      const ctl = neutralFrame();
+      ctl.flightMode = 1;
+      ctl.collective = -0.05;
+      run(sim, ctl, 25);
+      sim.state.pos.y = 8;
+      sim.state.onGround = false;
+      ctl.collective = 0.3;
+      run(sim, ctl, 1.5);
+      return sim.state.vel.y;
+    };
+    expect(hover(three)).toBeGreaterThan(hover(two));
+  });
+
   it('reproduces the references at their own size', () => {
     const m450 = buildCustomModel(normalizeSpec({ bladeMm: 325, massG: 780, cells: 6, mah: 2200, headspeedRpm: [2500, 2750, 3000] }));
     expect(m450.rotor.radius).toBeCloseTo(HELI_450.rotor.radius, 1);
