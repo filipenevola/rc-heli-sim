@@ -29,6 +29,7 @@ import { installTypingGuard } from './input/typing-guard';
 import { Rescue } from './game/rescue';
 import { Voice } from './ui/voice';
 import { CueTimer, coachCue } from './game/coach-cue';
+import { analyseCrash } from './game/crash-analysis';
 import { lessonFor, LessonRunner } from './game/lessons';
 import { recordGhost, type GhostFrame } from './game/ghost';
 import { Trail } from './render/trail';
@@ -783,6 +784,9 @@ function frame(now: number): void {
     else if (!recordedCrash) {
       record(ctl); // keep the impact frame once
       recordedCrash = true;
+      // The instructor's reading of the last two seconds, under the crash reason (the HUD builds the banner next frame).
+      hud.crashNote = analyseCrash(recording, (x, z) => world.groundAt(x, z)) ?? '';
+      if (hud.crashNote) voice.say(t(hud.crashNote), getLang());
       // Phones: a thump in the hand on a crash, like the real thing minus the repair bill.
       if ('vibrate' in navigator) navigator.vibrate([120, 60, 200]);
     }

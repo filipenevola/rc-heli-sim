@@ -122,6 +122,8 @@ export class Hud {
   onReplay: (() => void) | null = null;
   /** Hide the crash banner (while its replay plays). */
   crashHidden = false;
+  /** The instructor's reading of the last two seconds (set by the host when a crash is detected). */
+  crashNote = '';
   private pausedEl: HTMLElement | null = null;
   setPaused(p: boolean): void {
     if (!this.pausedEl) {
@@ -227,7 +229,7 @@ export class Hud {
     }
     if (s.crashed && !this.crashHidden) {
       if (this.crash.style.display === 'none') {
-        this.crash.innerHTML = `<h2>${tr('Crash')}</h2><p>${s.crashReason}</p><p class="hint">${tr('Press R or tap Reset')}</p><button id="btn-replay">${tr('▶ Replay last 10 s')}</button>`;
+        this.crash.innerHTML = `<h2>${tr('Crash')}</h2><p>${s.crashReason}</p>${this.crashNote ? `<p class="crash-note">🎓 ${tr(this.crashNote)}</p>` : ''}<p class="hint">${tr('Press R or tap Reset')}</p><button id="btn-replay">${tr('▶ Replay last 10 s')}</button>`;
         this.crash.querySelector('#btn-replay')!.addEventListener('click', () => this.onReplay?.());
       }
       this.crash.style.display = '';

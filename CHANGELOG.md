@@ -3,6 +3,12 @@
 All notable changes to RC Heli Sim. The version shown in the game (Help and Settings) matches the latest
 entry here; the commit hash next to it identifies the exact build.
 
+## 0.74.0
+
+- Crash analysis: the crash banner adds the instructor's reading of the last two seconds (inverted low, hold left
+  on, late flare, collective dumped, full cyclic near the ground, drift at touchdown, flew into the ground at speed),
+  spoken as well.
+
 ## 0.73.0
 
 - Teach me speaks corrections: when a stick sits more than a third of its travel from the ghost stick for 1.5 s,
