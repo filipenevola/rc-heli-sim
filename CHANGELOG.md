@@ -3,6 +3,12 @@
 All notable changes to RC Heli Sim. The version shown in the game (Help and Settings) matches the latest
 entry here; the commit hash next to it identifies the exact build.
 
+## 0.32.0
+
+- **Scenery**: pines are three stacked cones and every third tree is a broadleaf with a lumpy crown, each with
+  its own shade of green; distant hills ring the horizon inside the haze; the sun has a disc where the light
+  comes from.
+
 ## 0.31.0
 
 - A short **welcome card** on the first visit: the controls for your device, where Show me is, and where the

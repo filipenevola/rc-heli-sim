@@ -132,19 +132,67 @@ export function createScene(layout: FieldLayout): SceneHandles {
   arrow.position.y = 0.03;
   scene.add(arrow);
 
-  // Trees, instanced from the layout.
-  const trunk = new THREE.InstancedMesh(new THREE.CylinderGeometry(0.25, 0.4, 2.5, 7), mats.trunk, layout.trees.length);
-  const crown = new THREE.InstancedMesh(new THREE.ConeGeometry(2.2, 6, 9), mats.crown, layout.trees.length);
-  trunk.castShadow = crown.castShadow = true;
-  trunk.receiveShadow = crown.receiveShadow = true;
+  // Trees, instanced from the layout: every third one a broadleaf (lumpy crown), the rest pines (three stacked
+  // cones). A little per-tree colour variation keeps a stand of them from reading as copies.
   const m = new THREE.Matrix4();
+  const pines = layout.trees.filter((_, i) => i % 3 !== 2);
+  const leafy = layout.trees.filter((_, i) => i % 3 === 2);
+  const trunk = new THREE.InstancedMesh(new THREE.CylinderGeometry(0.22, 0.4, 2.6, 7), mats.trunk, layout.trees.length);
   layout.trees.forEach((t, i) => {
-    m.makeScale(t.scale, t.scale, t.scale).setPosition(t.x, 1.25 * t.scale, t.z);
+    m.makeScale(t.scale, t.scale, t.scale).setPosition(t.x, 1.3 * t.scale, t.z);
     trunk.setMatrixAt(i, m);
-    m.makeScale(t.scale, t.scale, t.scale).setPosition(t.x, 5.5 * t.scale, t.z);
-    crown.setMatrixAt(i, m);
   });
-  scene.add(trunk, crown);
+  trunk.castShadow = trunk.receiveShadow = true;
+  scene.add(trunk);
+  const tint = new THREE.Color();
+  const tiers: [number, number, number][] = [[2.4, 3.2, 3.6], [1.9, 2.8, 5.6], [1.3, 2.4, 7.4]]; // radius, height, centre y
+  for (const [r, h, cy] of tiers) {
+    const tier = new THREE.InstancedMesh(new THREE.ConeGeometry(r, h, 8), mats.crown.clone(), pines.length);
+    pines.forEach((t, i) => {
+      m.makeScale(t.scale, t.scale, t.scale).setPosition(t.x, cy * t.scale, t.z);
+      tier.setMatrixAt(i, m);
+      tint.setHSL(0.3 + 0.03 * Math.sin(i * 1.7), 0.45, 0.22 + 0.06 * Math.sin(i * 2.3));
+      tier.setColorAt(i, tint);
+    });
+    tier.castShadow = tier.receiveShadow = true;
+    scene.add(tier);
+  }
+  if (leafy.length) {
+    const crownGeo = new THREE.IcosahedronGeometry(2.6, 1);
+    // Jitter the vertices so the crowns are lumpy rather than geometric.
+    const cp = crownGeo.getAttribute('position');
+    for (let i = 0; i < cp.count; i++) {
+      const j = 0.85 + 0.3 * Math.abs(Math.sin(i * 12.9898) * 43758.5453 % 1);
+      cp.setXYZ(i, cp.getX(i) * j, cp.getY(i) * 0.85 * j, cp.getZ(i) * j);
+    }
+    crownGeo.computeVertexNormals();
+    const crown = new THREE.InstancedMesh(crownGeo, new THREE.MeshStandardMaterial({ color: 0x4f8a2e, roughness: 0.95 }), leafy.length);
+    leafy.forEach((t, i) => {
+      m.makeScale(t.scale, t.scale, t.scale).setPosition(t.x, 5.0 * t.scale, t.z);
+      crown.setMatrixAt(i, m);
+      tint.setHSL(0.26 + 0.04 * Math.sin(i * 3.1), 0.5, 0.3 + 0.07 * Math.sin(i * 1.3));
+      crown.setColorAt(i, tint);
+    });
+    crown.castShadow = crown.receiveShadow = true;
+    scene.add(crown);
+  }
+
+  // Distant hills: flattened spheres around the horizon, inside the fog so they fade with distance.
+  const hillMat = new THREE.MeshStandardMaterial({ color: 0x5f8a5a, roughness: 1 });
+  for (let i = 0; i < 14; i++) {
+    const ang = (i / 14) * Math.PI * 2 + 0.3 * Math.sin(i * 7.3);
+    const dist = 620 + 160 * Math.abs(Math.sin(i * 2.9));
+    const w = 260 + 220 * Math.abs(Math.sin(i * 1.7));
+    const h = 45 + 70 * Math.abs(Math.sin(i * 4.1));
+    const hill = new THREE.Mesh(new THREE.SphereGeometry(1, 20, 10), hillMat);
+    hill.scale.set(w, h, w * 0.6);
+    hill.position.set(Math.cos(ang) * dist, -h * 0.25, Math.sin(ang) * dist);
+    scene.add(hill);
+  }
+  // The sun: a bright disc where the light comes from.
+  const sunDisc = new THREE.Mesh(new THREE.SphereGeometry(22, 16, 8), new THREE.MeshBasicMaterial({ color: 0xfff6d5, fog: false }));
+  sunDisc.position.copy(sun.position).normalize().multiplyScalar(860);
+  scene.add(sunDisc);
 
   // Fence along the back.
   const posts = new THREE.InstancedMesh(new THREE.BoxGeometry(0.1, 1.2, 0.1), mats.metal, 61);
