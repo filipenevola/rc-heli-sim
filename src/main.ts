@@ -157,9 +157,10 @@ tracker.onComplete = (c) => {
 const stats = new FlightStats();
 flightTimer.onFlightEnd = (seconds, crashed) => {
   const d = stats.end(sim, seconds, crashed);
+  lastFlight = flightFrames();
   if (d && seconds > 8) {
     const extra = !crashed && seconds >= flightTimer.best ? '<br>Your longest clean flight' : '';
-    hud.notify(debriefHtml(d, fmtTime, (id) => CHALLENGES.find((c) => c.id === id)?.title ?? id) + extra, 8000);
+    hud.notify(debriefHtml(d, fmtTime, (id) => CHALLENGES.find((c) => c.id === id)?.title ?? id) + extra + '<br><button data-action="replay-flight">▶ Replay flight</button>', 12000);
   }
   if (!crashed) void challenges.sync();
 };
@@ -313,24 +314,38 @@ window.addEventListener('resize', () => {
 
 // Fixed-timestep physics driven by the render clock. Simulation time never runs ahead of wall time,
 // and a hitch (tab switch) is capped so the heli does not teleport.
-// Flight recorder: the last 10 s of state and sticks, for the crash replay.
+// Flight recorder: state and sticks once per render frame. The crash replay uses the last 10 s; the debrief's
+// "Replay flight" plays the whole flight from lift-off (capped at 15 minutes).
 interface Frame { pos: { x: number; y: number; z: number }; ori: { x: number; y: number; z: number; w: number }; a1: number; b1: number; rotorOmega: number; ctl: ReturnType<typeof input.poll> }
 const REC_SECONDS = 10;
-const REC_MAX = 60 * REC_SECONDS;
+const REC_MAX = 60 * 15 * 60;
 const recording: Frame[] = [];
-let replay: { frames: Frame[]; i: number; acc: number } | null = null;
+let recFrameNo = 0;
+let flightStartFrame = 0;
+let lastFlight: Frame[] | null = null;
+let replay: { frames: Frame[]; i: number; acc: number; kind: 'crash' | 'flight' } | null = null;
 let recordedCrash = false;
 function record(ctl: ReturnType<typeof input.poll>): void {
   const st = sim.state;
   recording.push({ pos: { ...st.pos }, ori: { ...st.ori }, a1: st.a1, b1: st.b1, rotorOmega: st.rotorOmega, ctl: { ...ctl } });
+  recFrameNo++;
   if (recording.length > REC_MAX) recording.shift();
 }
-function startReplay(): void {
-  if (recording.length < 10) return;
-  replay = { frames: [...recording], i: 0, acc: 0 };
-  lessonOverlay.showReplay();
+/** Frames since the current flight began (a second of ground run before lift-off included). */
+function flightFrames(): Frame[] {
+  const n = Math.min(recording.length, recFrameNo - flightStartFrame + 60);
+  return recording.slice(recording.length - n);
+}
+function startReplay(kind: 'crash' | 'flight' = 'crash'): void {
+  const frames = kind === 'crash' ? recording.slice(-60 * REC_SECONDS) : lastFlight ?? [];
+  if (frames.length < 10) return;
+  replay = { frames, i: 0, acc: 0, kind };
+  lessonOverlay.showReplay(kind);
   lessonOverlay.onStop = stopReplay;
 }
+hud.onAction = (id) => {
+  if (id === 'replay-flight') startReplay('flight');
+};
 function stopReplay(): void {
   replay = null;
   lessonOverlay.hide();
@@ -339,7 +354,7 @@ function stopReplay(): void {
   // Put the mesh back on the real (crashed) state.
   heliMesh.update(sim.state, 0);
 }
-hud.onReplay = startReplay;
+hud.onReplay = () => startReplay('crash');
 
 let paused = false;
 function setPaused(p: boolean): void {
@@ -432,8 +447,8 @@ function frame(now: number): void {
     const f = replay.frames[replay.i];
     const fake = { ...sim.state, pos: f.pos, ori: f.ori, a1: f.a1, b1: f.b1, rotorOmega: f.rotorOmega, crashed: false };
     heliMesh.update(fake, dt);
-    lessonOverlay.updateReplay(f.ctl, (replay.frames.length - 1 - replay.i) / 60);
-    if (replay.i >= replay.frames.length - 1 && replay.acc > 2) replay.i = 0; // loop after a pause at the crash
+    lessonOverlay.updateReplay(f.ctl, (replay.frames.length - 1 - replay.i) / 60, replay.i / 60);
+    if (replay.i >= replay.frames.length - 1 && replay.acc > 2) replay.i = 0; // loop after a pause at the end
     target.set(f.pos.x, f.pos.y, f.pos.z);
     heliQuat.set(f.ori.x, f.ori.y, f.ori.z, f.ori.w);
     pilotCam.update(target, heliQuat, dt);
@@ -473,7 +488,7 @@ function frame(now: number): void {
   if (!paused && (!lesson || lesson.mode === 'teach')) {
     const wasFlying = flightTimer.flying;
     flightTimer.update(sim, dt);
-    if (flightTimer.flying && !wasFlying) stats.begin(sim);
+    if (flightTimer.flying && !wasFlying) { stats.begin(sim); flightStartFrame = recFrameNo; }
     if (flightTimer.flying) stats.update(sim, dt);
     tracker.update(sim, dt, flightTimer.flying ? flightTimer.airTime : 0);
   }

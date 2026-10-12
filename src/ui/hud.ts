@@ -63,11 +63,21 @@ export class Hud {
     this.warnEl.style.display = text ? '' : 'none';
   }
 
-  /** Short on-screen note (mode changes, hints). */
+  /** Handler for `<button data-action="id">` buttons inside a toast. */
+  onAction: ((id: string) => void) | null = null;
+
+  /** Short on-screen note (mode changes, hints). Buttons with data-action call onAction and keep the toast open. */
   notify(html: string, ms = 3500): void {
     this.toast.innerHTML = html;
     this.toast.style.display = '';
     this.toastUntil = performance.now() + ms;
+    this.toast.querySelectorAll<HTMLButtonElement>('button[data-action]').forEach((b) => {
+      b.addEventListener('click', (e) => {
+        e.stopPropagation();
+        this.toast.style.display = 'none';
+        this.onAction?.(b.dataset.action!);
+      });
+    });
   }
 
   update(sim: HelicopterSim, ctl: ControlFrame, sourceLabel: string, sourceId: string, dt: number): void {

@@ -52,17 +52,24 @@ export class LessonOverlay {
   }
 
   /** Replay mode: same gimbals, custom title and caption, no hint ring. */
-  showReplay(): void {
+  private replayKind: 'crash' | 'flight' = 'crash';
+
+  showReplay(kind: 'crash' | 'flight' = 'crash'): void {
+    this.replayKind = kind;
     this.el.style.display = '';
     (this.el.querySelector('.lesson-title span') as HTMLElement).textContent = 'Replay';
-    (this.el.querySelector('#lesson-name') as HTMLElement).textContent = 'your last 10 seconds';
+    (this.el.querySelector('#lesson-name') as HTMLElement).textContent = kind === 'crash' ? 'your last 10 seconds' : 'your whole flight';
     (this.el.querySelector('#lesson-stop') as HTMLElement).textContent = 'Close replay';
-    this.intro.textContent = 'These were your sticks, exactly as you flew them. Watch what happened just before the crash.';
+    this.intro.textContent = kind === 'crash'
+      ? 'These were your sticks, exactly as you flew them. Watch what happened just before the crash.'
+      : 'Your sticks, exactly as you flew them, from lift-off to touchdown. Change the camera while it plays (keys 1-6).';
     this.coach?.style.setProperty('display', 'none');
   }
 
-  updateReplay(ctl: ControlFrame, secondsToCrash: number): void {
-    this.caption.textContent = secondsToCrash > 0 ? `${secondsToCrash.toFixed(1)} s before the crash` : 'Crash';
+  updateReplay(ctl: ControlFrame, secondsLeft: number, elapsed = 0): void {
+    this.caption.textContent = this.replayKind === 'crash'
+      ? secondsLeft > 0 ? `${secondsLeft.toFixed(1)} s before the crash` : 'Crash'
+      : `${elapsed.toFixed(1)} s · ${secondsLeft.toFixed(1)} s to go`;
     this.progress.textContent = '';
     this.switches.innerHTML = `<span class="${ctl.flightMode > 0 ? 'on' : ''}">Mode: ${['Normal', 'Idle-Up 1', 'Idle-Up 2'][ctl.flightMode]}</span><span class="${ctl.throttleHold ? 'on' : ''}">Throttle hold: ${ctl.throttleHold ? 'ON' : 'off'}</span>`;
     this.draw(ctl, null);

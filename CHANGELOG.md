@@ -3,6 +3,12 @@
 All notable changes to RC Heli Sim. The version shown in the game (Help and Settings) matches the latest
 entry here; the commit hash next to it identifies the exact build.
 
+## 0.20.0
+
+- **Replay any flight**: the debrief card has a Replay flight button that plays the whole flight back from
+  lift-off with your sticks shown, and the camera modes work while it runs. The crash replay still covers the
+  last 10 seconds.
+
 ## 0.19.0
 
 - **Physics: the main-rotor wake at the tail.** The wake is modelled as a skewed column leaving the disc along the

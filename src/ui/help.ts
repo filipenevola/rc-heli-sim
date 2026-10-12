@@ -100,7 +100,8 @@ const HELP_HTML = `
   <p>When you land (or crash) after more than a few seconds in the air, a card shows the flight: how firm the touchdown
   was (a greaser is under 0.25 m/s; a real heli's skids complain above 1 m/s), the peak altitude, speed and G, time spent
   in vortex ring state or blade stall, battery used, and any challenges you completed on the way. Chase softer landings
-  and fewer warnings; that is what an instructor would watch.</p>
+  and fewer warnings; that is what an instructor would watch. <b>Replay flight</b> on the card plays the whole flight
+  back with your sticks shown; switch cameras while it runs to see your hover from the side or from above.</p>
   <h4>Things the physics will do to you</h4>
   <ul>
     <li><b>Vortex ring state</b> (settling with power): descend nearly vertically at about the rotor's downwash speed and the
