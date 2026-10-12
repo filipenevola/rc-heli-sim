@@ -120,6 +120,7 @@ const flightTimer = new FlightTimer();
 const flightLog = new FlightLog();
 const rankingClient = new RankingClient();
 input.remote.apiBase = rankingClient.baseUrl;
+input.remote.onReset = () => reset();
 let lesson: LessonRunner | null = null;
 let assistBeforeLesson: AssistMode = 'rate';
 let lessonEndTimer: number | null = null;

@@ -125,6 +125,8 @@ export const PT_BR: Record<string, string> = {
   'Phone dropped: re-offering under the same code, it reconnects by itself. Or press Pair for a new code.': 'O celular caiu: oferecendo de novo com o mesmo código, ele reconecta sozinho. Ou aperte Parear para um código novo.',
   'Phone tilt for the cyclic': 'Inclinação do celular para o cíclico',
   'Tilt': 'Inclinar',
+  'Rescue (hold): the instructor levels the heli': 'Resgate (segure): o instrutor nivela o heli',
+  'Reset the heli to the pad': 'Reposicionar o heli no heliponto',
   'Tilt refused': 'Inclinação recusada',
   'Left stick: collective and rudder. Right stick: cyclic. The collective stays where you leave it.': 'Stick esquerdo: coletivo e leme. Stick direito: cíclico. O coletivo fica onde você deixar.',
   // ---- Sites ----

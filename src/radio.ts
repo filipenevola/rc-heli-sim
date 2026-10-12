@@ -28,6 +28,8 @@ let sendTimer = 0;
 let pingTimer = 0;
 let latency = 0;
 let lastCrash = '';
+let rescueHeld = false;
+let resetCount = 0;
 let wakeLock: { release(): Promise<void> } | null = null;
 
 function renderPair(message = ''): void {
@@ -110,6 +112,8 @@ function renderSticks(code: string): void {
       <span class="radio-code">${code}</span>
       <button data-mode="0" class="active">N</button><button data-mode="1">ID1</button><button data-mode="2">ID2</button>
       <button id="hold">✋ HOLD</button>
+      <button id="rescue" title="${t('Rescue (hold): the instructor levels the heli')}">🛟</button>
+      <button id="reset" title="${t('Reset the heli to the pad')}">↺</button>
       <button id="tilt" title="${t('Phone tilt for the cyclic')}">📱 ${t('Tilt')}</button>
       <select id="stickmode"><option value="1">Mode 1</option><option value="2" selected>Mode 2</option><option value="3">Mode 3</option><option value="4">Mode 4</option></select>
       <span class="hint"><b id="latency">–</b></span>
@@ -152,6 +156,12 @@ function renderSticks(code: string): void {
   tiltBtn.addEventListener('dblclick', () => motion?.recentre());
   root.querySelector<HTMLSelectElement>('#stickmode')!.addEventListener('change', (e) => touch!.setMode(Number((e.target as HTMLSelectElement).value) as StickMode));
   root.querySelector('#disconnect')!.addEventListener('click', () => { userClosed = true; link?.close(); });
+  const rescueBtn = root.querySelector<HTMLButtonElement>('#rescue')!;
+  const rescueDown = (e: Event) => { e.preventDefault(); rescueHeld = true; rescueBtn.classList.add('active'); navigator.vibrate?.(20); };
+  const rescueUp = () => { rescueHeld = false; rescueBtn.classList.remove('active'); };
+  rescueBtn.addEventListener('pointerdown', rescueDown);
+  for (const ev of ['pointerup', 'pointercancel', 'pointerleave']) rescueBtn.addEventListener(ev, rescueUp);
+  root.querySelector('#reset')!.addEventListener('click', () => { resetCount++; navigator.vibrate?.(30); });
   startStreaming();
 }
 
@@ -162,7 +172,7 @@ function startStreaming(): void {
     if (!link || !touch) return;
     const f = tilt && motion ? motion.poll(0) : touch.poll(0);
     const r3 = (x: number) => Math.round(x * 1000) / 1000;
-    link.send(JSON.stringify({ a: r3(f.aileron), e: r3(f.elevator), r: r3(f.rudder), c: r3(f.collective), m: f.flightMode, h: f.throttleHold ? 1 : 0 }));
+    link.send(JSON.stringify({ a: r3(f.aileron), e: r3(f.elevator), r: r3(f.rudder), c: r3(f.collective), m: f.flightMode, h: f.throttleHold ? 1 : 0, x: rescueHeld ? 1 : 0, rs: resetCount }));
   }, 20);
   pingTimer = window.setInterval(() => link?.send(JSON.stringify({ ping: performance.now() })), 1000);
 }
@@ -175,6 +185,7 @@ function clearTimers(): void {
 
 function stopStreaming(): void {
   clearTimers();
+  rescueHeld = false;
   void wakeLock?.release().catch(() => undefined);
   wakeLock = null;
   touch = null;

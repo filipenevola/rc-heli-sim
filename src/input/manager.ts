@@ -97,7 +97,7 @@ export class InputManager {
     o.flightMode = ownSwitches ? raw.flightMode : kb.flightMode;
     o.throttleHold = this.active === this.remote || (this.active === this.gamepad && hasSwitch(this.gamepad.mapping, 'throttleHold')) ? raw.throttleHold : kb.throttleHold;
     // A rescue switch on the transmitter works whichever source is active: it is the panic switch.
-    o.rescue = frames.gamepad.rescue;
+    o.rescue = frames.gamepad.rescue ?? (this.remote.available() ? frames.remote.rescue : undefined);
     return o;
   }
 

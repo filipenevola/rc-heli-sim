@@ -41,4 +41,20 @@ describe('phone radio input', () => {
     r.apply({ a: 0.1, e: 0, r: 0, c: -1, m: 0, h: 0 });
     expect(r.lastActivity()).toBeGreaterThanOrEqual(a1);
   });
+
+  it('carries the rescue switch and fires a reset once per counter change', () => {
+    const r = new RemoteInput();
+    let resets = 0;
+    r.onReset = () => resets++;
+    r.apply({ a: 0, e: 0, r: 0, c: -1, m: 0, h: 0, x: 1, rs: 0 });
+    expect(r.poll(0).rescue).toBe(true);
+    r.apply({ a: 0, e: 0, r: 0, c: -1, m: 0, h: 0, x: 0, rs: 0 });
+    expect(r.poll(0).rescue).toBe(false);
+    expect(resets).toBe(0); // the first counter value is only a baseline
+    r.apply({ a: 0, e: 0, r: 0, c: -1, m: 0, h: 0, x: 0, rs: 1 });
+    r.apply({ a: 0, e: 0, r: 0, c: -1, m: 0, h: 0, x: 0, rs: 1 });
+    expect(resets).toBe(1);
+    r.apply({ a: 0, e: 0, r: 0, c: -1, m: 0, h: 0 });
+    expect(r.poll(0).rescue).toBeUndefined();
+  });
 });

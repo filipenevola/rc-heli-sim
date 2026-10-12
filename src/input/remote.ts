@@ -2,7 +2,7 @@ import { neutralFrame, type ControlFrame, type InputSource } from './types';
 import { hostLink, makeCode, type LinkState, type RadioLink } from '../net/radio-link';
 
 /** Wire format of one stick frame from the phone: short keys, two decimals, ~50 Hz. */
-export interface RemoteFrame { a: number; e: number; r: number; c: number; m: 0 | 1 | 2; h: 0 | 1; t?: number }
+export interface RemoteFrame { a: number; e: number; r: number; c: number; m: 0 | 1 | 2; h: 0 | 1; t?: number; /** Rescue held. */ x?: 0 | 1; /** Reset counter: each change asks for a reset. */ rs?: number }
 
 /**
  * A phone used as the transmitter. Frames arrive over a WebRTC data channel; this source holds the latest one.
@@ -20,6 +20,9 @@ export class RemoteInput implements InputSource {
   apiBase: string | null = null;
   link: RadioLink | null = null;
   onState: ((s: LinkState, code: string) => void) | null = null;
+  /** The phone's Reset button. */
+  onReset: (() => void) | null = null;
+  private lastResetCount: number | undefined;
   /** Round trip measured by the phone, ms (it echoes our pings). */
   latencyMs = 0;
   failsafeMs = 800;
@@ -42,6 +45,11 @@ export class RemoteInput implements InputSource {
     f.collective = clamp1(msg.c);
     f.flightMode = msg.m === 1 || msg.m === 2 ? msg.m : 0;
     f.throttleHold = msg.h === 1;
+    f.rescue = msg.x === undefined ? undefined : msg.x === 1;
+    if (typeof msg.rs === 'number') {
+      if (this.lastResetCount !== undefined && msg.rs !== this.lastResetCount) this.onReset?.();
+      this.lastResetCount = msg.rs;
+    }
     this.lastFrameAt = this.now();
     if (changed) this.last = this.lastFrameAt;
   }
@@ -96,6 +104,7 @@ export class RemoteInput implements InputSource {
 
   unpair(): void {
     this.wantLink = false;
+    this.lastResetCount = undefined;
     clearTimeout(this.reconnectTimer);
     this.link?.close();
     this.link = null;

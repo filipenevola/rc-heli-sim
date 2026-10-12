@@ -3,6 +3,10 @@
 All notable changes to RC Heli Sim. The version shown in the game (Help and Settings) matches the latest
 entry here; the commit hash next to it identifies the exact build.
 
+## 0.68.0
+
+- Phone radio page: a 🛟 Rescue button (hold) and a ↺ Reset button, so the phone is a complete transmitter.
+
 ## 0.67.0
 
 - Nitro needle (mixture) in Model setup → Engine: lean gives a few percent more power but heats the engine under
