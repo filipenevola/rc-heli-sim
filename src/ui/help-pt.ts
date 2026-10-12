@@ -213,6 +213,10 @@ export const HELP_HTML_PT = `
   postes de luz, alguns carros estacionados, dois galpões no fundo e um contêiner cujo teto é um alvo de
   pouso (a 2,6 m, quase sem efeito solo). Céu aberto e vento, como um estacionamento de clube de verdade; os postes são a
   surpresa de sempre. Os desafios da mesa, picape, pontão e torre do campo aparecem como "Só no campo" lá.</p>
+  <h4>Minimapa</h4>
+  <p>Configurações → Câmera → Minimapa (ou <b>N</b>): um mapa de cima com você (azul), o modelo como uma seta que aponta
+  para onde o nariz aponta, o heliponto e os alvos como anéis, obstáculos em cinza e o vento como uma seta. A escala
+  cresce conforme o modelo se afasta. É a cura mais rápida para o "para onde ele está apontando?" num circuito longe.</p>
   <h4>Legendas faladas</h4>
   <p>No Me mostre e no Me ensine o instrutor lê cada passo em voz alta (e anuncia emergências e desafios concluídos),
   com a voz que o seu aparelho tem para o idioma escolhido, para os seus olhos ficarem no modelo. No Me ensine ele

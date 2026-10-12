@@ -28,6 +28,7 @@ import { ChallengesPanel } from './ui/challenges-panel';
 import { installTypingGuard } from './input/typing-guard';
 import { Rescue } from './game/rescue';
 import { Voice } from './ui/voice';
+import { Minimap } from './ui/minimap';
 import { CueTimer, coachCue } from './game/coach-cue';
 import { analyseCrash } from './game/crash-analysis';
 import { lessonFor, LessonRunner } from './game/lessons';
@@ -230,6 +231,7 @@ const stats = new FlightStats();
 let telemetryClock = 0;
 // Rescue (buddy box): hold Space or the 🛟 button and the demo pilot levels the heli and holds a hover.
 const voice = new Voice();
+const minimap = new Minimap(ui);
 const cueTimer = new CueTimer();
 let spokenStep = -1;
 let spokenLesson: unknown = null;
@@ -375,6 +377,9 @@ const settings = new SettingsPanel(ui, input, wind, audio, {
   },
   onGraph(on) {
     hud.graphOn = on;
+  },
+  onMinimap(on) {
+    minimap.setVisible(on);
   },
   onTimeOfDay(t) {
     field.setTimeOfDay(t);
@@ -535,6 +540,7 @@ window.addEventListener('keydown', (e) => {
   else if (e.code === 'KeyR') reset();
   if (e.code === 'KeyT') settings.setTrail(!trail.visible);
   if (e.code === 'KeyY') settings.setGraph(!hud.graphOn);
+  if (e.code === 'KeyN') settings.setMinimap(!minimap.visible);
 });
 
 // Tap a billboard to open the site. A short press with no drag only, so camera-free touches on the field do nothing.
@@ -845,6 +851,7 @@ function frame(now: number): void {
     }
   } else if (!lesson && spokenLesson) { spokenLesson = null; voice.stop(); }
   hud.update(sim, ctl, input.active.label, input.active.id, dt);
+  if (minimap.visible) minimap.draw(sim, world, layout, { x: pilotCam.eye.x, z: pilotCam.eye.z }, { x: w.x, z: w.z, speed: wind.speed });
   // A live instruction from a challenge in progress (the orientation drill's next heading).
   {
     const line = lesson ? '' : tracker.hudLine();

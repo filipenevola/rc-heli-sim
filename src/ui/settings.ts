@@ -57,6 +57,8 @@ export interface SettingsCallbacks {
   onLoadFlight(file: File, asGhost: boolean): void;
   onClearGhost(): void;
   onGraph(on: boolean): void;
+  /** Top-down minimap on / off. */
+  onMinimap(on: boolean): void;
 }
 
 type AxisName = 'aileron' | 'elevator' | 'rudder' | 'collective';
@@ -74,7 +76,7 @@ const AXIS_HINT: Record<AxisName | SwitchName, string> = {
 };
 
 const PREFS_KEY = 'rc-heli-sim.prefs.v1';
-interface Prefs { voice?: boolean; randomFailures?: boolean; seenVersion?: string; tod?: 'morning' | 'noon' | 'evening'; graph?: boolean; site?: SiteId; lang?: Lang; welcomed?: boolean; custom?: CustomSpec; trail?: boolean; gear?: boolean; nrate?: number; model?: string; source?: string; stickMode?: number; expo?: number; rate?: number; rexpo?: number; assist?: string; camera?: string; spot?: string; arrow?: boolean; wind?: number; windDir?: number; gust?: number; volume?: number; muted?: boolean; tilt?: number }
+interface Prefs { minimap?: boolean; voice?: boolean; randomFailures?: boolean; seenVersion?: string; tod?: 'morning' | 'noon' | 'evening'; graph?: boolean; site?: SiteId; lang?: Lang; welcomed?: boolean; custom?: CustomSpec; trail?: boolean; gear?: boolean; nrate?: number; model?: string; source?: string; stickMode?: number; expo?: number; rate?: number; rexpo?: number; assist?: string; camera?: string; spot?: string; arrow?: boolean; wind?: number; windDir?: number; gust?: number; volume?: number; muted?: boolean; tilt?: number }
 function loadPrefs(): Prefs {
   try { return JSON.parse(localStorage.getItem(PREFS_KEY) ?? '{}') as Prefs; } catch { return {}; }
 }
@@ -331,6 +333,7 @@ export class SettingsPanel {
     if (p.arrow !== undefined) { this.arrowOn = p.arrow; this.cb.onArrow(p.arrow); }
     if (p.trail) this.setTrail(true);
     if (p.graph) this.setGraph(true);
+    if (p.minimap) this.setMinimap(true);
     if (p.tod === 'morning' || p.tod === 'evening') { this.tod = p.tod; this.cb.onTimeOfDay(p.tod); }
     if (p.gear) { this.gearOn = true; this.cb.onTrainingGear(true); }
     if (p.wind !== undefined) this.wind.speed = p.wind;
@@ -427,6 +430,7 @@ export class SettingsPanel {
         <label><input type="checkbox" id="arrow" ${this.arrowOn ? 'checked' : ''}> Orientation arrow under the heli (beginner aid)</label>
         <label><input type="checkbox" id="trail" ${this.trailOn ? 'checked' : ''}> Smoke trail: fading path of the last 12 s (T)</label>
         <label><input type="checkbox" id="graph" ${this.graphOn ? 'checked' : ''}> Telemetry graph: head speed, collective, altitude and G over the last 30 s (Y)</label>
+        <label><input type="checkbox" id="minimap" ${this.minimapOn ? 'checked' : ''}> Minimap: top-down view with the model's nose, targets, obstacles and wind (N)</label>
       </section>
       <section>
         <label>Load a saved flight (.json) <input type="file" id="load-flight" accept="application/json,.json"></label>
@@ -560,6 +564,9 @@ export class SettingsPanel {
     q<HTMLInputElement>('#graph').addEventListener('change', (e) => {
       this.setGraph((e.target as HTMLInputElement).checked);
     });
+    q<HTMLInputElement>('#minimap').addEventListener('change', (e) => {
+      this.setMinimap((e.target as HTMLInputElement).checked);
+    });
     q<HTMLInputElement>('#trail').addEventListener('change', (e) => {
       this.setTrail((e.target as HTMLInputElement).checked);
     });
@@ -655,6 +662,7 @@ export class SettingsPanel {
   arrowOn = true;
   trailOn = false;
   graphOn = false;
+  minimapOn = false;
   tod: 'morning' | 'noon' | 'evening' = 'noon';
   gearOn = false;
 
@@ -665,6 +673,15 @@ export class SettingsPanel {
     const box = this.panel.querySelector<HTMLInputElement>('#graph');
     if (box) box.checked = on;
     savePrefs({ graph: on });
+  }
+
+  /** Minimap on/off (settings checkbox, N key); persisted. */
+  setMinimap(on: boolean): void {
+    this.minimapOn = on;
+    this.cb.onMinimap(on);
+    const box = this.panel.querySelector<HTMLInputElement>('#minimap');
+    if (box) box.checked = on;
+    savePrefs({ minimap: on });
   }
 
   /** Smoke trail on/off (settings checkbox, T key); persisted. */

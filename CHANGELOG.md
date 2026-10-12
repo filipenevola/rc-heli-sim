@@ -3,6 +3,11 @@
 All notable changes to RC Heli Sim. The version shown in the game (Help and Settings) matches the latest
 entry here; the commit hash next to it identifies the exact build.
 
+## 0.75.0
+
+- Minimap (Settings → Camera, or N): top-down view with the pilot, the model's nose, pad and targets, obstacles and
+  the wind arrow; the scale follows the model's distance.
+
 ## 0.74.0
 
 - Crash analysis: the crash banner adds the instructor's reading of the last two seconds (inverted low, hold left

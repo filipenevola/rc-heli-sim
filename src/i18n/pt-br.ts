@@ -37,6 +37,7 @@ export const PT_BR: Record<string, string> = {
   'Drone': 'Drone',
   'Dynamic rollover: once a skid is on the ground the cyclic must stay neutral or away from the ground. Lift straight up with collective, or set the other skid down; never fight the tilt with aileron.': 'Capotamento dinâmico: com um esqui no chão o cíclico tem que ficar neutro ou para longe do chão. Suba reto com o coletivo, ou apoie o outro esqui; nunca brigue com a inclinação usando o aileron.',
   'Next for you': 'Próximo para você',
+  "Minimap: top-down view with the model's nose, targets, obstacles and wind (N)": 'Minimapa: vista de cima com o nariz do modelo, alvos, obstáculos e vento (N)',
   // ---- Crash analysis ----
   'Inverted below 5 m: there is no room to recover from there. Keep inverted work above 15 m.': 'Invertido abaixo de 5 m: dali não há espaço para recuperar. Mantenha o trabalho invertido acima de 15 m.',
   'Throttle hold was on in the last second with the heli low: the motor was off when you needed it. Check the switch.': 'O throttle hold estava ligado no último segundo com o heli baixo: o motor estava desligado quando você precisou. Confira a chave.',
