@@ -721,6 +721,8 @@ function frame(now: number): void {
   const windAngle = Math.atan2(-w.x, -w.z);
   field.windsock.rotation.set(-(1 - Math.min(1, wind.speed / 6)) * 1.2, windAngle + Math.PI, 0, 'YXZ');
   field.animate(dt, sim.state.time);
+  // Trees lean and flutter with the wind where they stand: read the gusts off the treeline, as on the field.
+  field.setWind?.((x, y, z) => wind.at({ x, y, z }, sim.state.time), sim.state.time);
   // Orientation arrow under the model, pointing where the nose points; faces the pilot figure toward the model.
   if (field.arrow.visible) {
     const fwd = new THREE.Vector3(0, 0, -1).applyQuaternion(heliQuat);

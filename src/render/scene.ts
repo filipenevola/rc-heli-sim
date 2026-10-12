@@ -1,4 +1,5 @@
 import * as THREE from 'three';
+import { makeSway, type SwayLayer, type WindSampler } from './sway';
 import type { FieldLayout } from '../sim/world';
 
 export type TimeOfDay = 'morning' | 'noon' | 'evening';
@@ -16,6 +17,8 @@ export interface SceneHandles {
   pilotMarker: THREE.Object3D;
   /** Flat arrow on the ground under the heli showing where the nose points (beginner aid). */
   arrow: THREE.Object3D;
+  /** Lean the trees with the local wind (outdoor sites with trees). */
+  setWind?(sample: WindSampler, time: number): void;
 }
 
 const isMobile = typeof navigator !== 'undefined' && navigator.maxTouchPoints > 0 && window.innerWidth < 1100;
@@ -183,9 +186,13 @@ export function createScene(layout: FieldLayout): SceneHandles {
   trunk.castShadow = trunk.receiveShadow = true;
   scene.add(trunk);
   const tint = new THREE.Color();
+  const swayLayers: SwayLayer[] = [];
+  const pineIndex = layout.trees.map((_, i) => i).filter((i) => i % 3 !== 2);
+  const leafyIndex = layout.trees.map((_, i) => i).filter((i) => i % 3 === 2);
   const tiers: [number, number, number][] = [[2.4, 3.2, 3.6], [1.9, 2.8, 5.6], [1.3, 2.4, 7.4]]; // radius, height, centre y
   for (const [r, h, cy] of tiers) {
     const tier = new THREE.InstancedMesh(new THREE.ConeGeometry(r, h, 8), mats.crown.clone(), pines.length);
+    swayLayers.push({ mesh: tier, cy, index: pineIndex });
     pines.forEach((t, i) => {
       m.makeScale(t.scale, t.scale, t.scale).setPosition(t.x, cy * t.scale, t.z);
       tier.setMatrixAt(i, m);
@@ -205,6 +212,7 @@ export function createScene(layout: FieldLayout): SceneHandles {
     }
     crownGeo.computeVertexNormals();
     const crown = new THREE.InstancedMesh(crownGeo, new THREE.MeshStandardMaterial({ color: 0x4f8a2e, roughness: 0.95 }), leafy.length);
+    swayLayers.push({ mesh: crown, cy: 5.0, index: leafyIndex });
     leafy.forEach((t, i) => {
       m.makeScale(t.scale, t.scale, t.scale).setPosition(t.x, 5.0 * t.scale, t.z);
       crown.setMatrixAt(i, m);
@@ -419,6 +427,7 @@ export function createScene(layout: FieldLayout): SceneHandles {
     animate(_dt, time) {
       for (const h of heads) h.obj.rotation.x = 0.35 + 0.3 * Math.sin(time * 0.6 + h.phase);
     },
+    setWind: makeSway(layout.trees.map((t) => ({ x: t.x, z: t.z, scale: t.scale, base: 0 })), swayLayers),
   };
 }
 

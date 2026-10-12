@@ -1,6 +1,7 @@
 import * as THREE from 'three';
 import type { FieldLayout, World } from '../sim/world';
 import { makeGrassTexture, makePadTexture, outdoorLighting, type SceneHandles } from './scene';
+import { makeSway, type SwayLayer } from './sway';
 
 /**
  * The hillside: the terrain mesh is sampled from the same height field the physics uses, so what you see is
@@ -111,9 +112,12 @@ export function createHillScene(layout: FieldLayout, world: World): SceneHandles
   trunk.castShadow = trunk.receiveShadow = true;
   scene.add(trunk);
   const tint = new THREE.Color();
+  const swayLayers: SwayLayer[] = [];
+  const allIndex = layout.trees.map((_, i) => i);
   const tiers: [number, number, number][] = [[2.4, 3.2, 3.6], [1.9, 2.8, 5.6], [1.3, 2.4, 7.4]];
   for (const [r, h, cy] of tiers) {
     const tier = new THREE.InstancedMesh(new THREE.ConeGeometry(r, h, 8), new THREE.MeshStandardMaterial({ color: 0x2f6b2a }), layout.trees.length);
+    swayLayers.push({ mesh: tier, cy, index: allIndex });
     layout.trees.forEach((t, i) => {
       mtx.makeScale(t.scale, t.scale, t.scale).setPosition(t.x, g(t.x, t.z) + cy * t.scale, t.z);
       tier.setMatrixAt(i, mtx);
@@ -213,5 +217,5 @@ export function createHillScene(layout: FieldLayout, world: World): SceneHandles
   arrow.position.y = 0.03;
   scene.add(arrow);
 
-  return { scene, sun, setTimeOfDay, windsock, animate: () => {}, pilotMarker: pilot, arrow };
+  return { scene, sun, setTimeOfDay, windsock, animate: () => {}, pilotMarker: pilot, arrow, setWind: makeSway(layout.trees.map((t) => ({ x: t.x, z: t.z, scale: t.scale, base: g(t.x, t.z) })), swayLayers) };
 }
