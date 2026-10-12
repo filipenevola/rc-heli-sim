@@ -35,6 +35,8 @@ export const PT_BR: Record<string, string> = {
   'Front': 'Frente',
   'Top': 'De cima',
   'Drone': 'Drone',
+  'Dynamic rollover: once a skid is on the ground the cyclic must stay neutral or away from the ground. Lift straight up with collective, or set the other skid down; never fight the tilt with aileron.': 'Capotamento dinâmico: com um esqui no chão o cíclico tem que ficar neutro ou para longe do chão. Suba reto com o coletivo, ou apoie o outro esqui; nunca brigue com a inclinação usando o aileron.',
+  'Next for you': 'Próximo para você',
   // ---- Logbook chart ----
   'Flight time per flight; red = crash; yellow line = stick reversals per minute': 'Tempo de cada voo; vermelho = queda; linha amarela = inversões de stick por minuto',
   'Stick reversals per minute, last 10 flights:': 'Inversões de stick por minuto, últimos 10 voos:',

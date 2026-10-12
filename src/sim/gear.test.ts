@@ -54,7 +54,7 @@ describe('training gear', () => {
     const bare = sloppyLanding(false);
     const geared = sloppyLanding(true);
     expect(bare.state.crashed).toBe(true);
-    expect(bare.state.crashReason).toMatch(/Blade strike|Hard landing/);
+    expect(bare.state.crashReason).toMatch(/Blade strike|Hard landing|Dynamic rollover/);
     expect(geared.state.crashed).toBe(false);
   });
 });

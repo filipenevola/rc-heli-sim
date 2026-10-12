@@ -138,6 +138,7 @@ export function coachTip(log: FlightLog): { reason: string; tip: string } | null
   }
   const [reason] = [...counts.entries()].sort((a, b) => b[1] - a[1])[0];
   const tips: [RegExp, string][] = [
+    [/dynamic rollover/i, 'Dynamic rollover: once a skid is on the ground the cyclic must stay neutral or away from the ground. Lift straight up with collective, or set the other skid down; never fight the tilt with aileron.'],
     [/blade strike/i, 'Most blade strikes come from a low hover with drift: hold 1.5 m until the drift is dead, then come down straight.'],
     [/hard landing/i, 'Slow the last metre right down: a touch more collective early, and let it settle in ground effect before the final sink.'],
     [/boom strike/i, 'Keep the collective positive when you use a lot of cyclic on a flybar head; 3D belongs on a flybarless model.'],

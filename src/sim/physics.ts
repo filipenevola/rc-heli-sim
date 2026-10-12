@@ -134,6 +134,8 @@ export type AssistMode = 'rate' | 'attitude';
 export class HelicopterSim {
   state: HeliState;
   assist: AssistMode = 'rate';
+  /** Sim time when one skid (not both) last touched: a blade strike right after that is a dynamic rollover. */
+  private lastPartialSkid = -Infinity;
   private vrsNoise = 0;
   private vrsNoise2 = 0;
   private boomTimer = 0;
@@ -166,6 +168,7 @@ export class HelicopterSim {
 
   reset(model = this.model): void {
     this.model = model;
+    this.lastPartialSkid = -Infinity;
     this.cmdDelay = [];
     main.lambdaIState = Number.NaN;
     tail.lambdaIState = Number.NaN;
@@ -582,12 +585,16 @@ export class HelicopterSim {
       if (!onGround) s.landed = null;
     }
 
-    // Blade strike: the rotor disc edge touching the ground or any object while the rotor is spinning.
+    // Blade strike: the rotor disc edge touching the ground or any object while the rotor is spinning. When it
+    // happens with one skid planted and the other lifting while the body rolls fast, name it for what it is.
+    if (skidsTouching > 0 && skidsTouching < skidCount) this.lastPartialSkid = s.time;
+    const pivoting = s.time - this.lastPartialSkid < 0.3 && Math.hypot(s.omega.x, s.omega.z) > 1.2;
+    const strikeReason = pivoting ? 'Dynamic rollover: the heli pivoted about a planted skid. With a skid down, never push the cyclic toward the ground; lift straight up or set it down.' : 'Blade strike';
     if (rotorAlive && !s.crashed) {
       const nW = rotate(s.ori, n);
       const tiltSin = Math.sqrt(Math.max(0, 1 - nW.y * nW.y));
       const discLow = hubW.y - m.rotor.radius * tiltSin;
-      if (discLow < this.world.groundAt(hubW.x, hubW.z) - (this.world.terrain ? m.rotor.radius * 0.5 : 0)) this.crash('Blade strike');
+      if (discLow < this.world.groundAt(hubW.x, hubW.z) - (this.world.terrain ? m.rotor.radius * 0.5 : 0)) this.crash(strikeReason);
       else if (this.world.colliders.length > 0 || this.world.terrain) {
         // Sample the disc edge. Two in-plane axes perpendicular to the rotor normal.
         const ax = norm(cross(nW, Math.abs(nW.y) < 0.9 ? v3(0, 1, 0) : v3(1, 0, 0)));
@@ -596,7 +603,7 @@ export class HelicopterSim {
           const a = (i / 16) * Math.PI * 2;
           const pt = add(hubW, add(scale(ax, Math.cos(a) * m.rotor.radius), scale(az, Math.sin(a) * m.rotor.radius)));
           if (this.world.terrain && pt.y < this.world.groundAt(pt.x, pt.z)) {
-            this.crash('Blade strike');
+            this.crash(strikeReason);
             break;
           }
           if (this.world.hit(pt, hit)) {

@@ -113,7 +113,12 @@ export class ChallengesPanel {
       .join('');
     let body = '';
     if (this.tab === 'challenges') {
-      body = `
+      // The next drill: the first challenge not yet done, in level order, that this site can host and that has a lesson.
+      const next = CHALLENGES.find((c) => !this.tracker.completed.has(c.id) && !unavailableHere(c.id) && lessonFor(c.id));
+      const nextCard = next
+        ? `<div class="next-drill"><span>${t('Next for you')}: <b>${t(next.title)}</b> · ${t(next.level)}</span><span><button class="teach" data-teach="${next.id}" data-mode="show">${t('Show me')}</button><button class="teach" data-teach="${next.id}" data-mode="teach">${t('Teach me')}</button></span></div>`
+        : '';
+      body = `${nextCard}
         <p class="hint">${this.tracker.points} / ${TOTAL_POINTS} ${t('points')} · ${this.tracker.completed.size} / ${CHALLENGES.length} ${t('done')} · ${t('current flight')} <b id="air-time">${this.timer.flying ? fmtTime(this.timer.airTime) : '—'}</b> · ${t('best clean flight')} <b>${fmtTime(Math.max(p.bestFlight, this.timer.best))}</b></p>
         ${LEVELS.map((lv) => `<h5 class="level">${t(lv)} · ${CHALLENGES.filter((c) => c.level === lv && this.tracker.completed.has(c.id)).length}/${CHALLENGES.filter((c) => c.level === lv).length}</h5><ul class="challenge-list">
           ${CHALLENGES.filter((c) => c.level === lv).map((c) => {

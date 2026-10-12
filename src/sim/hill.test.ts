@@ -108,3 +108,21 @@ describe('hillside terrain', () => {
     expect(sim.state.crashed).toBe(true);
   });
 });
+
+describe('dynamic rollover', () => {
+  it('pushing the cyclic into the hill with a skid planted rolls the heli over, and says so', () => {
+    const { world } = buildHill();
+    const sim = new HelicopterSim(HELI_450, new Wind(), world);
+    sim.assist = 'rate';
+    const ctl = neutralFrame();
+    ctl.flightMode = 1;
+    ctl.collective = -0.05;
+    placeOnSlope(sim, 40, -8, 0); // across the 20° bank, uphill skid on the right (+x)
+    run(sim, ctl, 8); // spool up on the slope
+    ctl.collective = 0.15; // light on the skids
+    ctl.aileron = 1; // full cyclic into the hill
+    run(sim, ctl, 3);
+    expect(sim.state.crashed).toBe(true);
+    expect(sim.state.crashReason).toMatch(/Dynamic rollover/);
+  });
+});
