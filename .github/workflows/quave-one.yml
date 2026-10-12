@@ -14,7 +14,13 @@ jobs:
       - name: Stamp version
         run: git rev-parse --short HEAD > public/version.txt
       - name: Install Quave ONE CLI
+        # The installer asks api.github.com for the latest release unauthenticated, which shared runners
+        # rate-limit; resolve the tag with the runner's token and hand it over instead.
+        env:
+          GH_TOKEN: ${{ github.token }}
         run: |
+          export QUAVEONE_VERSION="$(gh api repos/quaveone/cli/releases/latest --jq .tag_name)"
+          echo "Quave ONE CLI $QUAVEONE_VERSION"
           QUAVEONE_INSTALL_DIR="$HOME/.local/bin" bash -c "$(curl -fsSL https://raw.githubusercontent.com/quaveone/cli/main/install.sh)"
           echo "$HOME/.local/bin" >> "$GITHUB_PATH"
       - name: Deploy web (heli.filipenevola.com)
