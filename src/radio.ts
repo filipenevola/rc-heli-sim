@@ -27,6 +27,7 @@ let tilt = false;
 let sendTimer = 0;
 let pingTimer = 0;
 let latency = 0;
+let lastCrash = '';
 let wakeLock: { release(): Promise<void> } | null = null;
 
 function renderPair(message = ''): void {
@@ -63,7 +64,14 @@ function connect(code: string): void {
   if (link.state !== 'idle') onState(link.state, code);
   link.onMessage = (text) => {
     try {
-      const msg = JSON.parse(text) as { pong?: number };
+      const msg = JSON.parse(text) as { pong?: number; tel?: { rpm: number; alt: number; bat: number; mode: 0 | 1 | 2; hold: boolean; crash: string } };
+      if (msg.tel) {
+        const el = root.querySelector('#tel');
+        if (el) el.innerHTML = `<b>${msg.tel.rpm}</b> rpm · <b>${msg.tel.alt.toFixed(1)}</b> m · 🔋${msg.tel.bat}%${msg.tel.crash ? ` · <span class="radio-crash">${msg.tel.crash}</span>` : ''}`;
+        if (msg.tel.crash && msg.tel.crash !== lastCrash) navigator.vibrate?.([120, 60, 200]);
+        lastCrash = msg.tel.crash;
+        return;
+      }
       if (typeof msg.pong === 'number') {
         latency = Math.round(performance.now() - msg.pong);
         const el = root.querySelector('#latency');
@@ -96,6 +104,7 @@ function renderSticks(code: string): void {
       <button id="disconnect">✕</button>
     </div>
     <div class="radio-sticks" id="sticks"></div>
+    <div class="radio-tel hint" id="tel"></div>
     <p class="radio-hint hint">${t('Left stick: collective and rudder. Right stick: cyclic. The collective stays where you leave it.')}</p>`;
   const sticksEl = root.querySelector<HTMLElement>('#sticks')!;
   touch = new TouchInput(sticksEl);

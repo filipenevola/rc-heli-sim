@@ -75,6 +75,11 @@ export class RemoteInput implements InputSource {
     return code;
   }
 
+  /** Push a telemetry snapshot to the phone (10 Hz is plenty for a glance strip). */
+  sendTelemetry(tel: { rpm: number; alt: number; bat: number; mode: 0 | 1 | 2; hold: boolean; crash: string }): void {
+    this.link?.send(JSON.stringify({ tel }));
+  }
+
   unpair(): void {
     this.link?.close();
     this.link = null;

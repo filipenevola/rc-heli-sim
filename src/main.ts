@@ -221,6 +221,7 @@ tracker.onComplete = (c) => {
   void challenges.sync();
 };
 const stats = new FlightStats();
+let telemetryClock = 0;
 flightTimer.onFlightEnd = (seconds, crashed) => {
   const d = stats.end(sim, seconds, crashed);
   lastFlight = flightFrames();
@@ -738,6 +739,11 @@ function frame(now: number): void {
   gates.update([tracker.nextGate('circuit'), tracker.nextGate('figure-eight')], [tracker.completed.has('circuit'), tracker.completed.has('figure-eight')]);
   challenges.tick();
   hud.update(sim, ctl, input.active.label, input.active.id, dt);
+  // Phone radio: a glance strip on the phone (head speed, height, battery) and a buzz when the heli crashes.
+  if (input.remote.state === 'connected' && (telemetryClock += dt) > 0.1) {
+    telemetryClock = 0;
+    input.remote.sendTelemetry({ rpm: Math.round(sim.telemetry.headspeedRpm), alt: Math.round(sim.telemetry.altitude * 10) / 10, bat: Math.round(sim.telemetry.battery * 100), mode: ctl.flightMode, hold: ctl.throttleHold, crash: sim.state.crashReason });
+  }
   audio.update(sim, pilotCam.eye, wind.speed);
   settings.tick();
   renderer.render(scene, pilotCam.camera);

@@ -189,3 +189,5 @@ body.radio-page { background: #141618; }
 .radio-sticks .gimbal { width: min(46vmin, 300px); height: min(46vmin, 300px); bottom: calc(24px + env(safe-area-inset-bottom)); }
 .radio-sticks .gimbal-knob { width: 64px; height: 64px; }
 .radio-hint { position: absolute; bottom: calc(4px + env(safe-area-inset-bottom)); left: 0; right: 0; text-align: center; margin: 0; pointer-events: none; }
+.radio-tel { position: absolute; top: 50%; left: 50%; transform: translate(-50%, -50%); font-size: 16px; text-align: center; pointer-events: none; }
+.radio-crash { color: #ff8a80; font-weight: 700; }

@@ -3,6 +3,11 @@
 All notable changes to RC Heli Sim. The version shown in the game (Help and Settings) matches the latest
 entry here; the commit hash next to it identifies the exact build.
 
+## 0.57.0
+
+- Phone radio: the sim streams head speed, height and battery back to the phone (a glance strip between the
+  gimbals) and the phone buzzes when the heli crashes, so the pilot's hands get the news without looking away.
+
 ## 0.56.0
 
 - Debrief reads your **stick work**: cyclic travel per second and direction reversals per minute, graded calm /
