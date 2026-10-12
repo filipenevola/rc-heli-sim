@@ -3,6 +3,12 @@
 All notable changes to RC Heli Sim. The version shown in the game (Help and Settings) matches the latest
 entry here; the commit hash next to it identifies the exact build.
 
+## 0.55.0
+
+- New hillside challenge and lesson: **Slope take-off (20°)** (60 pts). From rest on the bank mark, spool up and lift
+  off cleanly to 1.5 m; sliding on the skids or a crash voids the attempt. The lesson chains a bank landing, a spool-up
+  on the slope with cyclic held into the hill, and the lift-off with the downhill skid coming free first.
+
 ## 0.54.1
 
 - Fix: the rankings API image copied only `index.mjs`, so the 0.53.0 server (which imports `radio-rooms.mjs`)

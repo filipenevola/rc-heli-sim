@@ -145,6 +145,24 @@ export const CHALLENGES: Challenge[] = [
   landing('mat', 'Mat stack landing', 15, 'Gym: land on the stack of mats, all four skids inside the ring.', 'Beginner'),
   landing('vault', 'Vault box landing', 30, 'Gym: land on the vault box, a 1.2 m square with nothing to spare.'),
   landing('slope', 'Slope landing (10°)', 40, 'Hillside: set down inside the ring on the 10° slope. Uphill skid first, then ease the collective down; the heli sits tilted, that is fine.'),
+  {
+    id: 'slope-takeoff',
+    level: 'Advanced',
+    title: 'Slope take-off (20°)',
+    description: 'Hillside: from rest on the bank mark, spool up and lift off cleanly to 1.5 m without sliding or rolling. Cyclic into the hill as the downhill skid lifts, collective smoothly, straight up.',
+    points: 60,
+    check: (ctx) => {
+      const s = ctx.sim.state;
+      if (s.landed?.target.id === 'bank') { ctx.mem.rested = 1; ctx.mem.x = s.pos.x; ctx.mem.z = s.pos.z; }
+      if (!ctx.mem.rested) return 0;
+      if (s.crashed) { ctx.mem.rested = 0; return 0; }
+      // Sliding on the skids while still on the ground voids the attempt.
+      if (s.onGround && Math.hypot(s.pos.x - ctx.mem.x, s.pos.z - ctx.mem.z) > 0.5) { ctx.mem.rested = 0; return 0; }
+      const agl = ctx.sim.telemetry.altitude;
+      if (!s.onGround && agl > 1.5 && Math.hypot(s.pos.x - ctx.mem.x, s.pos.z - ctx.mem.z) < 4) return 1;
+      return 0.5 + Math.min(0.5, (agl / 1.5) * 0.5);
+    },
+  },
   landing('bank', 'Bank landing (20°)', 70, 'Hillside: the 20° bank. Skids across the fall line (nose along the hill), or it slides; land one skid at a time and never push the cyclic into the slope once a skid is down.', 'Advanced'),
   {
     id: 'circuit',

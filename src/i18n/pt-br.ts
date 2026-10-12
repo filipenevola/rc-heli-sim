@@ -398,6 +398,8 @@ export const PT_BR: Record<string, string> = {
   'Container roof landing': 'Pouso no teto do contêiner',
   'Slope landing (10°)': 'Pouso na rampa (10°)',
   'Bank landing (20°)': 'Pouso no barranco (20°)',
+  'Slope take-off (20°)': 'Decolagem em rampa (20°)',
+  'Hillside: from rest on the bank mark, spool up and lift off cleanly to 1.5 m without sliding or rolling. Cyclic into the hill as the downhill skid lifts, collective smoothly, straight up.': 'Encosta: parado na marca do barranco, acelere e decole limpo até 1,5 m sem escorregar nem capotar. Cíclico contra o morro enquanto o esqui de baixo levanta, coletivo suave, reto para cima.',
   'Mat stack landing': 'Pouso na pilha de colchões',
   'Vault box landing': 'Pouso no plinto',
   'Autorotation': 'Autorrotação',

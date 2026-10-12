@@ -238,6 +238,22 @@ export const LESSONS: Lesson[] = [
     steps: [spoolUp(0, 'Spool up.'), liftTo(4, 'Lift to 4 m.'), goTo({ x: 30, y: HILL_BANK.y + 3, z: -8 }, 'Fly to the bank on the right. Nose stays pointing away from you, along the hill.', { vmax: 3 }), ...landOn(HILL_BANK, 'Stop above the ring, 1.5 m up. Nose along the hill: the skids must lie across the slope.')],
   },
   {
+    challengeId: 'slope-takeoff',
+    title: 'Slope take-off (20°)',
+    intro: 'Taking off from a slope is where dynamic rollover bites: the uphill skid stays planted while the downhill one lifts, and any cyclic pushed into the hill with the skid still down pivots the heli about it. Spool up with the cyclic held a little into the hill, raise the collective smoothly, and the instant the downhill skid comes free, level the disc and climb straight up.',
+    steps: [spoolUp(0, 'Spool up.'), liftTo(4, 'Lift to 4 m.'), goTo({ x: 30, y: HILL_BANK.y + 3, z: -8 }, 'First a bank landing: fly to the bank, nose along the hill.', { vmax: 3 }), ...landOn(HILL_BANK, 'Land on the bank mark, skids across the slope.'), spoolUp(0, 'Resting on the slope. Spool up again: the heli is tilted 20°, so the disc is tilted too; hold a touch of cyclic into the hill so it does not creep downhill.'), {
+      caption: 'Collective up smoothly. The downhill skid lifts first; as it does, level the disc and climb straight up off the mark.',
+      run: ({ ap, sim, mem }) => {
+        mem.x ??= sim.state.pos.x;
+        mem.z ??= sim.state.pos.z;
+        mem.h ??= ap.heading;
+        return ap.goTo({ x: mem.x, y: HILL_BANK.y + 2.5, z: mem.z }, mem.h, { vzMax: 0.6 });
+      },
+      done: ({ sim }) => sim.telemetry.altitude > 1.8,
+      timeout: 40,
+    }],
+  },
+  {
     challengeId: 'land-truck',
     title: 'Pickup bed landing',
     intro: 'Same as the table, with an obstacle: approach from behind the truck so the cab is never under the blades.',
