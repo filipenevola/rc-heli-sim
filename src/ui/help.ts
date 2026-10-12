@@ -264,6 +264,10 @@ const HELP_HTML = `
   light poles, a few parked cars, two warehouses along the back and a shipping container whose roof is a landing
   target (2.6 m up, almost no ground effect). Open sky and wind, like a real club lot; the poles are the usual
   surprise. The field's picnic table, truck, pontoon and tower challenges are marked "Field only" there.</p>
+  <h4>Radio link latency</h4>
+  <p>A real 2.4 GHz link frames the sticks every 7–20 ms and the receiver and flybarless unit add a few more, so
+  the swashplate trails your thumbs by 15–40 ms. Settings → Input → Radio link latency (default 20 ms) adds that
+  to every input source; set it to 0 for the raw sim feel, or to what your radio measures.</p>
   <h4>Teach me score</h4>
   <p>At the end of a Teach me lesson the sim grades how closely your sticks followed the instructor's ghost stick,
   0–100%, and keeps the best per lesson next to it in the Challenges list. Above 80% you are flying the technique;

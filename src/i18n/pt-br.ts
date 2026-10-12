@@ -37,6 +37,7 @@ export const PT_BR: Record<string, string> = {
   'Drone': 'Drone',
   'Dynamic rollover: once a skid is on the ground the cyclic must stay neutral or away from the ground. Lift straight up with collective, or set the other skid down; never fight the tilt with aileron.': 'Capotamento dinâmico: com um esqui no chão o cíclico tem que ficar neutro ou para longe do chão. Suba reto com o coletivo, ou apoie o outro esqui; nunca brigue com a inclinação usando o aileron.',
   'Next for you': 'Próximo para você',
+  'Radio link latency (ms): what a real 2.4 GHz link and receiver add': 'Latência do link de rádio (ms): o que um link 2,4 GHz e o receptor de verdade acrescentam',
   'Teach me score: {pct}%': 'Nota do Me ensine: {pct}%',
   'Your sticks followed the instructor closely.': 'Seus sticks seguiram o instrutor de perto.',
   'Roughly there; the ghost stick shows where you drifted.': 'Quase lá; o stick fantasma mostra onde você se afastou.',

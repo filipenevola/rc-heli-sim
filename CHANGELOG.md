@@ -3,6 +3,11 @@
 All notable changes to RC Heli Sim. The version shown in the game (Help and Settings) matches the latest
 entry here; the commit hash next to it identifies the exact build.
 
+## 0.79.0
+
+- Radio link latency: every input source now trails the thumbs by a configurable 0–80 ms (default 20 ms), the delay
+  a real 2.4 GHz link and receiver add. Settings → Input.
+
 ## 0.78.0
 
 - Teach me score: at the end of a Teach me lesson, how closely your sticks followed the ghost stick (0–100%), with a

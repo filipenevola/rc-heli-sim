@@ -213,6 +213,11 @@ export const HELP_HTML_PT = `
   postes de luz, alguns carros estacionados, dois galpões no fundo e um contêiner cujo teto é um alvo de
   pouso (a 2,6 m, quase sem efeito solo). Céu aberto e vento, como um estacionamento de clube de verdade; os postes são a
   surpresa de sempre. Os desafios da mesa, picape, pontão e torre do campo aparecem como "Só no campo" lá.</p>
+  <h4>Latência do link de rádio</h4>
+  <p>Um link 2,4 GHz de verdade envia os sticks a cada 7–20 ms e o receptor e a unidade flybarless acrescentam mais
+  alguns, então o swashplate atrasa 15–40 ms em relação aos seus polegares. Configurações → Entrada → Latência do link
+  de rádio (padrão 20 ms) acrescenta isso a toda fonte de entrada; coloque 0 para a sensação crua do simulador, ou o
+  que o seu rádio mede.</p>
   <h4>Nota do Me ensine</h4>
   <p>No fim de uma lição Me ensine o simulador dá uma nota de 0 a 100% para o quanto seus sticks seguiram o stick
   fantasma do instrutor, e guarda a melhor por lição ao lado dela na lista de desafios. Acima de 80% você está voando

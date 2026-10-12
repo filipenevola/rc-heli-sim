@@ -32,6 +32,7 @@ import { Minimap } from './ui/minimap';
 import { CueTimer, coachCue } from './game/coach-cue';
 import { analyseCrash } from './game/crash-analysis';
 import { TeachScore, saveScore } from './game/lesson-scores';
+import { DelayLine } from './input/delay';
 import { lessonFor, LessonRunner } from './game/lessons';
 import { recordGhost, type GhostFrame } from './game/ghost';
 import { Trail } from './render/trail';
@@ -235,6 +236,8 @@ const voice = new Voice();
 const minimap = new Minimap(ui);
 const cueTimer = new CueTimer();
 const teachScore = new TeachScore();
+// The radio link's latency between the thumbs and the swashplate (Settings → Input).
+const radioDelay = new DelayLine();
 let teachScored: unknown = null;
 let spokenStep = -1;
 let spokenLesson: unknown = null;
@@ -345,6 +348,10 @@ const settings = new SettingsPanel(ui, input, wind, audio, {
   onVoice(on) {
     voice.enabled = on;
     if (!on) voice.stop();
+  },
+  onLatency(ms) {
+    radioDelay.delayMs = ms;
+    radioDelay.clear();
   },
   onPilotSpot(spot) {
     // The road spot stands beside the cerradoX billboard (x = 0, z = 56), not behind it.
@@ -685,6 +692,10 @@ function frame(now: number): void {
   const dt = Math.max(0, Math.min((now - last) / 1000, MAX_FRAME)); // never negative, even with odd clocks
   last = now;
   let ctl = input.poll(dt);
+  if (radioDelay.delayMs > 0) {
+    radioDelay.push(ctl, now);
+    ctl = radioDelay.get(now) ?? ctl;
+  }
   if (lesson && lesson.mode === 'teach') {
     // The player flies; the runner judges the step and computes the ghost-stick hint.
     lesson.coach(dt, ctl);

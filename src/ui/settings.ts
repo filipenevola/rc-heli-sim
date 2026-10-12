@@ -52,6 +52,8 @@ export interface SettingsCallbacks {
   onRandomFailures(on: boolean): void;
   /** Spoken captions on / off. */
   onVoice(on: boolean): void;
+  /** Radio link latency, ms. */
+  onLatency(ms: number): void;
   onTimeOfDay(t: 'morning' | 'noon' | 'evening'): void;
   /** A saved flight (.json from the debrief's Save flight) to replay, or to fly alongside as a ghost. */
   onLoadFlight(file: File, asGhost: boolean): void;
@@ -76,7 +78,7 @@ const AXIS_HINT: Record<AxisName | SwitchName, string> = {
 };
 
 const PREFS_KEY = 'rc-heli-sim.prefs.v1';
-interface Prefs { minimap?: boolean; voice?: boolean; randomFailures?: boolean; seenVersion?: string; tod?: 'morning' | 'noon' | 'evening'; graph?: boolean; site?: SiteId; lang?: Lang; welcomed?: boolean; custom?: CustomSpec; trail?: boolean; gear?: boolean; nrate?: number; model?: string; source?: string; stickMode?: number; expo?: number; rate?: number; rexpo?: number; assist?: string; camera?: string; spot?: string; arrow?: boolean; wind?: number; windDir?: number; gust?: number; volume?: number; muted?: boolean; tilt?: number }
+interface Prefs { latency?: number; minimap?: boolean; voice?: boolean; randomFailures?: boolean; seenVersion?: string; tod?: 'morning' | 'noon' | 'evening'; graph?: boolean; site?: SiteId; lang?: Lang; welcomed?: boolean; custom?: CustomSpec; trail?: boolean; gear?: boolean; nrate?: number; model?: string; source?: string; stickMode?: number; expo?: number; rate?: number; rexpo?: number; assist?: string; camera?: string; spot?: string; arrow?: boolean; wind?: number; windDir?: number; gust?: number; volume?: number; muted?: boolean; tilt?: number }
 function loadPrefs(): Prefs {
   try { return JSON.parse(localStorage.getItem(PREFS_KEY) ?? '{}') as Prefs; } catch { return {}; }
 }
@@ -89,6 +91,7 @@ export class SettingsPanel {
   private panel: HTMLElement;
   randomFailures = false;
   voiceOn = true;
+  latencyMs = 20;
   private wizardState: { axis: AxisName | SwitchName; baseline: number[]; baselineButtons: boolean[] } | null = null;
   private wizardStatus: HTMLElement | null = null;
   currentModelId = HELI_MODELS[0].id;
@@ -327,6 +330,8 @@ export class SettingsPanel {
     if (p.source && p.source !== 'motion') im.choice = p.source as SourceChoice; // motion needs a permission tap
     if (p.randomFailures) { this.randomFailures = true; this.cb.onRandomFailures(true); }
     if (p.voice === false) { this.voiceOn = false; this.cb.onVoice(false); }
+    if (typeof p.latency === 'number') { this.latencyMs = p.latency; }
+    this.cb.onLatency(this.latencyMs);
     if (p.stickMode) im.touch.setMode(p.stickMode as StickMode);
     if (p.expo !== undefined) { im.shaping.aileron.expo = p.expo; im.shaping.elevator.expo = p.expo; }
     if (p.rate !== undefined) { im.shaping.aileron.rate = p.rate; im.shaping.elevator.rate = p.rate; }
@@ -409,6 +414,7 @@ export class SettingsPanel {
         ${slider('rate', 'Cyclic dual rate', 0.3, 1, 0.05, im.shaping.aileron.rate)}
         ${slider('nrate', 'Normal-mode rate (dual rate on the mode switch)', 0.4, 1, 0.05, im.normalRate)}
         ${slider('rexpo', 'Rudder expo', 0, 0.8, 0.05, im.shaping.rudder.expo)}
+        ${slider('latency', 'Radio link latency (ms): what a real 2.4 GHz link and receiver add', 0, 80, 5, this.latencyMs)}
         <p class="hint">Keyboard: arrows = cyclic, W/S = collective, A/D = rudder, 1/2/3 flight mode, H throttle hold, R reset, P pause.</p>
       </section>
       <section>
@@ -501,6 +507,12 @@ export class SettingsPanel {
     });
     q<HTMLSelectElement>('#assist').addEventListener('change', (e) => this.setAssist((e.target as HTMLSelectElement).value as AssistMode));
     q('#fail-tail').addEventListener('click', () => { this.cb.onFailTail(); this.toggle(); });
+    q<HTMLInputElement>('#latency').addEventListener('input', (e) => {
+      this.latencyMs = Number((e.target as HTMLInputElement).value);
+      q('#latency-v').textContent = String(this.latencyMs);
+      savePrefs({ latency: this.latencyMs });
+      this.cb.onLatency(this.latencyMs);
+    });
     q<HTMLInputElement>('#voice').addEventListener('change', (e) => {
       this.voiceOn = (e.target as HTMLInputElement).checked;
       savePrefs({ voice: this.voiceOn });
