@@ -20,15 +20,18 @@ pilot-on-the-field camera are all about model helicopters.
   heading-hold tail gyro with the sensor filter, servo slew and delay that make too much gain wag the tail
   (or a plain rate gyro), a mechanical Bell-Hiller flybar for the trainer, and an attitude assist for beginners.
 - **Models:** 450 flybar trainer, 450 flybarless, 700 3D flybarless, 250 micro, plus **your own helicopter**
-  built from the numbers on the box (blade length, weight, battery, head speeds, flybar or not). Training
-  gear option. Model setup like a radio: pitch curves, head speeds, gyro gain, dual rates, expo, governor.
+  built from the numbers on the box (blade length, weight, battery or nitro tank, head speeds, flybar or not,
+  two or three blades, canopy colour). A **nitro** option models a glow engine behind a centrifugal clutch with
+  fuel. Training gear option. Model setup like a radio: pitch curves, head speeds, gyro gain, dual rates, expo,
+  governor on/off, heading-hold or rate gyro.
 - **Inputs, all mapped to one `ControlFrame` abstraction:** a real transmitter through a USB simulator
   dongle (Gamepad API, with a mapping and calibration wizard and sub-trim), touch-screen gimbals with
   modes 1–4, phone tilt, and the keyboard.
 - **Training:** 27 challenges on the classic progression with **Show me** (the demo pilot flies it) and
   **Teach me** (you fly, a ghost helicopter and a ring guide you), a flight **debrief** after every flight
   (landing grade from the measured sink rate, peaks, time in VRS or stall), full-flight and crash **replays**
-  with your sticks shown, a **logbook** with a progress line, a smoke trail, an orientation arrow,
+  with your sticks shown, **saved flights** (.json you can load on any machine), a **logbook** with a progress
+  line and a coach tip that follows your account, a smoke trail, a telemetry strip chart, an orientation arrow,
   Shift+R hover resets for 3D drills, and rankings (longest clean flight, challenge points) that follow an
   email across devices.
 - **Pilot's-eye camera** standing on the field with auto-zoom, plus chase, front, top and drone cameras.
@@ -36,7 +39,8 @@ pilot-on-the-field camera are all about model helicopters.
   Doppler, slap at high G, VRS roughness, stall buzz, battery alarm, crash sounds, birds and field ambience.
 - Wind with a log boundary layer, obstacle wakes and turbulence; a windsock shows the mean.
 - Interface, challenges, lessons and manual in English and Brazilian Portuguese.
-- Two flying sites: the outdoor field and an indoor gym (walls, ceiling, bleachers and hoops all solid, no wind).
+- Two flying sites: the outdoor field (morning, noon or evening light) and an indoor gym (walls, ceiling,
+  bleachers and hoops all solid, no wind, hall echo).
 
 ## Versions
 
