@@ -3,6 +3,11 @@
 All notable changes to RC Heli Sim. The version shown in the game (Help and Settings) matches the latest
 entry here; the commit hash next to it identifies the exact build.
 
+## 0.78.0
+
+- Teach me score: at the end of a Teach me lesson, how closely your sticks followed the ghost stick (0–100%), with a
+  word from the instructor and a best-per-lesson badge in the Challenges list.
+
 ## 0.77.0
 
 - Paint: every model (built-in or custom) takes a canopy colour and a scheme in Model setup → Paint: solid, stripes,

@@ -3,6 +3,7 @@ import { lessonFor } from '../game/lessons';
 import { importMappings, loadMappings, type GamepadMapping } from '../input/gamepad';
 import { fmtTime, localRankings, saveLocalRanking, saveProfile, type Profile, type RankingClient } from '../game/player';
 import { logbookCsv, logbookHtml, type FlightLog } from '../game/flightlog';
+import { loadScores } from '../game/lesson-scores';
 import { localizeDom, t } from '../i18n';
 import { homeLabel, unavailableHere } from '../site';
 
@@ -113,6 +114,7 @@ export class ChallengesPanel {
       .join('');
     let body = '';
     if (this.tab === 'challenges') {
+      const scores = loadScores();
       // The next drill: the first challenge not yet done, in level order, that this site can host and that has a lesson.
       const next = CHALLENGES.find((c) => !this.tracker.completed.has(c.id) && !unavailableHere(c.id) && lessonFor(c.id));
       const nextCard = next
@@ -123,11 +125,12 @@ export class ChallengesPanel {
         ${LEVELS.map((lv) => `<h5 class="level">${t(lv)} · ${CHALLENGES.filter((c) => c.level === lv && this.tracker.completed.has(c.id)).length}/${CHALLENGES.filter((c) => c.level === lv).length}</h5><ul class="challenge-list">
           ${CHALLENGES.filter((c) => c.level === lv).map((c) => {
             const done = this.tracker.completed.has(c.id);
+            const score = scores[c.id];
             const pr = done ? 1 : this.tracker.progress[c.id] ?? 0;
             const teach = lessonFor(c.id)
               ? `<button class="teach" data-teach="${c.id}" data-mode="show" title="${t('Watch a demo pilot do the whole challenge; the sticks are shown')}">${t('Show me')}</button><button class="teach" data-teach="${c.id}" data-mode="teach" title="${t('You fly it step by step with a ghost stick guiding you')}">${t('Teach me')}</button>`
               : '';
-            return `<li class="${done ? 'done' : ''}"><div class="row"><b>${done ? '✓ ' : ''}${t(c.title)}</b><span>${c.points} pts ${unavailableHere(c.id) ? `<i class="field-only">${t(homeLabel(c.id))}</i>` : teach}</span></div><div class="desc">${t(c.description)}</div><div class="bar"><i data-bar="${c.id}" style="width:${Math.round(pr * 100)}%"></i></div></li>`;
+            return `<li class="${done ? 'done' : ''}"><div class="row"><b>${done ? '✓ ' : ''}${t(c.title)}</b><span>${c.points} pts ${score !== undefined ? `<i class="score" title="${t('Best Teach me score')}">${score}%</i> ` : ''}${unavailableHere(c.id) ? `<i class="field-only">${t(homeLabel(c.id))}</i>` : teach}</span></div><div class="desc">${t(c.description)}</div><div class="bar"><i data-bar="${c.id}" style="width:${Math.round(pr * 100)}%"></i></div></li>`;
           }).join('')}
         </ul>`).join('')}`;
     } else if (this.tab === 'rankings') {

@@ -264,6 +264,10 @@ const HELP_HTML = `
   light poles, a few parked cars, two warehouses along the back and a shipping container whose roof is a landing
   target (2.6 m up, almost no ground effect). Open sky and wind, like a real club lot; the poles are the usual
   surprise. The field's picnic table, truck, pontoon and tower challenges are marked "Field only" there.</p>
+  <h4>Teach me score</h4>
+  <p>At the end of a Teach me lesson the sim grades how closely your sticks followed the instructor's ghost stick,
+  0–100%, and keeps the best per lesson next to it in the Challenges list. Above 80% you are flying the technique;
+  below 55% you are flying something else, so watch Show me again and chase the ring.</p>
   <h4>Minimap</h4>
   <p>Settings → Camera → Minimap (or <b>N</b>): a top-down map with you (blue), the model as an arrow that points where
   the nose points, the pad and targets as rings, obstacles in grey and the wind as an arrow. The scale grows as the

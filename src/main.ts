@@ -31,6 +31,7 @@ import { Voice } from './ui/voice';
 import { Minimap } from './ui/minimap';
 import { CueTimer, coachCue } from './game/coach-cue';
 import { analyseCrash } from './game/crash-analysis';
+import { TeachScore, saveScore } from './game/lesson-scores';
 import { lessonFor, LessonRunner } from './game/lessons';
 import { recordGhost, type GhostFrame } from './game/ghost';
 import { Trail } from './render/trail';
@@ -233,6 +234,8 @@ let telemetryClock = 0;
 const voice = new Voice();
 const minimap = new Minimap(ui);
 const cueTimer = new CueTimer();
+const teachScore = new TeachScore();
+let teachScored: unknown = null;
 let spokenStep = -1;
 let spokenLesson: unknown = null;
 const rescue = new Rescue(sim);
@@ -480,7 +483,7 @@ challenges.onProfileChange = () => settings.setPilotLabel(profile.name, profile.
 }
 
 // Exposed for automated checks and tinkering from the devtools console.
-(window as unknown as { rcHeli: unknown }).rcHeli = { sim, input, wind, audio, camera: pilotCam, clouds, scene, world, layout, loadFlightText, loadFlightGhostText, exportFlight, setFlightGhost, tracker, flightTimer, profile, flightLog, challengesList: CHALLENGES };
+(window as unknown as { rcHeli: unknown }).rcHeli = { sim, input, wind, audio, camera: pilotCam, clouds, scene, world, layout, loadFlightText, loadFlightGhostText, exportFlight, setFlightGhost, tracker, flightTimer, profile, flightLog, challengesList: CHALLENGES, get lesson() { return lesson; } };
 
 function reset(): void {
   setRescue(false);
@@ -690,6 +693,17 @@ function frame(now: number): void {
     if (lesson.hint && !lesson.finished && !lesson.crashed) {
       const cue = cueTimer.update(coachCue(ctl, lesson.hint), performance.now());
       if (cue) voice.say(t(cue), getLang());
+      if (teachScored !== lesson) { teachScored = lesson; teachScore.reset(); }
+      teachScore.add(ctl, lesson.hint);
+    }
+    // Lesson done: how closely the sticks followed the instructor, kept as a best per lesson.
+    if (lesson.finished && teachScored === lesson && teachScore.samples > 60) {
+      const pct = teachScore.percent ?? 0;
+      const best = saveScore(lesson.lesson.challengeId, pct);
+      teachScored = null;
+      hud.notify(`<b>${t('Teach me score: {pct}%', { pct })}</b><br>${t(pct >= 80 ? 'Your sticks followed the instructor closely.' : pct >= 55 ? 'Roughly there; the ghost stick shows where you drifted.' : 'You flew it your own way; try Show me again, then match the ring.')}${best ? `<br>${t('New best for this lesson.')}` : ''}`, 7000);
+      voice.say(t('Teach me score: {pct}%', { pct }), getLang());
+      challenges.refresh();
     }
     // Ghost: loop the demo pilot's recording of the current step.
     if (ghostFrames && ghostMesh) {

@@ -213,6 +213,10 @@ export const HELP_HTML_PT = `
   postes de luz, alguns carros estacionados, dois galpões no fundo e um contêiner cujo teto é um alvo de
   pouso (a 2,6 m, quase sem efeito solo). Céu aberto e vento, como um estacionamento de clube de verdade; os postes são a
   surpresa de sempre. Os desafios da mesa, picape, pontão e torre do campo aparecem como "Só no campo" lá.</p>
+  <h4>Nota do Me ensine</h4>
+  <p>No fim de uma lição Me ensine o simulador dá uma nota de 0 a 100% para o quanto seus sticks seguiram o stick
+  fantasma do instrutor, e guarda a melhor por lição ao lado dela na lista de desafios. Acima de 80% você está voando
+  a técnica; abaixo de 55% está voando outra coisa, então veja o Me mostre de novo e persiga o anel.</p>
   <h4>Minimapa</h4>
   <p>Configurações → Câmera → Minimapa (ou <b>N</b>): um mapa de cima com você (azul), o modelo como uma seta que aponta
   para onde o nariz aponta, o heliponto e os alvos como anéis, obstáculos em cinza e o vento como uma seta. A escala
