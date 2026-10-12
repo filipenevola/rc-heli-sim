@@ -3,6 +3,15 @@
 All notable changes to RC Heli Sim. The version shown in the game (Help and Settings) matches the latest
 entry here; the commit hash next to it identifies the exact build.
 
+## 0.19.0
+
+- **Physics: the main-rotor wake at the tail.** The wake is modelled as a skewed column leaving the disc along the
+  relative airflow plus the induced velocity. In a hover it misses the tail; between about 2 and 6 m/s it hits the
+  stabiliser (the nose-up transition bump) and, when its rolled-up edge passes through the tail rotor, costs tail
+  thrust and adds a rough yaw, as in slow sideways flight on a real heli.
+- **Physics: directional skid friction.** Skids slide along their length but dig in sideways, so a drifting
+  sideways touchdown is now the tip-over it is in real life.
+
 ## 0.18.0
 
 - **Flight debrief**: after every flight longer than a few seconds, a card grades the touchdown (greaser / soft / firm /

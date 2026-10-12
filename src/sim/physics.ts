@@ -71,6 +71,8 @@ export interface Telemetry {
   flightSeconds: number;
   /** Load factor along the rotor axis (1 = hover, 0 = free fall, negative = inverted pulling). */
   gLoad: number;
+  /** Main-rotor wake interference at the tail, 0..1 (the transition bump / tail-thrust loss band). */
+  wake: number;
 }
 
 export function initialState(model: HeliModel, yaw = 0): HeliState {
@@ -131,7 +133,7 @@ export class HelicopterSim {
   attitudeGain = 7;
   telemetry: Telemetry = {
     thrust: 0, torque: 0, tailThrust: 0, collectiveDeg: 0, headspeedRpm: 0, motorPower: 0,
-    altitude: 0, groundSpeed: 0, verticalSpeed: 0, groundEffect: 1, lambda: 0, battery: 1, vrs: 0, stall: 0, flightSeconds: 0, gLoad: 1,
+    altitude: 0, groundSpeed: 0, verticalSpeed: 0, groundEffect: 1, lambda: 0, battery: 1, vrs: 0, stall: 0, flightSeconds: 0, gLoad: 1, wake: 0,
   };
 
   constructor(public model: HeliModel, public wind: Wind, public world: World = new World()) {
@@ -314,12 +316,44 @@ export class HelicopterSim {
       if (this.boomTimer > 0.15) this.crash('Boom strike: big cyclic at negative G on a flybar head');
     } else this.boomTimer = 0;
 
+    // ---------- Main-rotor wake at the tail ----------
+    // The wake leaves the disc along the relative air velocity plus the induced velocity, a skewed column of
+    // radius R. In a hover it goes straight down and misses the tail; in slow forward (or sideways/backward)
+    // flight it skews onto the tail boom, stabiliser and tail rotor. Two real effects follow: a download on the
+    // stabiliser (the nose-up "transition bump" at 3-6 m/s) and, when the rolled-up edge of the wake passes
+    // through the tail rotor, a loss of tail thrust with a rough yaw: the classic slow-sideways tail wander.
+    let wakeDown = 0;
+    let wakeEdge = 0;
+    if (rotorAlive && main.vi > 0.2) {
+      const rT = sub(m.tailOffset, m.hubOffset);
+      const w = norm(sub(scale(vAirB, -1), scale(n, main.vi)));
+      const along = dot(rT, w);
+      if (along > 0) {
+        const perp = len(sub(rT, scale(w, along)));
+        const R = m.rotor.radius;
+        const inside = clamp(1 - perp / R, 0, 1);
+        // Fully developed wake is ~2 vi; decays with distance downstream.
+        const strength = Math.max(0, 1 - along / (4 * R));
+        wakeDown = 2 * main.vi * inside * strength;
+        wakeEdge = clamp(1 - Math.abs(perp - R) / (0.35 * R), 0, 1) * strength;
+      }
+    }
+    this.telemetry.wake = Math.max(wakeDown / (2 * Math.max(main.vi, 0.2)), wakeEdge);
+
     // ---------- Tail rotor ----------
     const tailVelB = add(vAirB, cross(s.omega, m.tailOffset));
+    tailVelB.y += wakeDown; // downwash through the tail region reads as the tail moving up through the air
     // Tail thrust positive = pushes tail to the left (-x) = nose right.
     const tailAlong = -tailVelB.x; // velocity along thrust direction
     const tailPlane = Math.hypot(tailVelB.y, tailVelB.z);
     solveRotor(m.tail, s.servoTail, tailAlong, tailPlane, s.rotorOmega * m.tailGearRatio, tail);
+    if (wakeEdge > 0) {
+      // Tip vortices through the tail disc: less thrust and a rough, unsteady yaw moment.
+      tail.thrust *= 1 - 0.3 * wakeEdge;
+      const rough = wakeEdge * main.vi * m.tail.radius * m.tail.radius * 0.8;
+      const noise = Math.sin(s.time * 23) * 0.6 + Math.sin(s.time * 41 + 1) * 0.4;
+      moment = add(moment, v3(0, rough * noise * m.tailOffset.z, 0));
+    }
     const tailForce = v3(-tail.thrust, 0, 0);
     force = add(force, tailForce);
     moment = add(moment, cross(m.tailOffset, tailForce));
@@ -385,7 +419,14 @@ export class HelicopterSim {
       const fn = Math.max(0, kN * pen - cN * vn);
       const vt = sub(vPointW, scale(normal, vn));
       const vtl = len(vt);
-      const muF = cp.kind === 'skid' ? 0.45 : 0.7;
+      // Skids slide along their length far more easily than sideways (a real heli can be nudged fore-aft on grass
+      // but digs in across). Resolve the tangential velocity in the body z direction for the friction coefficient.
+      let muF = 0.7;
+      if (cp.kind === 'skid') {
+        const zW = rotate(s.ori, v3(0, 0, 1));
+        const alongFrac = vtl > 1e-4 ? Math.abs(dot(vt, zW)) / vtl : 0;
+        muF = 0.6 - 0.3 * alongFrac;
+      }
       const ft = vtl > 1e-4 ? scale(vt, -Math.min(muF * fn, vtl * 40 * m.mass) / vtl) : v3();
       const fW = add(scale(normal, fn), ft);
       const fB = rotateInv(s.ori, fW);

@@ -110,6 +110,12 @@ const HELP_HTML = `
       not come. Ease the collective off and let the head speed recover.</li>
     <li><b>Battery</b>: the pack sags under 30% and the motor quits at 0%. Land before the warning, or practise the
       autorotation that follows.</li>
+    <li><b>The wake on the tail</b>: in a hover the rotor wake goes straight down and misses the tail. Between about
+      2 and 6 m/s of airspeed it skews onto the stabiliser and tail rotor: a nose-up bump, less tail authority and a
+      rough yaw. Real pilots feel this on every transition and in slow sideways flight; add a touch of forward cyclic
+      and expect to work the rudder.</li>
+    <li><b>Skids on grass</b> slide along their length but dig in sideways. A sideways touchdown with drift is what
+      rolls a heli over; land straight or with a bit of forward motion.</li>
     <li><b>Ground effect</b> only exists in a hover; it fades with forward speed, which is why a fast low pass sinks.</li>
     <li><b>Wind</b> (Settings) is weaker near the ground and rough in the lee of trees and buildings; the windsock shows
       the mean. Learn hovers in calm, then add 3–5 m/s, then move the hover next to the barn.</li>
