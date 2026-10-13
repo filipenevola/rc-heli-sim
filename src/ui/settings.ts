@@ -55,6 +55,11 @@ export interface SettingsCallbacks {
   /** Radio link latency, ms. */
   onLatency(ms: number): void;
   onTimeOfDay(t: 'morning' | 'noon' | 'evening'): void;
+  /** Open or close the Hangar (parts explorer). */
+  onHangar(): void;
+  /** Graphics quality (reloads the page) and the current value. */
+  onQuality(q: 'high' | 'low'): void;
+  getQuality(): 'high' | 'low';
   /** A saved flight (.json from the debrief's Save flight) to replay, or to fly alongside as a ghost. */
   onLoadFlight(file: File, asGhost: boolean): void;
   onClearGhost(): void;
@@ -236,6 +241,7 @@ export class SettingsPanel {
       <button id="btn-rescue" data-tip="Rescue (hold Space): the instructor takes the sticks, levels the heli and holds a hover until you let go. A buddy box." title="Rescue (hold Space)">🛟</button>
       <button id="btn-sound" data-tip="Sound on / off (M)" title="Sound (M)">🔊</button>
       <button id="btn-camera" data-tip="Camera (C): Pilot on the field, Chase, Front, Top, Drone" title="Camera (C)">🎥 Pilot</button>
+      <button id="btn-hangar" data-tip="Hangar (K): every part of your helicopter, named, with what it does, how it breaks and what to know when you buy a spare. Move the sticks to bench-test the swashplate." title="Hangar: parts (K)">🔧</button>
       <button id="btn-challenges" data-tip="Challenges, Show me / Teach me lessons, rankings" title="Challenges & rankings">🏁</button>
       <button id="btn-pilot" data-tip="Your callsign and email sign-in (syncs progress across devices)" title="Pilot">👤</button>
       <button id="btn-recentre" data-tip="Recentre the phone-tilt neutral position" title="Recentre phone tilt" style="display:none">🎯</button>
@@ -260,6 +266,7 @@ export class SettingsPanel {
     attachTips(bar);
     bar.querySelector('#btn-help')!.addEventListener('click', () => cb.onHelp());
     bar.querySelector('#btn-challenges')!.addEventListener('click', () => cb.onChallenges());
+    bar.querySelector('#btn-hangar')!.addEventListener('click', () => cb.onHangar());
     bar.querySelector('#btn-pilot')!.addEventListener('click', () => cb.onPilot());
     bar.querySelector('#btn-camera')!.addEventListener('click', () => this.cycleCamera());
     // The button row wraps on phones; let the HUD and panels sit below whatever height it ends up with.
@@ -455,6 +462,7 @@ export class SettingsPanel {
       </section>
       <section>
         ${getSite() === 'gym' ? '' : `<label>Time of day ${sel('tod', [['morning', 'Morning'], ['noon', 'Noon (default)'], ['evening', 'Evening: low sun, long shadows, a dark silhouette']], this.tod)}</label>`}
+        <label>Graphics ${sel('quality', [['high', 'High: lake reflections, dense grass, bloom'], ['low', 'Low: phones and older laptops (reloads)']], this.cb.getQuality())}</label>
         <h4>Emergencies</h4>
         <div class="wizard"><button id="fail-tail">Tail rotor failure now</button></div>
         <label><input type="checkbox" id="random-failures" ${this.randomFailures ? 'checked' : ''}> Random tail failure: once per flight, somewhere above 15 m</label>
@@ -561,6 +569,7 @@ export class SettingsPanel {
       this.cb.onArrow(this.arrowOn);
       savePrefs({ arrow: this.arrowOn });
     });
+    this.panel.querySelector<HTMLSelectElement>('#quality')?.addEventListener('change', (e) => this.cb.onQuality((e.target as HTMLSelectElement).value as 'high' | 'low'));
     this.panel.querySelector<HTMLSelectElement>('#tod')?.addEventListener('change', (e) => {
       this.tod = (e.target as HTMLSelectElement).value as 'morning' | 'noon' | 'evening';
       this.cb.onTimeOfDay(this.tod);

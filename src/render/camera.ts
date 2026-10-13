@@ -20,6 +20,12 @@ export const CAMERA_LABELS: Record<CameraMode, string> = {
  */
 export class PilotCamera {
   readonly camera: THREE.PerspectiveCamera;
+  /**
+   * Hangar orbit: when set, overrides the mode. The camera circles `target` (yaw/pitch in rad, distance in m), used by
+   * the parts view. Eases towards these values.
+   */
+  orbit: { target: THREE.Vector3; yaw: number; pitch: number; distance: number; fov: number } | null = null;
+  private orbitNow = { target: new THREE.Vector3(), yaw: 0, pitch: 0, distance: 1 };
   readonly eye = new THREE.Vector3(0, 1.7, 0);
   mode: CameraMode = 'pilot';
   /** Field of view at close range, degrees. */
@@ -62,6 +68,36 @@ export class PilotCamera {
     this.fwd.normalize();
     const up = new THREE.Vector3(0, 1, 0);
     let fov = this.baseFov;
+
+    const near = this.orbit ? 0.02 : 0.3;
+    if (this.camera.near !== near) {
+      this.camera.near = near;
+      this.camera.updateProjectionMatrix();
+    }
+    if (this.orbit) {
+      const o = this.orbit;
+      const n = this.orbitNow;
+      const ko = 1 - Math.exp(-dt * 7);
+      n.target.lerp(o.target, ko);
+      n.yaw += (o.yaw - n.yaw) * ko;
+      n.pitch += (o.pitch - n.pitch) * ko;
+      n.distance += (o.distance - n.distance) * ko;
+      this.pos.set(
+        n.target.x + Math.sin(n.yaw) * Math.cos(n.pitch) * n.distance,
+        n.target.y + Math.sin(n.pitch) * n.distance,
+        n.target.z + Math.cos(n.yaw) * Math.cos(n.pitch) * n.distance,
+      );
+      this.pos.y = Math.max(this.pos.y, 0.05);
+      this.lookAt.copy(n.target);
+      this.camera.position.copy(this.pos);
+      this.camera.up.set(0, 1, 0);
+      this.camera.lookAt(this.lookAt);
+      if (Math.abs(o.fov - this.camera.fov) > 0.01) {
+        this.camera.fov += (o.fov - this.camera.fov) * ko;
+        this.camera.updateProjectionMatrix();
+      }
+      return;
+    }
 
     switch (this.mode) {
       case 'pilot': {
@@ -113,6 +149,20 @@ export class PilotCamera {
       this.camera.fov += (fov - this.camera.fov) * k;
       this.camera.updateProjectionMatrix();
     }
+  }
+
+  /** Start the orbit from where the camera is now, so entering the hangar glides instead of jumping. */
+  beginOrbit(target: THREE.Vector3, yaw: number, pitch: number, distance: number): void {
+    const off = this.camera.position.clone().sub(target);
+    const d = Math.max(off.length(), 0.01);
+    this.orbitNow.target.copy(this.lookAt);
+    this.orbitNow.distance = d;
+    this.orbitNow.pitch = Math.asin(THREE.MathUtils.clamp(off.y / d, -1, 1));
+    this.orbitNow.yaw = Math.atan2(off.x, off.z);
+    // Take the short way round.
+    while (yaw - this.orbitNow.yaw > Math.PI) yaw -= Math.PI * 2;
+    while (yaw - this.orbitNow.yaw < -Math.PI) yaw += Math.PI * 2;
+    this.orbit = { target: target.clone(), yaw, pitch, distance, fov: 35 };
   }
 
   resize(aspect: number): void {

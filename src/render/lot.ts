@@ -6,7 +6,7 @@ import { makePadTexture, outdoorLighting, type SceneHandles } from './scene';
 export function createLotScene(layout: FieldLayout): SceneHandles {
   const lot = layout.lot!;
   const scene = new THREE.Scene();
-  const { sun, setTimeOfDay } = outdoorLighting(scene, 110);
+  const { sun, setTimeOfDay, env } = outdoorLighting(scene, 110);
 
   const shadowed = <T extends THREE.Object3D>(o: T): T => {
     o.traverse((c) => {
@@ -166,7 +166,7 @@ export function createLotScene(layout: FieldLayout): SceneHandles {
   arrow.position.y = 0.03;
   scene.add(arrow);
 
-  return { scene, sun, setTimeOfDay, windsock, animate: () => {}, pilotMarker: pilot, arrow };
+  return { scene, sun, env, setTimeOfDay, windsock, animate: () => {}, pilotMarker: pilot, arrow };
 }
 
 function makeAsphaltTexture(): THREE.Texture {

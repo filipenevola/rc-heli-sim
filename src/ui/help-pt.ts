@@ -18,7 +18,7 @@ export const HELP_HTML_PT = `
     <li><b>Stick direito</b> — cíclico. Esquerda/direita = aileron (rolamento), frente/trás = profundor (arfagem).</li>
     <li><b>Stick esquerdo</b> — coletivo/acelerador (cima/baixo, sem mola) e leme (esquerda/direita, guinada).</li>
     <li><b>Teclado:</b> setas = cíclico, W/S = coletivo, A/D = leme, 1/2/3 = modo de voo, H = throttle hold,
-      R = reiniciar, P = pausar, M = mudo, U = esconder/mostrar a interface, F = tela cheia, C = câmera, ? = esta ajuda.</li>
+      R = reiniciar, P = pausar, M = mudo, U = esconder/mostrar a interface, F = tela cheia, C = câmera, K = hangar (peças), ? = esta ajuda.</li>
     <li><b>Ícones da barra superior:</b> passe o mouse para ver a dica no computador; em tela de toque, <b>segure</b> qualquer
       ícone para uma mini ajuda. O olho no canto superior esquerdo esconde ou mostra todo o resto; pause com ⏸.</li>
     <li><b>Toque:</b> dois gimbais na tela. Escolha o Modo 1–4 nas Configurações. O stick do acelerador fica onde você o deixa.</li>
@@ -185,6 +185,17 @@ export const HELP_HTML_PT = `
 </section>
 
 <section>
+  <h4>Hangar: conheça as peças</h4>
+  <p>Aperte <b>K</b> ou o botão 🔧. O helicóptero é montado com as peças reais: pás, grips, eixo de passo (feathering shaft),
+  head block, links de passo, flybar e palhetas (no treinador), swashplate, servos e varetas, coroa principal, pinhão, motor
+  (ou o motor glow, embreagem, escapamento e tanque no nitro), correia ou torque tube da cauda, caixa da cauda, slider de passo,
+  bateria, ESC, giro ou controladora flybarless, chassi, canopy e trem de pouso. Clique em qualquer peça, ou escolha na lista,
+  para ver o que ela faz, como costuma quebrar e o que saber na hora de comprar a reposição (os textos das peças ainda estão em
+  inglês). Mexa os sticks: é um teste de bancada, a swashplate e os grips acompanham. <b>Demo the controls</b> mostra coletivo,
+  cíclico e leme; a vista explodida e o botão do canopy mostram o que tem dentro.</p>
+</section>
+
+<section>
   <h4>HUD</h4>
   <p><b>Rotação</b> rpm do rotor · <b>Coletivo</b> passo das pás · <b>Potência</b> o que o motor está entregando ·
   <b>Efeito solo</b> sustentação extra perto do chão (por isso ele flutua na altura do joelho) · <b>Distância</b> de onde você está.
@@ -194,12 +205,14 @@ export const HELP_HTML_PT = `
 <section>
   <h4>O campo e os desafios de pouso</h4>
   <p>Tudo no campo é sólido: árvores, a cerca, casas, o celeiro, fardos de feno, vacas, ovelhas, o poste da biruta. Pás
-  tocando qualquer coisa é queda; esquis contra uma parede em velocidade também. A <b>biruta</b> ao lado do heliponto mostra a direção
+  tocando qualquer coisa é queda; esquis contra uma parede em velocidade também. O <b>lago</b> à direita é água: tocou nele,
+  caiu na água (só o pontão segura o heli). Voe baixo sobre ele e veja o vento do rotor ondular a superfície; sobre a grama
+  o vento do rotor deita a grama em volta do heliponto. A <b>biruta</b> ao lado do heliponto mostra a direção
   do vento ao vivo e murcha quando está calmo. Quatro <b>alvos de pouso</b> têm o topo amarelo com um anel branco: a mesa de piquenique (à direita
   do heliponto), a caçamba da picape (à esquerda), o pontão no lago (bem à direita) e a plataforma da torre de 7 m (bem à frente). Coloque os quatro
   apoios dos esquis dentro do anel e fique parado um momento: o simulador mede a sua distância do centro e guarda o seu
-  recorde neste aparelho. Tente a mesa no modo Normal primeiro, depois a picape, o pontão, e a torre por último (é alta, pequena
-  e fora do efeito solo).</p>
+  recorde neste aparelho. Tente a mesa no modo Normal primeiro, depois a picape, o pontão, e a torre por último (é alta e
+  pequena: a plataforma dá colchão de efeito solo, mas derive para fora da borda e ele some).</p>
 </section>
 
 <section>
@@ -211,7 +224,7 @@ export const HELP_HTML_PT = `
   <h4>O estacionamento</h4>
   <p>Configurações → <b>Local de voo</b> → Estacionamento: o estacionamento do clube, 110 × 90 m de asfalto com vagas pintadas,
   postes de luz, alguns carros estacionados, dois galpões no fundo e um contêiner cujo teto é um alvo de
-  pouso (a 2,6 m, quase sem efeito solo). Céu aberto e vento, como um estacionamento de clube de verdade; os postes são a
+  pouso (a 2,6 m e estreito: o teto dá colchão de efeito solo só enquanto o disco está sobre ele). Céu aberto e vento, como um estacionamento de clube de verdade; os postes são a
   surpresa de sempre. Os desafios da mesa, picape, pontão e torre do campo aparecem como "Só no campo" lá.</p>
   <h4>Latência do link de rádio</h4>
   <p>Um link 2,4 GHz de verdade envia os sticks a cada 7–20 ms e o receptor e a unidade flybarless acrescentam mais
@@ -338,7 +351,7 @@ export const HELP_HTML_PT = `
       piquenique e de precisão, cinco minutos no ar. Modo Normal, treinador 450, sem vento.</li>
     <li><b>Intermediário</b>: pairado nose-in (o grande: o cíclico parece invertido), pirueta, oito, o circuito de anéis,
       pousos na picape e no pontão, quinze minutos no ar. Acrescente vento nas Configurações quando estes estiverem fáceis.</li>
-    <li><b>Avançado</b>: pouso na torre fora do efeito solo, circuito nose-in, stall turn, autorrotação.</li>
+    <li><b>Avançado</b>: pouso na torre (plataforma pequena a 7 m), circuito nose-in, stall turn, autorrotação.</li>
     <li><b>3D</b>: rolamento, loop, pairado invertido, funil, tic-toc, piro flip. Idle-Up, bem alto, e muito Me mostre antes.</li>
   </ol>
   <p>Regra de ouro do campo: não passe para o próximo item até o atual ficar chato.</p>

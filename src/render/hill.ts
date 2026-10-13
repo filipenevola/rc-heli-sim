@@ -11,7 +11,7 @@ import { makeSway, type SwayLayer } from './sway';
 export function createHillScene(layout: FieldLayout, world: World): SceneHandles {
   const hill = layout.hill!;
   const scene = new THREE.Scene();
-  const { sun, setTimeOfDay } = outdoorLighting(scene, 130);
+  const { sun, setTimeOfDay, env } = outdoorLighting(scene, 130);
   const shadowed = <T extends THREE.Object3D>(o: T): T => {
     o.traverse((c) => {
       if ((c as THREE.Mesh).isMesh) {
@@ -217,5 +217,5 @@ export function createHillScene(layout: FieldLayout, world: World): SceneHandles
   arrow.position.y = 0.03;
   scene.add(arrow);
 
-  return { scene, sun, setTimeOfDay, windsock, animate: () => {}, pilotMarker: pilot, arrow, setWind: makeSway(layout.trees.map((t) => ({ x: t.x, z: t.z, scale: t.scale, base: g(t.x, t.z) })), swayLayers) };
+  return { scene, sun, env, setTimeOfDay, windsock, animate: () => {}, pilotMarker: pilot, arrow, setWind: makeSway(layout.trees.map((t) => ({ x: t.x, z: t.z, scale: t.scale, base: g(t.x, t.z) })), swayLayers) };
 }

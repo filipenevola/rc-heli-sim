@@ -43,6 +43,13 @@ pilot-on-the-field camera are all about model helicopters.
   (hover power, figure of merit, climb, autorotation sink, power bucket) pinned to published numbers by tests, a smoke trail, a telemetry strip chart, an orientation arrow,
   Shift+R hover resets for 3D drills, and rankings (longest clean flight, challenge points) that follow an
   email across devices.
+- **Hangar (K): learn the parts.** The helicopter is built from ~40 real, named parts (grips, feathering shaft, flybar,
+  mixer, swashplate, CCPM servos, main gear and one-way bearing, belt or torque tube, tail slider, ESC or glow engine,
+  FBL unit...). Click one for what it does, how it breaks and what to know when buying a spare; exploded view;
+  bench-test the sticks and watch the swashplate and grips move.
+- **Graphics that help you fly:** a sharp contact shadow of the model (with a faint rotor-disc shadow) for judging height,
+  rotor wash flattening the grass and rippling the lake, a mirror-like lake with wind-driven waves, mowed stripes for
+  depth cues, image-based lighting, and a quality setting for phones.
 - **Pilot's-eye camera** standing on the field with auto-zoom, plus chase, front, top and drone cameras.
 - **Procedural sound** (Web Audio, no samples): motor, blade chop, tail whine with wag flutter, wind,
   Doppler, slap at high G, VRS roughness, stall buzz, battery alarm, crash sounds, birds and field ambience.
