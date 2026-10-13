@@ -553,4 +553,9 @@ export const PT_BR: Record<string, string> = {
   'A full banked circle: 360° of heading with more than 45° of bank the whole way, above 5 m, moving faster than 3 m/s. Keep the nose pointed into the centre.': 'Um círculo inclinado completo: 360° de rumo com mais de 45° de inclinação o tempo todo, acima de 5 m, a mais de 3 m/s. Mantenha o nariz apontado para o centro.',
   'Above 6 m and nearly stationary, swing the nose past 30° up and 30° down four times in a row (two full tic-tocs) within 8 s, pumping collective to hold height.': 'Acima de 6 m e quase parado, balance o nariz além de 30° para cima e 30° para baixo quatro vezes seguidas (dois tic-tocs completos) em 8 s, bombeando o coletivo para manter a altura.',
   'Flip through inverted and back to level while pirouetting (at least 270° of heading during the flip), above 8 m. The signature 3D move.': 'Flip passando pelo invertido e voltando ao nivelado enquanto pirueta (pelo menos 270° de rumo durante o flip), acima de 8 m. A manobra símbolo do 3D.',
+  'Something went wrong in the 3D view': 'Algo deu errado na visualização 3D',
+  'Reload': 'Recarregar',
+  'Dismiss': 'Fechar',
+  'The graphics chip reset the 3D view. Restoring…': 'O chip gráfico reiniciou a visualização 3D. Restaurando…',
+  'The 3D view did not come back by itself.': 'A visualização 3D não voltou sozinha.',
 };

@@ -3,6 +3,14 @@
 All notable changes to RC Heli Sim. The version shown in the game (Help and Settings) matches the latest
 entry here; the commit hash next to it identifies the exact build.
 
+## 0.84.1
+
+- Fix: a black 3D view on phones. One error inside the render loop stopped it for good; the picture froze and the next
+  resize (opening a panel moves the address bar) cleared it to black. The loop now keeps running and shows the error with
+  Reload / Dismiss. A lost graphics context (phones under memory pressure) is reported and rebuilt when the browser
+  gives it back, with a Reload button if it does not.
+- Phones (Graphics: Low) render at up to 1.5× pixel density instead of 2×: much less GPU memory and heat.
+
 ## 0.84.0
 
 - **Hangar (K or 🔧): the helicopter, part by part.** The model is rebuilt from its real parts, about 40 of them, named

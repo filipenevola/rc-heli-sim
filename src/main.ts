@@ -65,7 +65,8 @@ const quality: Quality = ((): Quality => {
 })();
 // With the HDR post chain the multisampling happens in its render target, not on the canvas.
 const renderer = new THREE.WebGLRenderer({ antialias: quality === 'low', powerPreference: 'high-performance' });
-renderer.setPixelRatio(Math.min(window.devicePixelRatio, 2));
+// Low quality (phones) caps the pixel ratio: a 1080 × 2400 screen at full density is ~10 M pixels per pass.
+renderer.setPixelRatio(Math.min(window.devicePixelRatio, quality === 'low' ? 1.5 : 2));
 renderer.setSize(window.innerWidth, window.innerHeight);
 renderer.shadowMap.enabled = true;
 renderer.shadowMap.type = THREE.PCFSoftShadowMap;
@@ -959,7 +960,7 @@ const target = new THREE.Vector3();
 const heliQuat = new THREE.Quaternion();
 const MAX_FRAME = 0.1;
 
-function frame(now: number): void {
+function frameBody(now: number): void {
   const dt = Math.max(0, Math.min((now - last) / 1000, MAX_FRAME)); // never negative, even with odd clocks
   last = now;
   let ctl = input.poll(dt);
@@ -1055,7 +1056,6 @@ function frame(now: number): void {
     heliQuat.set(f.ori.x, f.ori.y, f.ori.z, f.ori.w);
     pilotCam.update(target, heliQuat, dt);
     renderFrame(dt);
-    requestAnimationFrame(frame);
     return;
   }
   if (hoverArmed) {
@@ -1171,6 +1171,49 @@ function frame(now: number): void {
   audio.update(sim, pilotCam.eye, wind.speed);
   settings.tick();
   renderFrame(dt);
+}
+
+/*
+ * The loop must never die: before 0.84.1 one exception stopped requestAnimationFrame for good, the canvas froze, and the
+ * next resize (opening a panel on a phone moves the address bar) cleared it to black. Now an error is shown once with
+ * its message and the loop keeps going. A lost GPU context (phones under memory pressure) is reported and rebuilt.
+ */
+let loopError: string | null = null;
+function frame(now: number): void {
+  try {
+    frameBody(now);
+  } catch (e) {
+    const msg = e instanceof Error ? `${e.message}` : String(e);
+    console.error('frame error', e);
+    if (loopError !== msg) {
+      loopError = msg;
+      showGlBanner(`${t('Something went wrong in the 3D view')}: <code>${msg.replace(/</g, '&lt;')}</code>`, true);
+    }
+  }
   requestAnimationFrame(frame);
 }
 requestAnimationFrame(frame);
+
+const glBanner = document.createElement('div');
+glBanner.className = 'gl-banner';
+glBanner.style.display = 'none';
+ui.appendChild(glBanner);
+function showGlBanner(html: string, withReload: boolean): void {
+  glBanner.innerHTML = `${html}${withReload ? `<br><button data-action="reload">${t('Reload')}</button> <button data-action="dismiss">${t('Dismiss')}</button>` : ''}`;
+  glBanner.style.display = '';
+  glBanner.querySelector('[data-action="reload"]')?.addEventListener('click', () => location.reload());
+  glBanner.querySelector('[data-action="dismiss"]')?.addEventListener('click', () => (glBanner.style.display = 'none'));
+}
+let contextLostTimer: number | null = null;
+renderer.domElement.addEventListener('webglcontextlost', () => {
+  // three calls preventDefault, which asks the browser to give the context back; wait for it, then offer a reload.
+  showGlBanner(t('The graphics chip reset the 3D view. Restoring…'), false);
+  contextLostTimer = window.setTimeout(() => showGlBanner(t('The 3D view did not come back by itself.'), true), 4000);
+});
+renderer.domElement.addEventListener('webglcontextrestored', () => {
+  if (contextLostTimer !== null) clearTimeout(contextLostTimer);
+  contextLostTimer = null;
+  // GPU-side buffers are gone: rebuild the sky's environment map (shadow maps and textures re-create on their own).
+  field.env?.setTimeOfDay(field.env.timeOfDay);
+  glBanner.style.display = 'none';
+});
