@@ -511,6 +511,8 @@ export class HeliMesh {
     // Boom.
     const bm = this.piece('tail-boom', this.root, [0, 0, 0.06]);
     this.mesh('tail-boom', bm, new THREE.CylinderGeometry(boomR, boomR, zEnd - zFront, 20, 1, true), 'alu', [0, boomY, (zFront + zEnd) / 2], [Math.PI / 2, 0, 0]);
+    // White stripe along the top of the boom: carries the orientation cue (bright top, dark belly) back to the tail.
+    this.mesh('tail-boom', bm, new THREE.BoxGeometry(boomR * 0.7, boomR * 0.25, (zEnd - zFront) * 0.92), 'plasticWhite', [0, boomY + boomR * 0.92, (zFront + zEnd) / 2]);
     // Boom clamp on the frame.
     this.mesh('tail-boom', bm, new THREE.CylinderGeometry(boomR * 1.35, boomR * 1.35, 0.022 * this.S.z, 16), 'plastic', [0, boomY, zFront + 0.006 * this.S.z], [Math.PI / 2, 0, 0]);
 
@@ -653,7 +655,7 @@ export class HeliMesh {
     if (this.power === 'nitro') {
       // A small receiver pack instead of the flight LiPo; no ESC.
       const rxp = this.piece('battery', c, [0, -0.03, -0.08]);
-      this.mesh('battery', rxp, roundedBox(0.03, 0.014, 0.04, 0.003), 'battery', [0, -0.02, -0.15]);
+      this.mesh('battery', rxp, roundedBox(0.026, 0.014, 0.036, 0.003), 'battery', [0, -0.059, -0.155]);
     }
     this.buildReceiverAndGyro();
     if (this.power === 'nitro') return;
@@ -778,19 +780,24 @@ export class HeliMesh {
       const a = (i / 10) * Math.PI * 2;
       this.mesh('clutch', this.motorBell, new THREE.BoxGeometry(0.012, 0.004, 0.0012), 'plastic', [Math.cos(a) * 0.012, 0, Math.sin(a) * 0.012], [0, -a, 0]);
     }
+    // Crankshaft vertical (up into the fan and clutch); the cylinder and its finned head point forward horizontally,
+    // glow plug at the tip; carburettor at the back of the crankcase; exhaust out of the side into the muffler.
     const en = this.piece('engine', c, [0, -0.07, -0.06]);
-    this.mesh('engine', en, new THREE.CylinderGeometry(0.013, 0.015, 0.024, 20), 'engine', [0, -0.07, -0.0385]); // crankcase
-    for (let i = 0; i < 5; i++) this.mesh('engine', en, new THREE.CylinderGeometry(0.017, 0.017, 0.0016, 24), 'engine', [0, -0.084 - i * 0.003, -0.0385]); // head fins
-    this.mesh('engine', en, new THREE.CylinderGeometry(0.0022, 0.0022, 0.005, 8), 'brass', [0, -0.099, -0.0385]); // glow plug
-    this.mesh('engine', en, new THREE.CylinderGeometry(0.004, 0.004, 0.02, 10), 'engine', [0.016, -0.08, -0.0385], [0, 0, Math.PI / 2]); // carburettor
+    const ez = -0.0385;
+    const ey = -0.074;
+    this.mesh('engine', en, new THREE.CylinderGeometry(0.013, 0.014, 0.024, 20), 'engine', [0, ey, ez]); // crankcase
+    this.mesh('engine', en, new THREE.CylinderGeometry(0.0105, 0.0105, 0.018, 18), 'engine', [0, ey, ez - 0.019], [Math.PI / 2, 0, 0]); // cylinder
+    for (let i = 0; i < 5; i++) this.mesh('engine', en, new THREE.CylinderGeometry(0.0155, 0.0155, 0.0014, 22), 'engine', [0, ey, ez - 0.024 - i * 0.0028], [Math.PI / 2, 0, 0]); // head fins
+    this.mesh('engine', en, new THREE.CylinderGeometry(0.0022, 0.0022, 0.005, 8), 'brass', [0, ey, ez - 0.039], [Math.PI / 2, 0, 0]); // glow plug
+    this.mesh('engine', en, new THREE.CylinderGeometry(0.0045, 0.004, 0.016, 10), 'engine', [0, ey + 0.002, ez + 0.019], [Math.PI / 2, 0, 0]); // carburettor
     const mu = this.piece('muffler', c, [0.05, -0.05, 0]);
-    this.tube('muffler', mu, [[-0.012, -0.085, -0.0385], [-0.03, -0.09, -0.03], [-0.034, -0.09, 0.0], [-0.032, -0.085, 0.05]], 0.0075, 'alu', 24);
+    this.tube('muffler', mu, [[0.011, ey, ez - 0.02], [0.024, ey - 0.004, ez - 0.012], [0.03, ey - 0.006, ez + 0.02], [0.03, ey - 0.004, 0.05]], 0.0075, 'alu', 24);
     const ft = this.piece('fuel-tank', c, [0, -0.04, -0.07]);
-    this.mesh('fuel-tank', ft, roundedBox(0.03, 0.026, 0.07, 0.006), 'fuel', [0, -0.052, -0.1]);
-    this.tube('fuel-tank', ft, [[0.008, -0.04, -0.07], [0.016, -0.06, -0.055], [0.016, -0.08, -0.042]], 0.0012, 'wireYellow');
+    this.mesh('fuel-tank', ft, roundedBox(0.03, 0.022, 0.06, 0.006), 'fuel', [0, -0.048, -0.105]);
+    this.tube('fuel-tank', ft, [[0.008, -0.04, -0.09], [0.014, -0.058, -0.07], [0.006, ey + 0.002, ez + 0.026]], 0.0012, 'wireYellow');
     const tsv = this.piece('throttle-servo', c, [0.05, 0, 0]);
-    this.mesh('throttle-servo', tsv, new THREE.BoxGeometry(0.012, 0.023, 0.023), 'servo', [0.032, -0.05, -0.035]);
-    this.tube('throttle-servo', tsv, [[0.03, -0.04, -0.035], [0.024, -0.06, -0.04], [0.018, -0.08, -0.0385]], 0.0007, 'steel');
+    this.mesh('throttle-servo', tsv, new THREE.BoxGeometry(0.012, 0.023, 0.023), 'servo', [0.032, -0.05, -0.0]);
+    this.tube('throttle-servo', tsv, [[0.03, -0.04, 0.0], [0.016, -0.06, -0.01], [0.004, -0.072, -0.0195]], 0.0007, 'steel');
     const td = this.piece('tail-drive-gear', c, [0, 0.0, 0.05]);
     td.add(this.tailDriveFront);
     if (this.head === 'flybar') this.mesh('tail-drive-gear', this.tailDriveFront, gearGeometry(28, 0.0105, 0.0095, 0.007), 'plastic');

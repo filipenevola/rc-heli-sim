@@ -30,6 +30,10 @@ entry here; the commit hash next to it identifies the exact build.
   surface under the rotor, so the tower pad, table, truck bed, container and roofs cushion like the ground (tree crowns do
   not); before, it was always measured from the ground below, and the lessons and challenge texts that taught "no ground
   effect up there" are corrected; a billboard and the end of the fence stood in the pond.
+- Kept from before: every landing platform's white ring is exactly its scoring radius; the white top stripe that carries
+  the orientation cue to the tail; paint schemes, model colour, ghosts, training gear, 3-blade heads, the 250 and nitro
+  (now with a heli-style glow engine: vertical crank into the clutch, cylinder and finned head forward); the course
+  rings, hover box, arrow, minimap and trail are tucked away while you are in the Hangar.
 
 ## 0.83.1
 

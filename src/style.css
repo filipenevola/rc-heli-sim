@@ -239,5 +239,5 @@ body:has(.challenges:not([style*="display: none"])) .rescue-badge, body:has(.set
 .part-label { position: absolute; transform: translate(-50%, calc(-100% - 14px)); background: rgba(10,10,14,0.92); border: 1px solid #ffd34d; color: #ffd34d; font-weight: 700; font-size: 14px;
   padding: 4px 10px; border-radius: 6px; pointer-events: none; white-space: nowrap; }
 .part-label::after { content: ''; position: absolute; left: 50%; bottom: -12px; width: 2px; height: 12px; background: #ffd34d; transform: translateX(-50%); }
-body.in-hangar .hud, body.in-hangar .hud-sticks, body.in-hangar .touch-sticks, body.in-hangar .toast, body.in-hangar .crash-banner, body.in-hangar .warn-banner, body.in-hangar .paused-banner { display: none !important; }
+body.in-hangar .hud, body.in-hangar .hud-sticks, body.in-hangar .touch-sticks, body.in-hangar .toast, body.in-hangar .crash-banner, body.in-hangar .warn-banner, body.in-hangar .paused-banner, body.in-hangar .minimap, body.in-hangar .drill-badge, body.in-hangar .lesson { display: none !important; }
 @media (max-width: 760px) { .hangar { top: auto; bottom: 10px; max-height: 45vh; } }

@@ -257,7 +257,7 @@ export function createScene(layout: FieldLayout, quality: Quality = 'high'): Sce
       case 'table': {
         // Picnic table: plank top, A-frame legs, benches. The collider is the top plus a solid block under it.
         top.material = mats.wood;
-        const target = new THREE.Mesh(new THREE.CircleGeometry(p.size * 0.42, 40), decal(mats.pad.clone()));
+        const target = new THREE.Mesh(new THREE.CircleGeometry(p.radius + 0.12, 40), decal(mats.pad.clone()));
         target.rotation.x = -Math.PI / 2;
         target.position.y = p.height + 0.002;
         g.add(target);
@@ -312,6 +312,11 @@ export function createScene(layout: FieldLayout, quality: Quality = 'high'): Sce
         break;
       }
     }
+    // The white ring painted on the surface is exactly the radius that counts as a precise landing.
+    const ring = new THREE.Mesh(new THREE.RingGeometry(p.radius - 0.04, p.radius, 48), decal(new THREE.MeshStandardMaterial({ color: 0xffffff, roughness: 0.6, polygonOffsetFactor: -4, polygonOffsetUnits: -4 })));
+    ring.rotation.x = -Math.PI / 2;
+    ring.position.y = p.height + 0.004;
+    g.add(ring);
     g.position.set(p.x, 0, p.z);
     scene.add(shadowed(g));
   }
@@ -661,7 +666,7 @@ function roofTexture(): THREE.Texture {
   });
 }
 
-/** Yellow landing square with a painted ring and cross-hair: the challenge platforms' target. */
+/** Yellow landing square with a cross-hair: the challenge platforms' target (the ring is added per platform). */
 function targetTexture(): THREE.Texture {
   return canvasTex(256, 256, (g) => {
     g.fillStyle = '#e8b500';
@@ -669,11 +674,8 @@ function targetTexture(): THREE.Texture {
     g.strokeStyle = '#1b1b1b';
     g.lineWidth = 14;
     g.strokeRect(7, 7, 242, 242);
+    // The white scoring ring is a separate mesh at each platform's exact radius; only the cross-hair is painted here.
     g.strokeStyle = '#ffffff';
-    g.lineWidth = 10;
-    g.beginPath();
-    g.arc(128, 128, 80, 0, Math.PI * 2);
-    g.stroke();
     g.lineWidth = 4;
     g.beginPath();
     g.moveTo(128, 90);

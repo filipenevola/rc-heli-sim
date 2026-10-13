@@ -564,7 +564,7 @@ export function buildHill(): { layout: FieldLayout; world: World } {
   world.pad = { id: 'pad', name: 'helipad', centre: { x: 0, y: 0, z: -6 }, radius: 0.5 };
   for (const m of hill.marks) world.addGroundTarget({ id: m.id, name: m.name, centre: { x: m.x, y: HILL_TERRAIN.heightAt(m.x, m.z), z: m.z }, radius: 0.6, reach: m.r });
   for (const r of hill.rocks) world.add({ kind: 'cylinder', name: 'a boulder', x: r.x, z: r.z, r: r.r, y0: HILL_TERRAIN.heightAt(r.x, r.z) - 1, y1: HILL_TERRAIN.heightAt(r.x, r.z) + r.r * 0.9 });
-  for (const t of trees) world.add({ kind: 'cylinder', name: 'a tree', x: t.x, z: t.z, r: 1.6 * t.scale, y0: HILL_TERRAIN.heightAt(t.x, t.z), y1: HILL_TERRAIN.heightAt(t.x, t.z) + 9 * t.scale });
+  for (const t of trees) world.add({ kind: 'cylinder', name: 'a tree', x: t.x, z: t.z, r: 1.6 * t.scale, y0: HILL_TERRAIN.heightAt(t.x, t.z), y1: HILL_TERRAIN.heightAt(t.x, t.z) + 9 * t.scale, porous: true });
   // Fence posts along the bottom edge (behind the pilot) so the meadow has a boundary to read distance from.
   for (let x = -40; x <= 40; x += 4) world.add({ kind: 'cylinder', name: 'a fence post', x, z: 22, r: 0.08, y0: HILL_TERRAIN.heightAt(x, 22), y1: HILL_TERRAIN.heightAt(x, 22) + 1.2 });
   return { layout, world };

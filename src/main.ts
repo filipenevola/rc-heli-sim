@@ -175,6 +175,7 @@ let flightGhost: { frames: GhostFrame[]; mesh: HeliMesh; clock: number } | null 
 function setFlightGhost(frames: { pos: GhostFrame['pos']; ori: GhostFrame['ori']; a1: number; b1: number; rotorOmega: number }[] | null): void {
   if (flightGhost) {
     scene.remove(flightGhost.mesh.root);
+    flightGhost.mesh.dispose();
     flightGhost = null;
   }
   if (!frames || frames.length < 30) return;
@@ -247,6 +248,7 @@ function stopLesson(resetHeli = true): void {
   lessonOverlay.hide();
   if (ghostMesh) {
     scene.remove(ghostMesh.root);
+    ghostMesh.dispose();
     ghostMesh = null;
     ghostFrames = null;
   }
@@ -515,10 +517,12 @@ function enterHangar(): void {
   if (inHangar) return;
   if (lesson) stopLesson();
   if (replay) stopReplay();
+  setRescue(false);
   if (paused) setPaused(false);
   sim.reset();
   tracker.resetTransient();
   inHangar = true;
+  trail.clear();
   document.body.classList.add('in-hangar');
   gates.group.visible = false; // course rings and the hover box would wrap the model
   arrowBeforeHangar = field.arrow.visible;
@@ -548,6 +552,7 @@ function exitHangar(): void {
 
 /** Select a part: glow it, fade the rest and swing the camera to it. */
 function selectPart(id: string | null): void {
+  heliMesh.update(sim.state, 0); // a freshly built mesh (model change) is not placed until its first update
   hangar.select(id);
   heliMesh.highlight(id, hoverPart);
   if (!pilotCam.orbit) return;
@@ -749,6 +754,7 @@ challenges.onProfileChange = () => settings.setPilotLabel(profile.name, profile.
 (window as unknown as { rcHeli: unknown }).rcHeli = {
   getHeliMesh: () => heliMesh, enterHangar, exitHangar, selectPart, env: field.env,
   setModelById: (id: string) => setModel(allModels().find((m) => m.id === id) ?? sim.model),
+  setModel,
   /** Orbit the camera around the model (yaw/pitch rad, distance m); handy for screenshots of the model. */
   inspect(yaw: number, pitch: number, distance: number, dy = 0.03): void {
     const p = sim.state.pos;
@@ -1095,7 +1101,7 @@ function frame(now: number): void {
 
   heliMesh.update(sim.state, paused ? 0 : dt);
   if (!paused) trail.update(sim.state.pos, dt);
-  if (flightGhost && !lesson) {
+  if (flightGhost && !lesson && !inHangar) {
     if (!paused) flightGhost.clock += dt;
     const fr = flightGhost.frames;
     const idx = Math.floor(flightGhost.clock * 20) % fr.length;
