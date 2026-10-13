@@ -3,6 +3,15 @@
 All notable changes to RC Heli Sim. The version shown in the game (Help and Settings) matches the latest
 entry here; the commit hash next to it identifies the exact build.
 
+## 0.84.2
+
+- Fix: a black screen for returning players. Since 0.84.0, a saved model (or model setup) made start-up read the Hangar
+  state before it existed, so the page threw before the 3D view started; clearing the site data was the only way out.
+  The browser smoke now also loads the game as a returning pilot (`?prefs=<json>` seeds saved preferences), which fails
+  on exactly that bug.
+- Fix: the buttons inside the green cards could not be tapped or clicked (Got it on the welcome card; Replay, Save
+  flight and Fly against it on the debrief). The welcome card also closes by itself once you take off.
+
 ## 0.84.1
 
 - Fix: a black 3D view on phones. One error inside the render loop stopped it for good; the picture froze and the next

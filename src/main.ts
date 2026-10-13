@@ -75,6 +75,18 @@ renderer.toneMappingExposure = 1.0;
 app.appendChild(renderer.domElement);
 setEnvironmentRenderer(renderer);
 
+// ?prefs=<json>: start as a returning pilot with these saved preferences (merged into what is stored). Used by the
+// browser smoke to load the game with a saved model/site/time of day, the path that broke in 0.84.0.
+{
+  const raw = new URLSearchParams(location.search).get('prefs');
+  if (raw) {
+    try {
+      const seed = JSON.parse(raw) as Record<string, unknown>;
+      const cur = JSON.parse(localStorage.getItem('rc-heli-sim.prefs.v1') ?? '{}') as Record<string, unknown>;
+      localStorage.setItem('rc-heli-sim.prefs.v1', JSON.stringify({ ...cur, ...seed }));
+    } catch { /* malformed: ignore */ }
+  }
+}
 // Site: ?site=gym or the saved preference; the field otherwise. Changing it reloads the page.
 {
   const fromUrl = new URLSearchParams(location.search).get('site');
@@ -124,6 +136,12 @@ let customModel: HeliModel | null = null;
 function allModels(): HeliModel[] {
   return customModel ? [...HELI_MODELS, customModel] : [...HELI_MODELS];
 }
+// Hangar state lives up here: setModel() reads it, and saved preferences call setModel() during start-up (0.84.0 declared
+// it further down, so a saved model threw "cannot access before initialization" and the page never started).
+let inHangar = false;
+let hangarSpin = false;
+const HANGAR_SPIN = 3; // rad/s: slow enough to follow one blade round
+
 function setModel(model: HeliModel): void {
   baseModel = model;
   if (flightGhost) setFlightGhost(null);
@@ -484,13 +502,10 @@ if (import.meta.env.PROD && 'serviceWorker' in navigator) {
 /* ------------------------------------------------------------------------------------------------ */
 /* Hangar: the parts explorer                                                                         */
 /* ------------------------------------------------------------------------------------------------ */
-let inHangar = false;
 let hangarDemo = false;
-let hangarSpin = false;
 let demoT = 0;
 let hoverPart: string | null = null;
 let arrowBeforeHangar = false;
-const HANGAR_SPIN = 3; // rad/s: slow enough to follow one blade round
 const hangar = new HangarPanel(ui, {
   onClose: () => exitHangar(),
   onSelect: (id) => selectPart(id),
@@ -1136,6 +1151,7 @@ function frameBody(now: number): void {
   if (!paused && !inHangar && (!lesson || lesson.mode === 'teach')) {
     const wasFlying = flightTimer.flying;
     flightTimer.update(sim, dt);
+    if (flightTimer.flying && !wasFlying) hud.closeToastWith('welcome-ok'); // the welcome card goes away once you fly
     if (flightTimer.flying && !wasFlying) { stats.begin(sim); flightStartFrame = recFrameNo; failureAt = 10 + Math.random() * 40; }
     if (randomFailures && flightTimer.flying && flightTimer.airTime > failureAt && sim.telemetry.altitude > 15) { failureAt = Infinity; failTailNow(); }
     if (flightTimer.flying) stats.update(sim, dt, ctl);

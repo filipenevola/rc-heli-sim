@@ -6,6 +6,8 @@ html, body { margin: 0; height: 100%; overflow: hidden; background: #000; font-f
 #ui { position: fixed; inset: 0; pointer-events: none; }
 #ui > * { pointer-events: auto; }
 #ui > .hud-sticks, #ui > .toast, #ui > .touch-sticks { pointer-events: none; }
+/* The toast lets touches through to the field, but its buttons and links must still take a tap (Got it, Replay...). */
+#ui > .toast button, #ui > .toast a { pointer-events: auto; }
 .crash-banner button { margin-top: 8px; background: rgba(0,0,0,0.5); color: #fff; border: 1px solid #ffd34d; border-radius: 6px; padding: 6px 12px; font-size: 14px; cursor: pointer; }
 body.ui-hidden .hud, body.ui-hidden .hud-sticks, body.ui-hidden .settings, body.ui-hidden .challenges, body.ui-hidden .help { display: none !important; }
 body.ui-hidden .topbar button:not(#btn-hide) { display: none !important; }

@@ -150,6 +150,14 @@ export class Hud {
   onAction: ((id: string) => void) | null = null;
 
   /** Short on-screen note (mode changes, hints). Buttons with data-action call onAction and keep the toast open. */
+  /** Close the toast if it is showing the given action button (e.g. the welcome card once the pilot is flying). */
+  closeToastWith(action: string): void {
+    if (this.toast.style.display !== 'none' && this.toast.querySelector(`button[data-action="${action}"]`)) {
+      this.toast.style.display = 'none';
+      this.toastUntil = 0;
+    }
+  }
+
   notify(html: string, ms = 3500): void {
     this.toast.innerHTML = html;
     this.toast.style.display = '';

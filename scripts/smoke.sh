@@ -13,9 +13,12 @@ case "$(uname -s)" in
   *) GPU="--use-angle=swiftshader --enable-unsafe-swiftshader --no-sandbox --disable-dev-shm-usage" ;;
 esac
 fail=0
-for path in "/" "/?lesson=first-hover&mode=teach&cam=chase" "/?lesson=roll&cam=drone" "/?panel=challenges" "/?pos=0,30,-6" "/?panel=pilot" "/?site=gym&cam=pilot" "/?site=gym&lesson=hover-box&mode=show" "/?site=lot&cam=pilot" "/?site=hill&cam=pilot" "/?site=hill&lesson=land-bank&mode=show&cam=chase" "/?hangar=swashplate" "/?quality=low&site=field" "/radio.html?c=ABCD&auto=0"; do
+# A throwaway profile: no extensions, no saved site data from a previous run.
+PROFILE="$(mktemp -d)"
+trap 'rm -rf "$PROFILE"' EXIT
+for path in "/" "/?lesson=first-hover&mode=teach&cam=chase" "/?lesson=roll&cam=drone" "/?panel=challenges" "/?pos=0,30,-6" "/?panel=pilot" "/?site=gym&cam=pilot" "/?site=gym&lesson=hover-box&mode=show" "/?site=lot&cam=pilot" "/?site=hill&cam=pilot" "/?site=hill&lesson=land-bank&mode=show&cam=chase" "/?hangar=swashplate" "/?prefs=%7B%22model%22%3A%22700-fbl%22%2C%22welcomed%22%3Atrue%7D" "/?prefs=%7B%22site%22%3A%22lot%22%2C%22model%22%3A%22250-fbl%22%2C%22tod%22%3A%22evening%22%7D" "/?prefs=%7B%22site%22%3A%22gym%22%2C%22model%22%3A%22450-flybar%22%7D" "/?quality=low&site=field" "/radio.html?c=ABCD&auto=0"; do
   # shellcheck disable=SC2086
-  out=$("$CHROME" --headless=new $GPU --hide-scrollbars --window-size=900,600 --virtual-time-budget=5000 --enable-logging=stderr --v=0 --dump-dom "$BASE$path" 2>&1 >/dev/null | grep -i "uncaught" | head -2)
+  out=$("$CHROME" --headless=new $GPU --user-data-dir="$PROFILE" --hide-scrollbars --window-size=900,600 --virtual-time-budget=5000 --enable-logging=stderr --v=0 --dump-dom "$BASE$path" 2>&1 >/dev/null | grep -i "uncaught" | head -2)
   if [ -n "$out" ]; then echo "FAIL $path"; echo "$out"; fail=1; else echo "ok   $path"; fi
 done
 exit $fail
