@@ -285,7 +285,7 @@ export const LESSONS: Lesson[] = [
   {
     challengeId: 'land-container',
     title: 'Container roof landing',
-    intro: 'A roof is a roof: approach high, stop dead above it, and sink straight down. Up there the ground effect is gone, so the last metre needs a little more collective than on the pad.',
+    intro: 'A roof is a roof: approach high, stop dead above it, and sink straight down. The roof cushions the last metre like the pad does, but only while the whole disc is over it: drift off the edge and the heli drops.',
     steps: [spoolUp(0, 'Spool up.'), liftTo(4, 'Lift to 4 m: higher than the container.'), ...landOn({ x: 12, y: 2.6, z: -24 }, 'Fly over the container and stop above its roof, about 1.5 m up. Kill all drift before you sink.')],
   },
   {
@@ -361,8 +361,8 @@ export const LESSONS: Lesson[] = [
   {
     challengeId: 'land-tower',
     title: 'Tower pad landing',
-    intro: 'Seven metres up there is no ground effect: the heli needs a bit more collective to hover, and the pad is small. Patience.',
-    steps: [spoolUp(0, 'Spool up.'), liftTo(3, 'Lift off.'), goTo({ x: 22, y: 9, z: -42 }, 'Climb to above the tower; approach from the side so the pole stays clear of the blades.', { vmax: 4 }), ...landOn({ x: 22, y: 7, z: -42 }, 'Hover over the pad: notice it takes slightly more collective up here.')],
+    intro: 'Seven metres up the pad is small: it cushions you like the ground only while you are right over it, and off its edge the heli sinks. Patience.',
+    steps: [spoolUp(0, 'Spool up.'), liftTo(3, 'Lift off.'), goTo({ x: 22, y: 9, z: -42 }, 'Climb to above the tower; approach from the side so the pole stays clear of the blades.', { vmax: 4 }), ...landOn({ x: 22, y: 7, z: -42 }, 'Hover over the pad: it gives a ground cushion like the field does, but drift off its edge and the cushion is gone.')],
   },
   {
     challengeId: 'circuit',

@@ -30,10 +30,15 @@ jobs:
         # rate-limit; resolve the tag with the runner's token and hand it over instead.
         env:
           GH_TOKEN: ${{ github.token }}
+        # A download can fail its checksum now and then (seen on 0.83.0): retry a few times rather than skip a deploy.
         run: |
           export QUAVEONE_VERSION="$(gh api repos/quaveone/cli/releases/latest --jq .tag_name)"
           echo "Quave ONE CLI $QUAVEONE_VERSION"
-          QUAVEONE_INSTALL_DIR="$HOME/.local/bin" bash -c "$(curl -fsSL https://raw.githubusercontent.com/quaveone/cli/main/install.sh)"
+          for attempt in 1 2 3; do
+            if QUAVEONE_INSTALL_DIR="$HOME/.local/bin" bash -c "$(curl -fsSL https://raw.githubusercontent.com/quaveone/cli/main/install.sh)"; then break; fi
+            if [ "$attempt" = 3 ]; then echo "Quave ONE CLI install failed 3 times"; exit 1; fi
+            echo "CLI install failed (attempt $attempt), retrying in 10 s"; sleep 10
+          done
           echo "$HOME/.local/bin" >> "$GITHUB_PATH"
       - name: Deploy web (heli.filipenevola.com)
         run: quaveone deploy -env filipenevola-rc-heli-sim-web-production -env-token "$QUAVEONE_WEB_ENV_TOKEN" -dir .

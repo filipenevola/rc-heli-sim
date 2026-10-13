@@ -3,6 +3,38 @@
 All notable changes to RC Heli Sim. The version shown in the game (Help and Settings) matches the latest
 entry here; the commit hash next to it identifies the exact build.
 
+## 0.84.0
+
+- **Hangar (K or 🔧): the helicopter, part by part.** The model is rebuilt from its real parts, about 40 of them, named
+  the way hobbyists and parts shops name them: main blades with tracking tape, grips, blade bolts, feathering shaft and
+  dampers, head block, pitch links, flybar, paddles, flybar control frame, Bell-Hiller mixer and washout (trainer),
+  swashplate, anti-rotation guide, 120° CCPM servos and pushrods, main shaft, bearing blocks, main gear with one-way bearing,
+  pinion and outrunner (or glow engine, clutch, muffler, fuel tank and throttle servo on nitro), front tail pulley/gear,
+  twisted tail belt (trainer) or torque tube (FBL), boom and supports, stabiliser, fin, tail servo and rod, tail gearbox,
+  output shaft, pitch slider and lever, tail hub and blades, LiPo (or receiver pack), ESC, receiver, gyro or flybarless
+  unit, frame, canopy and mounts, skids, struts, training gear. Click a part for what it does, how it usually breaks and
+  what to know when buying a spare. Exploded view, canopy off, slow rotor turn.
+- **Bench test in the Hangar:** move the sticks and the swashplate rises and tilts, servo arms and pushrods follow, each
+  blade grip twists by collective plus cyclic for where it is in the turn, the flybar teeters, the tail slider moves.
+  "Demo the controls" walks through collective, cyclic and rudder. In flight the same parts move from the simulated servos.
+  Model colour and paint schemes, ghosts and training gear carry over to the new model.
+- **Outdoor graphics (field, parking lot, hillside):** sky with image-based lighting; one sun with two shadow maps (the
+  whole site, plus a sharp one that follows the model, so its shadow, the best height cue when landing, is crisp; the
+  spinning rotor casts a faint disc shadow whose density follows the blade area); HDR bloom; Settings → Graphics (high/low).
+- **Field:** mowed stripes and natural grass variation, instanced grass that sways in the wind and is laid flat by the rotor
+  wash in a low hover, new trees (crowns now inside their colliders), houses, barn, pickup, tower, pontoon, pad, windsock and
+  pilot figure.
+- **The lake:** the pond grows into a lake round the right of the field, with mirror reflections (sky, trees, your
+  helicopter), waves driven by the simulated wind, rotor-wash rings and spray, a sandy shore and caustics.
+- **Physics and world fixes:** touching the lake is a ditching (it behaved like grass); ground effect now comes from the
+  surface under the rotor, so the tower pad, table, truck bed, container and roofs cushion like the ground (tree crowns do
+  not); before, it was always measured from the ground below, and the lessons and challenge texts that taught "no ground
+  effect up there" are corrected; a billboard and the end of the fence stood in the pond.
+- Kept from before: every landing platform's white ring is exactly its scoring radius; the white top stripe that carries
+  the orientation cue to the tail; paint schemes, model colour, ghosts, training gear, 3-blade heads, the 250 and nitro
+  (now with a heli-style glow engine: vertical crank into the clutch, cylinder and finned head forward); the course
+  rings, hover box, arrow, minimap and trail are tucked away while you are in the Hangar.
+
 ## 0.83.1
 
 - `NEXT_STEPS.md`: the planned backlog, how to resume, what needs the pilot, and the pitfalls already met.

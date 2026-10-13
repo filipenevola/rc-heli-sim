@@ -70,7 +70,7 @@ const HELP_HTML = `
     <li><b>Right stick</b> — cyclic. Left/right = aileron (roll), forward/back = elevator (pitch).</li>
     <li><b>Left stick</b> — collective/throttle (up/down, no spring) and rudder (left/right, yaw).</li>
     <li><b>Keyboard:</b> arrows = cyclic, W/S = collective, A/D = rudder, 1/2/3 = flight mode, H = throttle hold,
-      R = reset, P = pause, M = mute, U = hide/show UI, F = fullscreen, C = camera, ? = this help.</li>
+      R = reset, P = pause, M = mute, U = hide/show UI, F = fullscreen, C = camera, K = hangar (parts), ? = this help.</li>
     <li><b>Top bar icons:</b> hover for a tooltip on desktop; on a touch screen, <b>long-press</b> any icon for a mini help.
       The eye at the top-left hides or shows everything else; pause with ⏸.</li>
     <li><b>Touch:</b> two on-screen gimbals. Choose Mode 1–4 in Settings. The throttle stick stays where you leave it.</li>
@@ -236,6 +236,17 @@ const HELP_HTML = `
 </section>
 
 <section>
+  <h4>Hangar: know your parts</h4>
+  <p>Press <b>K</b> or the 🔧 button. The helicopter is built from its real parts: blades, grips, feathering shaft, head
+  block, pitch links, flybar and paddles (on the trainer), swashplate, servos and pushrods, main gear, pinion, motor (or the
+  glow engine, clutch, muffler and fuel tank on nitro), tail drive belt or torque tube, tail gearbox, pitch slider, battery,
+  ESC, gyro or flybarless unit, frame, canopy, landing gear. Click any part, or pick it from the list, to see what it does,
+  how it usually breaks and what to know when you buy a spare. Move your sticks: it is a bench test, and the swashplate and
+  grips follow. <b>Demo the controls</b> walks you through collective, cyclic and rudder; the exploded view and the canopy
+  switch show what is inside.</p>
+</section>
+
+<section>
   <h4>HUD</h4>
   <p><b>Head speed</b> rotor rpm · <b>Collective</b> blade pitch · <b>Power</b> what the motor is delivering ·
   <b>Ground effect</b> extra lift close to the ground (why it floats at knee height) · <b>Distance</b> from where you stand.
@@ -245,12 +256,14 @@ const HELP_HTML = `
 <section>
   <h4>The field and the landing challenges</h4>
   <p>Everything on the field is solid: trees, the fence, houses, the barn, hay bales, cows, sheep, the windsock pole. Blades
-  touching anything is a crash; skids into a wall at speed too. The <b>windsock</b> next to the pad shows the live wind
+  touching anything is a crash; skids into a wall at speed too. The <b>lake</b> on the right is water: touch it and you have
+  ditched (only the pontoon holds you up). Fly low over it and watch the rotor wash ripple the surface; over the grass the
+  wash lays it flat around the pad. The <b>windsock</b> next to the pad shows the live wind
   direction and droops when it is calm. Four <b>landing targets</b> have a yellow top with a white ring: the picnic table (right of
-  the pad), the pickup truck bed (left), the pontoon on the pond (far right) and the 7 m tower pad (far ahead). Set all four
+  the pad), the pickup truck bed (left), the pontoon on the lake (far right) and the 7 m tower pad (far ahead). Set all four
   skids down inside the ring and hold still for a moment: the sim measures your distance from the centre and remembers your
-  best on this device. Try the table in Normal mode first, then the truck, the pontoon, and the tower last (it is high, small
-  and out of ground effect).</p>
+  best on this device. Try the table in Normal mode first, then the truck, the pontoon, and the tower last (it is high and
+  small: the pad gives a ground cushion, but drift off its edge and it is gone).</p>
 </section>
 
 <section>
@@ -262,7 +275,7 @@ const HELP_HTML = `
   <h4>The parking lot</h4>
   <p>Settings → <b>Flying site</b> → Parking lot: the club's car park, 110 × 90 m of asphalt with painted bays,
   light poles, a few parked cars, two warehouses along the back and a shipping container whose roof is a landing
-  target (2.6 m up, almost no ground effect). Open sky and wind, like a real club lot; the poles are the usual
+  target (2.6 m up and narrow: the roof gives a ground cushion only while the disc is over it). Open sky and wind, like a real club lot; the poles are the usual
   surprise. The field's picnic table, truck, pontoon and tower challenges are marked "Field only" there.</p>
   <h4>Radio link latency</h4>
   <p>A real 2.4 GHz link frames the sticks every 7–20 ms and the receiver and flybarless unit add a few more, so
@@ -385,7 +398,7 @@ const HELP_HTML = `
       spot landings, five minutes up. Normal mode, 450 trainer, no wind.</li>
     <li><b>Intermediate</b>: nose-in hover (the big one: cyclic feels reversed), pirouette, figure eight, the ring circuit,
       truck and pontoon landings, fifteen minutes up. Add wind in Settings once these are easy.</li>
-    <li><b>Advanced</b>: tower landing out of ground effect, nose-in circuit, stall turn, autorotation.</li>
+    <li><b>Advanced</b>: tower landing (a small pad 7 m up), nose-in circuit, stall turn, autorotation.</li>
     <li><b>3D</b>: roll, loop, inverted hover, funnel, tic-toc, piro flip. Idle-Up, high up, and lots of Show me first.</li>
   </ol>
   <p>Rule of thumb from the field: do not move to the next item until the current one is boring.</p>

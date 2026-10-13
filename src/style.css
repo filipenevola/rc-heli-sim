@@ -217,3 +217,27 @@ body:has(.challenges:not([style*="display: none"])) .rescue-badge, body:has(.set
   .drill-badge { top: auto; bottom: calc(185px + env(safe-area-inset-bottom)); font-size: 13px; padding: 5px 10px; max-width: 68vw; white-space: normal; text-align: center; }
   .rescue-badge { top: auto; bottom: calc(228px + env(safe-area-inset-bottom)); font-size: 13px; padding: 5px 10px; max-width: 68vw; white-space: normal; text-align: center; }
 }
+
+/* Hangar: parts explorer */
+.hangar { position: absolute; top: calc(var(--topbar-h) + 18px + env(safe-area-inset-top)); right: 10px; width: min(380px, calc(100vw - 20px)); max-height: calc(100vh - var(--topbar-h) - 30px); overflow: auto;
+  background: rgba(10, 10, 14, 0.9); border: 1px solid rgba(255,255,255,0.15); border-radius: 10px; padding: 12px 16px; font-size: 14px; line-height: 1.4; }
+.hangar h3 { margin: 0 0 6px; display: flex; justify-content: space-between; align-items: center; }
+.hangar h5 { margin: 12px 0 4px; font-size: 12px; text-transform: uppercase; letter-spacing: 0.05em; color: #ffd34d; }
+.hangar button { background: rgba(0,0,0,0.55); color: #fff; border: 1px solid rgba(255,255,255,0.3); border-radius: 6px; padding: 5px 9px; font-size: 13px; cursor: pointer; }
+.hangar button.active { background: rgba(190, 120, 0, 0.75); border-color: #ffd34d; }
+.hangar .part-list { display: flex; flex-wrap: wrap; gap: 5px; }
+.hangar-tools { display: grid; grid-template-columns: 1fr 1fr; gap: 6px 12px; align-items: center; margin: 8px 0; font-size: 13px; }
+.hangar-tools label:first-child { grid-column: 1 / -1; }
+.hangar-tools input[type=range] { width: 100%; }
+.hangar-tools .check { display: flex; gap: 6px; align-items: center; }
+.hangar .readout { font-size: 12px; font-variant-numeric: tabular-nums; opacity: 0.85; margin: 4px 0; }
+.hangar .demo-caption { background: rgba(190, 120, 0, 0.3); border: 1px solid rgba(255,211,77,0.6); border-radius: 8px; padding: 8px 10px; margin: 6px 0; font-weight: 600; }
+.hangar .part-card { background: rgba(255,255,255,0.05); border-radius: 8px; padding: 8px 10px; margin: 8px 0; min-height: 60px; }
+.hangar .part-card p { margin: 6px 0; font-size: 13px; }
+.hangar .part-name { font-size: 18px; font-weight: 700; color: #ffd34d; }
+.hangar .part-aka { font-size: 12px; opacity: 0.7; font-style: italic; }
+.part-label { position: absolute; transform: translate(-50%, calc(-100% - 14px)); background: rgba(10,10,14,0.92); border: 1px solid #ffd34d; color: #ffd34d; font-weight: 700; font-size: 14px;
+  padding: 4px 10px; border-radius: 6px; pointer-events: none; white-space: nowrap; }
+.part-label::after { content: ''; position: absolute; left: 50%; bottom: -12px; width: 2px; height: 12px; background: #ffd34d; transform: translateX(-50%); }
+body.in-hangar .hud, body.in-hangar .hud-sticks, body.in-hangar .touch-sticks, body.in-hangar .toast, body.in-hangar .crash-banner, body.in-hangar .warn-banner, body.in-hangar .paused-banner, body.in-hangar .minimap, body.in-hangar .drill-badge, body.in-hangar .lesson { display: none !important; }
+@media (max-width: 760px) { .hangar { top: auto; bottom: 10px; max-height: 45vh; } }

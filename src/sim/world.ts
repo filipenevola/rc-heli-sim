@@ -6,9 +6,10 @@ import { BILLBOARDS, billboardFootprint } from './ads';
  * One definition so what you see is exactly what you can hit or land on. World frame: y up, the pilot
  * stands at the origin, the helipad is at z = -6 (in front of the pilot).
  */
+/** `porous`: air goes through it (a tree crown), so it gives no ground-effect cushion. */
 export type Collider =
-  | { kind: 'box'; name: string; min: V3; max: V3; target?: LandingTarget }
-  | { kind: 'cylinder'; name: string; x: number; z: number; r: number; y0: number; y1: number; target?: LandingTarget };
+  | { kind: 'box'; name: string; min: V3; max: V3; target?: LandingTarget; porous?: boolean }
+  | { kind: 'cylinder'; name: string; x: number; z: number; r: number; y0: number; y1: number; target?: LandingTarget; porous?: boolean };
 
 export interface LandingTarget {
   id: string;
@@ -35,6 +36,32 @@ export interface GroundTarget extends LandingTarget {
   reach: number;
 }
 
+/** A circle of water; a lake is the smooth union of a few of these (same shape in physics and in the shader). */
+export interface LakeLobe { x: number; z: number; r: number }
+export interface LakeSpec {
+  lobes: LakeLobe[];
+  /** Smooth-union blend distance, m. Larger = rounder bays between lobes. */
+  blend: number;
+}
+
+/** Polynomial smooth minimum (Quilez). Mirrored in the water/ground shaders (render/glsl.ts), keep them in sync. */
+export function smin(a: number, b: number, k: number): number {
+  const h = Math.max(k - Math.abs(a - b), 0) / k;
+  return Math.min(a, b) - h * h * k * 0.25;
+}
+
+/** Signed distance to the shoreline on the ground plane, m: negative over water, positive on land (Infinity: no lake). */
+export function lakeDistance(lake: LakeSpec, x: number, z: number): number {
+  let d = Infinity;
+  for (const l of lake.lobes) {
+    const di = Math.hypot(x - l.x, z - l.z) - l.r;
+    d = d === Infinity ? di : smin(d, di, lake.blend);
+  }
+  return d;
+}
+
+export const NO_LAKE: LakeSpec = { lobes: [], blend: 1 };
+
 export class World {
   readonly colliders: Collider[] = [];
   readonly targets: LandingTarget[] = [];
@@ -44,6 +71,33 @@ export class World {
   readonly groundTargets: GroundTarget[] = [];
   /** Height field, when the site is not flat. */
   terrain: Terrain | null = null;
+  /** Open water: touching it is a ditching. */
+  lake: LakeSpec | null = null;
+
+  /** True when the ground-plane point (x, z) is over water. */
+  isWater(x: number, z: number): boolean {
+    return this.lake !== null && lakeDistance(this.lake, x, z) < 0;
+  }
+
+  /**
+   * Raised surfaces right under (x, z) and below height y (platform tops, roofs, bales...): their height and the
+   * area they offer, for ground effect. The ground itself is not included; porous colliders (tree crowns) neither.
+   */
+  surfacesBelow(x: number, z: number, y: number, out: { top: number; area: number }[]): number {
+    let n = 0;
+    for (const c of this.colliders) {
+      if (c.porous) continue;
+      if (c.kind === 'box') {
+        if (x < c.min.x || x > c.max.x || z < c.min.z || z > c.max.z || c.max.y >= y) continue;
+        out[n++] = { top: c.max.y, area: (c.max.x - c.min.x) * (c.max.z - c.min.z) };
+      } else {
+        if (Math.hypot(x - c.x, z - c.z) > c.r || c.y1 >= y) continue;
+        out[n++] = { top: c.y1, area: Math.PI * c.r * c.r };
+      }
+      if (n >= out.length) break;
+    }
+    return n;
+  }
 
   /** Ground height under a point. */
   groundAt(x: number, z: number): number {
@@ -185,7 +239,10 @@ export interface FieldLayout {
   houses: HouseSpec[];
   animals: AnimalSpec[];
   bales: BaleSpec[];
+  /** The pond the pontoon floats on (the first lobe of the lake). */
   pond: { x: number; z: number; r: number };
+  /** Water on the site (field only; the other sites have none). */
+  lake: LakeSpec;
   road: { x: number; z: number; length: number; width: number; rot: number };
   windsock: { x: number; z: number; height: number };
   platforms: PlatformSpec[];
@@ -207,6 +264,9 @@ export interface PlatformSpec {
   radius: number;
 }
 
+/** Back fence line on the field: from x0 to x1 at z, posts every 1.5 m. */
+export const FENCE = { x0: -45, x1: 28.5, z: -30 };
+
 export function buildField(): { layout: FieldLayout; world: World } {
   let seed = 7;
   const rnd = () => ((seed = (seed * 16807) % 2147483647) / 2147483647);
@@ -218,6 +278,16 @@ export function buildField(): { layout: FieldLayout; world: World } {
     animals: [],
     bales: [],
     pond: { x: 42, z: -22, r: 11 },
+    // The pond opens into a lake that curves round the right of the field, away from the pilot.
+    lake: {
+      blend: 7,
+      lobes: [
+        { x: 42, z: -22, r: 11 },
+        { x: 55, z: -9, r: 10 },
+        { x: 61, z: 7, r: 9.5 },
+        { x: 52, z: 17, r: 7 },
+      ],
+    },
     road: { x: 0, z: 70, length: 260, width: 5, rot: 0 },
     windsock: { x: -6, z: -3, height: 3.5 },
     platforms: [
@@ -237,9 +307,12 @@ export function buildField(): { layout: FieldLayout; world: World } {
     if (Math.hypot(x - layout.pond.x, z - layout.pond.z) < layout.pond.r + 3) continue;
     if (Math.abs(z - layout.road.z) < 5) continue;
     const scale = 0.8 + rnd() * 0.8;
+    // The lake was dug after the trees were planted: drop the ones in or at the edge of the water (filtering after
+    // the random draws keeps every other tree exactly where it was).
+    if (lakeDistance(layout.lake, x, z) < 2.5 + 1.7 * scale) continue;
     layout.trees.push({ x, z, scale });
-    // Trunk + crown as one slightly conservative cylinder.
-    world.add({ kind: 'cylinder', name: 'a tree', x, z, r: 1.7 * scale, y0: 0, y1: 8.5 * scale });
+    // Trunk + crown as one cylinder; the renderer keeps every crown inside it. Porous: no ground-effect cushion.
+    world.add({ kind: 'cylinder', name: 'a tree', x, z, r: 1.7 * scale, y0: 0, y1: 8.5 * scale, porous: true });
   }
 
   // A small farm on the left and a couple of houses on the right.
@@ -274,7 +347,8 @@ export function buildField(): { layout: FieldLayout; world: World } {
   }
 
   // Fence along the back and the windsock pole.
-  world.add({ kind: 'box', name: 'the fence', min: { x: -45, y: 0, z: -30.15 }, max: { x: 45, y: 1.2, z: -29.85 } });
+  // The back fence stops short of the pond.
+  world.add({ kind: 'box', name: 'the fence', min: { x: FENCE.x0, y: 0, z: FENCE.z - 0.15 }, max: { x: FENCE.x1, y: 1.2, z: FENCE.z + 0.15 } });
   world.add({ kind: 'cylinder', name: 'the windsock pole', x: layout.windsock.x, z: layout.windsock.z, r: 0.08, y0: 0, y1: layout.windsock.height });
 
   // Landing platforms: the surface is a thin box so skids can rest on it; the support below is a collider too.
@@ -287,6 +361,7 @@ export function buildField(): { layout: FieldLayout; world: World } {
     if (p.style === 'table') world.add({ kind: 'box', name: 'the table', min: { x: p.x - 0.5, y: 0, z: p.z - 0.5 }, max: { x: p.x + 0.5, y: p.height - 0.08, z: p.z + 0.5 } });
   }
 
+  world.lake = layout.lake;
   world.pad = { id: 'pad', name: 'helipad', centre: { x: 0, y: 0, z: -6 }, radius: 0.5 };
 
   // Billboards: the panel plus its posts, as one box each.
@@ -314,6 +389,7 @@ export function buildGym(): { layout: FieldLayout; world: World } {
     animals: [],
     bales: [],
     pond: { x: 0, z: 0, r: 0 },
+    lake: NO_LAKE,
     road: { x: 0, z: 0, length: 0, width: 0, rot: 0 },
     windsock: { x: -6, z: -3, height: 0 },
     platforms: [
@@ -379,6 +455,7 @@ export function buildLot(): { layout: FieldLayout; world: World } {
     animals: [],
     bales: [],
     pond: { x: 0, z: 0, r: 0 },
+    lake: NO_LAKE,
     road: { x: 0, z: 0, length: 0, width: 0, rot: 0 },
     windsock: { x: -6, z: -3, height: 3.5 },
     platforms: [{ id: 'container', name: 'Container roof', x: 12, z: -24, height: 2.6, size: 2.4, style: 'table', radius: 0.6 }],
@@ -479,6 +556,7 @@ export function buildHill(): { layout: FieldLayout; world: World } {
     ],
     bales: [],
     pond: { x: 0, z: 0, r: 0 },
+    lake: NO_LAKE,
     road: { x: 0, z: 0, length: 0, width: 0, rot: 0 },
     windsock: { x: -6, z: -3, height: 3.5 },
     platforms: [],
@@ -486,7 +564,7 @@ export function buildHill(): { layout: FieldLayout; world: World } {
   world.pad = { id: 'pad', name: 'helipad', centre: { x: 0, y: 0, z: -6 }, radius: 0.5 };
   for (const m of hill.marks) world.addGroundTarget({ id: m.id, name: m.name, centre: { x: m.x, y: HILL_TERRAIN.heightAt(m.x, m.z), z: m.z }, radius: 0.6, reach: m.r });
   for (const r of hill.rocks) world.add({ kind: 'cylinder', name: 'a boulder', x: r.x, z: r.z, r: r.r, y0: HILL_TERRAIN.heightAt(r.x, r.z) - 1, y1: HILL_TERRAIN.heightAt(r.x, r.z) + r.r * 0.9 });
-  for (const t of trees) world.add({ kind: 'cylinder', name: 'a tree', x: t.x, z: t.z, r: 1.6 * t.scale, y0: HILL_TERRAIN.heightAt(t.x, t.z), y1: HILL_TERRAIN.heightAt(t.x, t.z) + 9 * t.scale });
+  for (const t of trees) world.add({ kind: 'cylinder', name: 'a tree', x: t.x, z: t.z, r: 1.6 * t.scale, y0: HILL_TERRAIN.heightAt(t.x, t.z), y1: HILL_TERRAIN.heightAt(t.x, t.z) + 9 * t.scale, porous: true });
   // Fence posts along the bottom edge (behind the pilot) so the meadow has a boundary to read distance from.
   for (let x = -40; x <= 40; x += 4) world.add({ kind: 'cylinder', name: 'a fence post', x, z: 22, r: 0.08, y0: HILL_TERRAIN.heightAt(x, 22), y1: HILL_TERRAIN.heightAt(x, 22) + 1.2 });
   return { layout, world };
