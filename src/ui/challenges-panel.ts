@@ -1,11 +1,12 @@
 import { CHALLENGES, TOTAL_POINTS, LEVELS, type ChallengeTracker, type FlightTimer } from '../game/challenges';
 import { lessonFor } from '../game/lessons';
 import { importMappings, loadMappings, type GamepadMapping } from '../input/gamepad';
-import { fmtTime, localRankings, saveLocalRanking, saveProfile, type Profile, type RankingClient } from '../game/player';
+import { fmtTime, localRankings, saveLocalRanking, saveProfile, type Profile, type RankingClient, type RankingEntry } from '../game/player';
 import { logbookCsv, logbookHtml, type FlightLog } from '../game/flightlog';
 import { loadScores } from '../game/lesson-scores';
 import { localizeDom, t } from '../i18n';
 import { homeLabel, unavailableHere } from '../site';
+import { LEVEL_BADGE, LEVEL_LABEL, SIM_LEVELS, mergeChallengeLevels, type LevelBests, type SimLevel } from '../game/sim-level';
 
 /**
  * Challenges + rankings drawer. Tabs: Challenges (list with live progress), Rankings (longest flight,
@@ -14,7 +15,11 @@ import { homeLabel, unavailableHere } from '../site';
 export class ChallengesPanel {
   private el: HTMLElement;
   private tab: 'challenges' | 'rankings' | 'pilot' = 'challenges';
-  private online: { flight: unknown[]; challenge: unknown[] } | null = null;
+  private online: { flight: Record<SimLevel, RankingEntry[]>; challenge: RankingEntry[] } | null = null;
+  /** Which pilot-level board the flight column shows; starts on the board the pilot currently flies for. */
+  private board: SimLevel | null = null;
+  /** The board the current settings qualify for (set by the host). */
+  boardLevel: () => SimLevel = () => 'beginner';
   private status = '';
   private lastRender = 0;
   private pendingEmail: string | null = null;
@@ -47,6 +52,7 @@ export class ChallengesPanel {
   /** Open directly on a tab (the Pilot button in the top bar uses this). */
   open(tab: 'challenges' | 'rankings' | 'pilot'): void {
     this.tab = tab;
+    this.board = null; // back to the board the pilot flies for now
     this.status = '';
     this.el.style.display = '';
     this.render();
@@ -64,9 +70,10 @@ export class ChallengesPanel {
   async sync(): Promise<void> {
     this.profile.radio = loadMappings();
     this.profile.completed = [...this.tracker.completed];
+    this.profile.challengeLevels = { ...this.tracker.levels };
     this.profile.bestFlight = Math.max(this.profile.bestFlight, this.timer.best);
     saveProfile(this.profile);
-    saveLocalRanking(this.profile.name, this.profile.bestFlight, this.tracker.points, this.profile.completed);
+    saveLocalRanking(this.profile.name, this.profile.bestFlight, this.tracker.points, this.profile.completed, this.profile.bestFlights);
     if (this.client.online && this.profile.name) {
       try {
         await this.client.submit(this.profile, this.log?.entries ?? null);
@@ -80,8 +87,8 @@ export class ChallengesPanel {
   private async refreshOnline(): Promise<void> {
     if (!this.client.online) return;
     try {
-      const [flight, challenge] = await Promise.all([this.client.rankings('flight'), this.client.rankings('challenge')]);
-      this.online = { flight, challenge };
+      const [beginner, amateur, pro, challenge] = await Promise.all([...SIM_LEVELS.map((l) => this.client.rankings('flight', l)), this.client.rankings('challenge')]);
+      this.online = { flight: { beginner, amateur, pro }, challenge };
     } catch (e) {
       this.status = `Could not load online rankings: ${(e as Error).message}`;
     }
@@ -121,7 +128,7 @@ export class ChallengesPanel {
         ? `<div class="next-drill"><span>${t('Next for you')}: <b>${t(next.title)}</b> · ${t(next.level)}</span><span><button class="teach" data-teach="${next.id}" data-mode="show">${t('Show me')}</button><button class="teach" data-teach="${next.id}" data-mode="teach">${t('Teach me')}</button></span></div>`
         : '';
       body = `${nextCard}
-        <p class="hint">${this.tracker.points} / ${TOTAL_POINTS} ${t('points')} · ${this.tracker.completed.size} / ${CHALLENGES.length} ${t('done')} · ${t('current flight')} <b id="air-time">${this.timer.flying ? fmtTime(this.timer.airTime) : '—'}</b> · ${t('best clean flight')} <b>${fmtTime(Math.max(p.bestFlight, this.timer.best))}</b></p>
+        <p class="hint">${this.tracker.points} / ${TOTAL_POINTS} ${t('points')} · ${this.tracker.completed.size} / ${CHALLENGES.length} ${t('done')} · ${t('current flight')} <b id="air-time">${this.timer.flying ? fmtTime(this.timer.airTime) : '—'}</b> · ${t('best clean flight')} ${SIM_LEVELS.map((l) => `<span title="${t(LEVEL_LABEL[l])}">${LEVEL_BADGE[l]} <b>${p.bestFlights?.[l] ? fmtTime(p.bestFlights[l]!) : '—'}</b></span>`).join(' ')}</p>
         ${LEVELS.map((lv) => `<h5 class="level">${t(lv)} · ${CHALLENGES.filter((c) => c.level === lv && this.tracker.completed.has(c.id)).length}/${CHALLENGES.filter((c) => c.level === lv).length}</h5><ul class="challenge-list">
           ${CHALLENGES.filter((c) => c.level === lv).map((c) => {
             const done = this.tracker.completed.has(c.id);
@@ -130,24 +137,32 @@ export class ChallengesPanel {
             const teach = lessonFor(c.id)
               ? `<button class="teach" data-teach="${c.id}" data-mode="show" title="${t('Watch a demo pilot do the whole challenge; the sticks are shown')}">${t('Show me')}</button><button class="teach" data-teach="${c.id}" data-mode="teach" title="${t('You fly it step by step with a ghost stick guiding you')}">${t('Teach me')}</button>`
               : '';
-            return `<li class="${done ? 'done' : ''}"><div class="row"><b>${done ? '✓ ' : ''}${t(c.title)}</b><span>${c.points} pts ${score !== undefined ? `<i class="score" title="${t('Best Teach me score')}">${score}%</i> ` : ''}${unavailableHere(c.id) ? `<i class="field-only">${t(homeLabel(c.id))}</i>` : teach}</span></div><div class="desc">${t(c.description)}</div><div class="bar"><i data-bar="${c.id}" style="width:${Math.round(pr * 100)}%"></i></div></li>`;
+            const lv = this.tracker.levels[c.id] ?? 'beginner';
+            const badge = done ? `<i class="lvl" title="${t('Flown at {level} level', { level: t(LEVEL_LABEL[lv]) })}">${LEVEL_BADGE[lv]}</i> ` : '';
+            return `<li class="${done ? 'done' : ''}"><div class="row"><b>${done ? '✓ ' : ''}${badge}${t(c.title)}</b><span>${c.points} pts ${score !== undefined ? `<i class="score" title="${t('Best Teach me score')}">${score}%</i> ` : ''}${unavailableHere(c.id) ? `<i class="field-only">${t(homeLabel(c.id))}</i>` : teach}</span></div><div class="desc">${t(c.description)}</div><div class="bar"><i data-bar="${c.id}" style="width:${Math.round(pr * 100)}%"></i></div></li>`;
           }).join('')}
         </ul>`).join('')}`;
     } else if (this.tab === 'rankings') {
       const local = Object.entries(localRankings());
       const list = (rows: { name: string; value: string; verified?: boolean }[], empty: string) =>
         rows.length ? `<ol>${rows.map((r) => `<li><span>${esc(r.name)}${r.verified ? ' <i title="verified email">✔</i>' : ''}</span><b>${r.value}</b></li>`).join('')}</ol>` : `<p class="hint">${empty}</p>`;
-      const flightLocal = local.filter(([, v]) => v.bestFlight > 0).sort((a, b) => b[1].bestFlight - a[1].bestFlight).map(([n, v]) => ({ name: n, value: fmtTime(v.bestFlight) }));
+      const board = (this.board ??= this.boardLevel());
+      // Device entries from before pilot levels only know an overall best: that counts as Beginner.
+      const bestOn = (v: { bestFlight: number; bestFlights?: LevelBests }) => (v.bestFlights ? v.bestFlights[board] ?? 0 : board === 'beginner' ? v.bestFlight : 0);
+      const flightLocal = local.filter(([, v]) => bestOn(v) > 0).sort((a, b) => bestOn(b[1]) - bestOn(a[1])).map(([n, v]) => ({ name: n, value: fmtTime(bestOn(v)) }));
+      const boardTabs = `<div class="tabs level-tabs">${SIM_LEVELS.map((l) => `<button data-board="${l}" class="${l === board ? 'active' : ''}">${LEVEL_BADGE[l]} ${t(LEVEL_LABEL[l])}</button>`).join('')}</div>`;
+      const boardHint = { beginner: 'Any settings. Flights on harder boards count here too.', amateur: 'Rate assist, cyclic rate 70%+, no training gear, no rescue.', pro: 'Amateur plus full rates (90%+), wind 3 m/s+ with gusts, random tail failures on.' }[board];
       const chalLocal = local.filter(([, v]) => v.points > 0).sort((a, b) => b[1].points - a[1].points).map(([n, v]) => ({ name: n, value: `${v.points} pts` }));
       const onl = this.online;
       body = `
         <div class="ranking-cols">
           <div><h5>Longest flight without a crash</h5>
-            ${this.client.online ? `<h6>Online</h6>${onl ? list((onl.flight as { name: string; value: number; verified: boolean }[]).map((r) => ({ name: r.name, value: fmtTime(r.value), verified: r.verified })), 'Nobody yet. Be the first.') : '<p class="hint">Loading…</p>'}` : ''}
+            ${boardTabs}<p class="hint">${boardHint}</p>
+            ${this.client.online ? `<h6>Online</h6>${onl ? list(onl.flight[board].map((r) => ({ name: r.name, value: fmtTime(r.value), verified: r.verified })), 'Nobody yet. Be the first.') : '<p class="hint">Loading…</p>'}` : ''}
             <h6>This device</h6>${list(flightLocal, 'No flights recorded yet.')}
           </div>
           <div><h5>Challenge points</h5>
-            ${this.client.online ? `<h6>Online</h6>${onl ? list((onl.challenge as { name: string; value: number; verified: boolean }[]).map((r) => ({ name: r.name, value: `${r.value} pts`, verified: r.verified })), 'Nobody yet.') : '<p class="hint">Loading…</p>'}` : ''}
+            ${this.client.online ? `<h6>Online</h6>${onl ? list(onl.challenge.map((r) => ({ name: r.name, value: `${r.pro ? `<i title="${t('Challenges flown at Pro level')}">${LEVEL_BADGE.pro}${r.pro}</i> ` : ''}${r.value} pts`, verified: r.verified })), 'Nobody yet.') : '<p class="hint">Loading…</p>'}` : ''}
             <h6>This device</h6>${list(chalLocal, 'No points yet.')}
           </div>
         </div>
@@ -185,6 +200,12 @@ export class ChallengesPanel {
       b.addEventListener('click', () => {
         this.toggle();
         this.onTeach(b.dataset.teach!, (b.dataset.mode as 'show' | 'teach') ?? 'show');
+      });
+    }
+    for (const b of this.el.querySelectorAll<HTMLButtonElement>('[data-board]')) {
+      b.addEventListener('click', () => {
+        this.board = b.dataset.board as SimLevel;
+        this.render();
       });
     }
     for (const b of this.el.querySelectorAll<HTMLButtonElement>('[data-tab]')) {
@@ -252,7 +273,10 @@ export class ChallengesPanel {
         if (r.logbook && this.log) this.log.merge(r.logbook); // and the logbook
         // Merge what the server knows for this email with what this device has.
         for (const id of r.completed) this.tracker.completed.add(id);
+        if (r.challengeLevels) this.tracker.levels = mergeChallengeLevels(this.tracker.levels, r.challengeLevels);
         p.bestFlight = Math.max(p.bestFlight, r.bestFlight);
+        p.bestFlights ??= {};
+        for (const l of SIM_LEVELS) p.bestFlights[l] = Math.max(p.bestFlights[l] ?? 0, r.bestFlights?.[l] ?? 0);
         this.pendingEmail = null;
         this.status = `Signed in as ${p.name}. Your records follow this email now.`;
         saveProfile(p);

@@ -3,6 +3,22 @@
 All notable changes to RC Heli Sim. The version shown in the game (Help and Settings) matches the latest
 entry here; the commit hash next to it identifies the exact build.
 
+## 0.85.0
+
+- Pilot levels: Beginner, Amateur and Pro (Settings → Pilot level, and on the welcome card). A level is a preset over
+  settings that already existed (assist, cyclic rates and expo, wind and gusts, random tail failures); the physics are
+  the same at every level. Change any of those settings and the picker shows Custom. New pilots start as Beginner.
+- Longest clean flight is now ranked per level. The board never trusts the label: a flight counts on the hardest board
+  whose requirements it met for the whole flight, judged from what it was actually flown with. Pro needs rate assist,
+  90%+ cyclic rate, wind of 3 m/s or more with gusts, and random tail failures; Amateur needs rate assist and 70%+ rates.
+  Training gear, a rescue or a lesson make it Beginner. A flight also counts on every easier board. Records from before
+  levels were flown on unknown settings, so they count on the Beginner board.
+- Challenge points stay one board, but each completed challenge shows the level it was flown at (🟢 🟡 🔴). Fly a done
+  challenge again at a higher level to upgrade its badge. The online challenge board shows how many each pilot did at Pro.
+- Wind speed, direction and gustiness are now saved like the other settings (they reset on every visit before).
+- Rankings API: `GET /api/rankings?kind=flight&level=beginner|amateur|pro`; scores carry `bestFlights` and
+  `challengeLevels`. Older clients keep working (their best flight lands on the Beginner board).
+
 ## 0.84.2
 
 - Fix: a black screen for returning players. Since 0.84.0, a saved model (or model setup) made start-up read the Hangar

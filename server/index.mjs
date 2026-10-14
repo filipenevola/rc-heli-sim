@@ -10,8 +10,9 @@
 // Endpoints:
 //   POST /api/auth/request {email, name}      -> emails a 6-digit code
 //   POST /api/auth/verify  {email, code}      -> {token, name, completed, bestFlight}
-//   POST /api/scores       {name, deviceId, completed[], bestFlight}  (Bearer token optional)
-//   GET  /api/rankings?kind=flight|challenge  -> [{name, value, verified, at}]
+//   POST /api/scores       {name, deviceId, completed[], bestFlight, bestFlights{beginner,amateur,pro}, challengeLevels{id: level}}  (Bearer token optional)
+//   GET  /api/rankings?kind=flight&level=beginner|amateur|pro  -> [{name, value, verified, at}]  (no level: the pre-levels board)
+//   GET  /api/rankings?kind=challenge  -> [{name, value, verified, at, pro}]
 //   POST /api/radio/signal {code, role, sdp?}   -> {peer: sdp|null}  (phone-radio WebRTC signalling, in memory)
 //   GET  /api/health
 
@@ -21,6 +22,7 @@ import { randomBytes, randomInt, createHash } from 'node:crypto';
 import { mkdirSync } from 'node:fs';
 import { dirname } from 'node:path';
 import { createRooms } from './radio-rooms.mjs';
+import { LEVELS, LEVEL_COLUMN, cleanBests, mergeChallengeLevels, proCount } from './levels.mjs';
 
 const PORT = Number(process.env.PORT ?? 8787);
 const DB_PATH = process.env.DB_PATH ?? './data/rankings.sqlite';
@@ -59,6 +61,14 @@ db.exec(`
 try { db.exec('ALTER TABLE players ADD COLUMN radio TEXT'); } catch { /* column exists */ }
 try { db.exec('ALTER TABLE players ADD COLUMN setup TEXT'); } catch { /* column exists */ }
 try { db.exec('ALTER TABLE players ADD COLUMN logbook TEXT'); } catch { /* column exists */ }
+// Pilot levels (0.85.0). Records from before them were flown on unknown settings: they seed the Beginner board.
+try {
+  db.exec('ALTER TABLE players ADD COLUMN best_beginner INTEGER NOT NULL DEFAULT 0');
+  db.exec('UPDATE players SET best_beginner = best_flight');
+} catch { /* column exists */ }
+try { db.exec('ALTER TABLE players ADD COLUMN best_amateur INTEGER NOT NULL DEFAULT 0'); } catch { /* column exists */ }
+try { db.exec('ALTER TABLE players ADD COLUMN best_pro INTEGER NOT NULL DEFAULT 0'); } catch { /* column exists */ }
+try { db.exec('ALTER TABLE players ADD COLUMN challenge_levels TEXT'); } catch { /* column exists */ }
 
 const q = {
   playerByKey: db.prepare('SELECT * FROM players WHERE key = ?'),
@@ -67,6 +77,8 @@ const q = {
   setRadio: db.prepare('UPDATE players SET radio = ? WHERE key = ?'),
   setSetup: db.prepare('UPDATE players SET setup = ? WHERE key = ?'),
   setLogbook: db.prepare('UPDATE players SET logbook = ? WHERE key = ?'),
+  setBests: db.prepare('UPDATE players SET best_beginner = MAX(best_beginner, ?), best_amateur = MAX(best_amateur, ?), best_pro = MAX(best_pro, ?) WHERE key = ?'),
+  setLevels: db.prepare('UPDATE players SET challenge_levels = ? WHERE key = ?'),
   setCode: db.prepare('INSERT OR REPLACE INTO codes (email, code, name, expires_at, attempts) VALUES (?, ?, ?, ?, 0)'),
   getCode: db.prepare('SELECT * FROM codes WHERE email = ?'),
   bumpAttempts: db.prepare('UPDATE codes SET attempts = attempts + 1 WHERE email = ?'),
@@ -77,7 +89,8 @@ const q = {
   addReport: db.prepare('INSERT INTO radio_reports (report) VALUES (?)'),
   lastReports: db.prepare('SELECT id, created_at, report FROM radio_reports ORDER BY id DESC LIMIT 20'),
   topFlight: db.prepare(`SELECT name, best_flight AS value, verified, updated_at AS at FROM players WHERE best_flight > 0 AND name <> '' ORDER BY best_flight DESC, updated_at ASC LIMIT 100`),
-  all: db.prepare(`SELECT name, completed, verified, updated_at AS at FROM players WHERE name <> ''`),
+  topLevel: Object.fromEntries(LEVELS.map((l) => [l, db.prepare(`SELECT name, ${LEVEL_COLUMN[l]} AS value, verified, updated_at AS at FROM players WHERE ${LEVEL_COLUMN[l]} > 0 AND name <> '' ORDER BY ${LEVEL_COLUMN[l]} DESC, updated_at ASC LIMIT 100`)])),
+  all: db.prepare(`SELECT name, completed, challenge_levels, verified, updated_at AS at FROM players WHERE name <> ''`),
 };
 
 const radioRooms = createRooms();
@@ -88,6 +101,9 @@ const cleanEmail = (e) => String(e ?? '').trim().toLowerCase();
 const validEmail = (e) => /^[^\s@]+@[^\s@]+\.[^\s@]+$/.test(e) && e.length < 200;
 const cleanCompleted = (c) => (Array.isArray(c) ? [...new Set(c.filter((id) => typeof id === 'string' && id in POINTS))] : []);
 const validDeviceId = (d) => /^[0-9a-f-]{36}$/.test(String(d ?? ''));
+const CHALLENGE_IDS = new Set(Object.keys(POINTS));
+const levelsOf = (row) => (row?.challenge_levels ? JSON.parse(row.challenge_levels) : {});
+const bestsOf = (row) => ({ beginner: row?.best_beginner ?? 0, amateur: row?.best_amateur ?? 0, pro: row?.best_pro ?? 0 });
 
 /** Fold a device's anonymous row into an email account (progress union, best flight max) and drop the device row. */
 function absorbDevice(emailKey, deviceId) {
@@ -98,6 +114,9 @@ function absorbDevice(emailKey, deviceId) {
   if (acct) {
     const merged = [...new Set([...JSON.parse(acct.completed), ...JSON.parse(dev.completed)])];
     q.upsertPlayer.run(emailKey, acct.name, 1, JSON.stringify(merged), Math.max(acct.best_flight, dev.best_flight));
+    const b = bestsOf(dev);
+    q.setBests.run(b.beginner, b.amateur, b.pro, emailKey);
+    q.setLevels.run(JSON.stringify(mergeChallengeLevels(levelsOf(acct), levelsOf(dev), CHALLENGE_IDS)), emailKey);
   }
   q.deletePlayer.run(dev.key);
 }
@@ -208,7 +227,7 @@ createServer(async (req, res) => {
       const player = q.playerByKey.get(key);
       const token = randomBytes(24).toString('base64url');
       q.addToken.run(hash(token), player.id);
-      return json(res, 200, { token, name: player.name, completed: JSON.parse(player.completed), bestFlight: player.best_flight, radio: player.radio ? JSON.parse(player.radio) : null, setup: player.setup ? JSON.parse(player.setup) : null, logbook: player.logbook ? JSON.parse(player.logbook) : null });
+      return json(res, 200, { token, name: player.name, completed: JSON.parse(player.completed), bestFlight: player.best_flight, bestFlights: bestsOf(player), challengeLevels: levelsOf(player), radio: player.radio ? JSON.parse(player.radio) : null, setup: player.setup ? JSON.parse(player.setup) : null, logbook: player.logbook ? JSON.parse(player.logbook) : null });
     }
 
     if (req.method === 'POST' && url.pathname === '/api/scores') {
@@ -231,6 +250,9 @@ createServer(async (req, res) => {
       const existing = q.playerByKey.get(key);
       const merged = [...new Set([...(existing ? JSON.parse(existing.completed) : []), ...completed])];
       q.upsertPlayer.run(key, name, verified ? 1 : 0, JSON.stringify(merged), bestFlight);
+      const bests = cleanBests(body.bestFlights, bestFlight, MAX_FLIGHT_SECONDS);
+      q.setBests.run(bests.beginner, bests.amateur, bests.pro, key);
+      q.setLevels.run(JSON.stringify(mergeChallengeLevels(levelsOf(existing), body.challengeLevels, CHALLENGE_IDS)), key);
       // Transmitter calibration travels with the account (verified players only; it is per-dongle, keyed by gamepad id).
       if (verified && body.radio && typeof body.radio === 'object') {
         const radio = JSON.stringify(body.radio).slice(0, 20000);
@@ -280,9 +302,17 @@ createServer(async (req, res) => {
           return true;
         });
       };
-      if (kind === 'flight') return json(res, 200, dedupe(q.topFlight.all().map((r) => ({ name: r.name, value: r.value, verified: !!r.verified, at: r.at }))).slice(0, 100));
+      const level = url.searchParams.get('level');
+      if (kind === 'flight') {
+        if (level && !LEVELS.includes(level)) return json(res, 400, { error: 'level must be beginner, amateur or pro' });
+        const rows = (level ? q.topLevel[level] : q.topFlight).all();
+        return json(res, 200, dedupe(rows.map((r) => ({ name: r.name, value: r.value, verified: !!r.verified, at: r.at }))).slice(0, 100));
+      }
       if (kind === 'challenge') {
-        const rows = q.all.all().map((r) => ({ name: r.name, value: points(JSON.parse(r.completed)), verified: !!r.verified, at: r.at })).filter((r) => r.value > 0);
+        const rows = q.all.all().map((r) => {
+          const completed = JSON.parse(r.completed);
+          return { name: r.name, value: points(completed), verified: !!r.verified, at: r.at, pro: proCount(levelsOf(r), completed) };
+        }).filter((r) => r.value > 0);
         rows.sort((a, b) => b.value - a.value || a.at.localeCompare(b.at));
         return json(res, 200, dedupe(rows).slice(0, 100));
       }

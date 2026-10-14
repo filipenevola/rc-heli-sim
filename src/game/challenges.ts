@@ -1,5 +1,6 @@
 import type { HelicopterSim } from '../sim/physics';
 import { eulerFromQ, rotate, v3 } from '../sim/math';
+import { levelRank, type SimLevel } from './sim-level';
 
 /**
  * Challenge mode. Each challenge watches the live simulation and completes when its condition has held
@@ -561,11 +562,18 @@ export class ChallengeTracker {
   completed = new Set<string>();
   progress: Record<string, number> = {};
   private mem: Record<string, Record<string, number>> = {};
+  /** Pilot level each challenge was flown at (the best so far). Older completions without one count as Beginner. */
+  levels: Record<string, SimLevel> = {};
+  /** The level the current flight qualifies for; a completed challenge stays live until it is flown at this level. */
+  currentLevel: () => SimLevel = () => 'beginner';
   /** Fired when a challenge completes. */
   onComplete: ((c: Challenge) => void) | null = null;
+  /** Fired when a completed challenge is flown again at a higher pilot level. */
+  onLevelUp: ((c: Challenge, level: SimLevel) => void) | null = null;
 
-  constructor(completed: string[] = []) {
+  constructor(completed: string[] = [], levels: Record<string, SimLevel> = {}) {
     for (const id of completed) this.completed.add(id);
+    this.levels = { ...levels };
   }
 
   get points(): number {
@@ -578,14 +586,22 @@ export class ChallengeTracker {
   }
 
   update(sim: HelicopterSim, dt: number, airTime: number): void {
+    const level = this.currentLevel();
     for (const c of CHALLENGES) {
-      if (this.completed.has(c.id)) continue;
+      const done = this.completed.has(c.id);
+      if (done && levelRank(this.levels[c.id] ?? 'beginner') >= levelRank(level)) continue;
       const mem = (this.mem[c.id] ??= {});
       const p = c.check({ sim, dt, airTime, mem });
-      this.progress[c.id] = p;
+      if (!done) this.progress[c.id] = p;
       if (p >= 1) {
-        this.completed.add(c.id);
-        this.onComplete?.(c);
+        this.levels[c.id] = level;
+        this.mem[c.id] = {}; // a later attempt at a higher level starts from scratch
+        if (done) {
+          this.onLevelUp?.(c, level);
+        } else {
+          this.completed.add(c.id);
+          this.onComplete?.(c);
+        }
       }
     }
   }

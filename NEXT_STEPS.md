@@ -1,6 +1,6 @@
 # Next steps
 
-State on 2026-10-12: version 0.83.0 is live at https://heli.filipenevola.com (web and rankings API on Quave ONE,
+State on 2026-10-13: version 0.85.0 (pilot levels and per-level flight boards) is live at https://heli.filipenevola.com (web and rankings API on Quave ONE,
 CI green including the headless-browser smoke). Tree clean. Full picture of what exists: README.md and CHANGELOG.md.
 
 ## How to resume
@@ -52,6 +52,8 @@ notes. Keep Fable for rotor/physics changes, lesson recipes (the demo pilot is t
 - Using the motor torque for the fuselage yaw reaction broke the rate-gyro, wake, rescue and debrief tests; the
   current rule is `spin · max(main.torque, 0)` only while `motorTorque > 0`.
 - A new server module must be copied by `server/Dockerfile` (`server/*.mjs`), or the API crash-loops with a 503.
+- Pilot levels: rankings classify a flight from its real conditions (`classifyLevel` in `src/game/sim-level.ts`),
+  never from the picker label. Keep `server/levels.mjs` in step with it (a test checks the level list).
 - The autorotation and tail-failure demos need the flybarless 450 (micro/flybar models are switched automatically
   and excluded in `src/game/matrix.test.ts`); the tail-failure demo needs 40 m and hold within 0.4 s.
 - Phone radio: the PHONE offers, the desk answers the newest offer with a fresh RTCPeerConnection, answers carry

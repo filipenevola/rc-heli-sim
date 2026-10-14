@@ -80,7 +80,9 @@ node scripts/drive.mjs "http://localhost:5173/?cam=chase" "wait:rcHeli.sim.state
 ## Challenges and rankings
 
 Thirty challenges following the classic progression (hover in every orientation, elevator, pirouette, figure eight, circuits, seven landing targets across the three sites, landing streak, stall turn, autorotation, roll, loop, inverted hover, funnel, tic-toc, piro flip, endurance), grouped by level,
-and two rankings: longest clean flight and challenge points. Records live on the device under a pilot name;
+and two rankings: longest clean flight (one board per pilot level) and challenge points. Pilot levels (Beginner,
+Amateur, Pro) are presets over the assist, rates, wind and failure settings; a flight is ranked by the settings it was
+actually flown with (`src/game/sim-level.ts`), never by the label. Records live on the device under a pilot name;
 the production build also syncs them to a small rankings server (`server/`, deployed on Quave ONE) and a
 player can verify an email with a 6-digit code to carry the profile across devices.
 

@@ -46,6 +46,7 @@ import { buildCustomModel, normalizeSpec, type CustomSpec } from './sim/custom-m
 import { detectLang, onLangChange, setLang, t, type Lang, getLang } from './i18n';
 import { LessonOverlay } from './ui/lesson-overlay';
 import type { AssistMode } from './sim/physics';
+import { classifyLevel, isLevel, LEVEL_BADGE, LEVEL_LABEL, LEVEL_SUMMARY, minLevel, recordFlight, SIM_LEVELS, type FlightConditions, type SimLevel } from './game/sim-level';
 
 // Must be first: keeps every game hotkey out of text fields (name, email, code...). See input/typing-guard.ts.
 installTypingGuard(() => (typeof input !== 'undefined' ? input.keyboard.release() : undefined));
@@ -177,13 +178,15 @@ const profile = loadProfile();
   setLang(saved ?? detectLang());
 }
 if (profile.setup?.[baseModel.id]) setModel(baseModel);
-const tracker = new ChallengeTracker(profile.completed);
+const tracker = new ChallengeTracker(profile.completed, profile.challengeLevels);
 const flightTimer = new FlightTimer();
 const flightLog = new FlightLog();
 const rankingClient = new RankingClient();
 input.remote.apiBase = rankingClient.baseUrl;
 input.remote.onReset = () => reset();
 let lesson: LessonRunner | null = null;
+// Declared up here: conditionsNow() reads it and settings render during start-up (see the Hangar note above).
+let replay: { frames: Frame[]; i: number; acc: number; kind: 'crash' | 'flight'; speed: number; playing: boolean } | null = null;
 let assistBeforeLesson: AssistMode = 'rate';
 let lessonEndTimer: number | null = null;
 let modelBeforeLesson: HeliModel | null = null;
@@ -281,6 +284,11 @@ function stopLesson(resetHeli = true): void {
   }
 }
 lessonOverlay.onStop = () => stopLesson();
+tracker.onLevelUp = (c, level) => {
+  stats.trick(c.id);
+  hud.notify(`<b>${LEVEL_BADGE[level]} ${t('Flown at {level} level: {title}', { level: t(LEVEL_LABEL[level]), title: t(c.title) })}</b>`, 4000);
+  void challenges.sync();
+};
 tracker.onComplete = (c) => {
   stats.trick(c.id);
   voice.say(t('Challenge complete: {title}', { title: t(c.title) }), getLang());
@@ -303,6 +311,21 @@ const rescue = new Rescue(sim);
 // Emergencies: a tail rotor failure on demand, or once per flight at a random moment above 15 m.
 let randomFailures = false;
 let failureAt = Infinity;
+// Pilot level of the flight in progress: the lowest board the conditions qualified for at any moment of it, so
+// switching the assist on for a second (or a rescue) drops the whole flight to that board.
+function conditionsNow(): FlightConditions {
+  return {
+    assist: sim.assist,
+    cyclicRate: input.shaping.aileron.rate,
+    wind: getSite() === 'gym' ? 0 : wind.speed,
+    gust: wind.gustiness,
+    randomFailures,
+    trainingGear,
+    helped: rescue.active || lesson !== null || replay !== null,
+  };
+}
+let flightLevel: SimLevel = 'beginner';
+tracker.currentLevel = () => (flightTimer.flying ? flightLevel : classifyLevel(conditionsNow()));
 function failTailNow(): void {
   if (sim.state.onGround || sim.state.crashed || sim.state.tailFailed || lesson || replay) return;
   sim.failTail();
@@ -333,9 +356,12 @@ function setRescue(on: boolean): void {
 flightTimer.onFlightEnd = (seconds, crashed) => {
   const d = stats.end(sim, seconds, crashed);
   lastFlight = flightFrames();
+  const record = !crashed && recordFlight((profile.bestFlights ??= {}), flightLevel, seconds);
   if (d && seconds > 8) {
     flightLog.add(d, sim.model.name);
-    const extra = !crashed && seconds >= flightTimer.best ? `<br>${t('Your longest clean flight')}` : '';
+    const extra = record
+      ? `<br>${LEVEL_BADGE[flightLevel]} ${t('Your longest clean flight on the {level} board', { level: t(LEVEL_LABEL[flightLevel]) })}`
+      : !crashed && seconds >= flightTimer.best ? `<br>${t('Your longest clean flight')}` : '';
     hud.notify(debriefHtml(d, fmtTime, (id) => t(CHALLENGES.find((c) => c.id === id)?.title ?? id)) + extra + `<br><button data-action="replay-flight">${t('▶ Replay flight')}</button> <button data-action="save-flight">${t('Save flight')}</button> <button data-action="ghost-flight">${t('Fly against it')}</button>`, 12000);
   }
   if (!crashed) void challenges.sync();
@@ -402,6 +428,9 @@ const settings = new SettingsPanel(ui, input, wind, audio, {
   },
   onRandomFailures(on) {
     randomFailures = on;
+  },
+  boardLevel() {
+    return classifyLevel(conditionsNow());
   },
   onVoice(on) {
     voice.enabled = on;
@@ -721,9 +750,12 @@ if (settings.firstVisit && !new URLSearchParams(location.search).get('lesson')) 
       ? t('Left stick: throttle and rudder. Right stick: cyclic. Raise the throttle slowly.')
       : t('W / S collective, arrow keys cyclic, A / D rudder. Raise W slowly to lift off.')}<br>` +
       t('New to helis? Open <b>Challenges</b> and press <b>Show me</b> on First hover. The <b>?</b> button is the manual.') +
-      `<br><button data-action="welcome-ok">${t('Got it')}</button>`,
+      `<br>${t('You start as a <b>Beginner</b>: self-levelling assist, soft rates, no wind. Flown before? Pick your level (Settings → Pilot level changes it later):')}<br>` +
+      SIM_LEVELS.map((l) => `<button data-action="level-${l}">${LEVEL_BADGE[l]} ${t(LEVEL_LABEL[l])}</button>`).join(' ') +
+      ` <button data-action="welcome-ok">${t('Got it')}</button>`,
     60000,
   );
+  settings.applyLevel('beginner');
   settings.markWelcomed();
 }
 settings.onRadioReport = (r) => rankingClient.sendRadioReport(r);
@@ -736,6 +768,7 @@ setInterval(() => {
   }
 }, 15000);
 challenges.onProfileChange = () => settings.setPilotLabel(profile.name, profile.verified);
+challenges.boardLevel = () => classifyLevel(conditionsNow());
 
 // URL options, handy for sharing a view or for screenshots: ?cam=chase&pos=0,6,-28&yaw=180
 {
@@ -873,7 +906,6 @@ const recording: Frame[] = [];
 let recFrameNo = 0;
 let flightStartFrame = 0;
 let lastFlight: Frame[] | null = null;
-let replay: { frames: Frame[]; i: number; acc: number; kind: 'crash' | 'flight'; speed: number; playing: boolean } | null = null;
 let recordedCrash = false;
 let wasOnGround = true;
 function record(ctl: ReturnType<typeof input.poll>): void {
@@ -933,6 +965,11 @@ hud.onAction = (id) => {
   if (id === 'ghost-flight') setFlightGhost(lastFlight);
   if (id === 'ghost-off') setFlightGhost(null);
   // 'welcome-ok' just closes the card.
+  const level = id.startsWith('level-') ? id.slice(6) : null;
+  if (isLevel(level)) {
+    settings.applyLevel(level);
+    hud.notify(`<b>${LEVEL_BADGE[level]} ${t('Pilot level: {level}', { level: t(LEVEL_LABEL[level]) })}</b><br>${t(LEVEL_SUMMARY[level])}`, 3500);
+  }
 };
 /** A saved flight as a ghost instead of a replay. Returns the model it was flown on. */
 function loadFlightGhostText(text: string): string {
@@ -1152,7 +1189,8 @@ function frameBody(now: number): void {
     const wasFlying = flightTimer.flying;
     flightTimer.update(sim, dt);
     if (flightTimer.flying && !wasFlying) hud.closeToastWith('welcome-ok'); // the welcome card goes away once you fly
-    if (flightTimer.flying && !wasFlying) { stats.begin(sim); flightStartFrame = recFrameNo; failureAt = 10 + Math.random() * 40; }
+    if (flightTimer.flying && !wasFlying) { stats.begin(sim); flightStartFrame = recFrameNo; failureAt = 10 + Math.random() * 40; flightLevel = classifyLevel(conditionsNow()); }
+    if (flightTimer.flying) flightLevel = minLevel(flightLevel, classifyLevel(conditionsNow()));
     if (randomFailures && flightTimer.flying && flightTimer.airTime > failureAt && sim.telemetry.altitude > 15) { failureAt = Infinity; failTailNow(); }
     if (flightTimer.flying) stats.update(sim, dt, ctl);
     tracker.update(sim, dt, flightTimer.flying ? flightTimer.airTime : 0);

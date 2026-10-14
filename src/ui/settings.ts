@@ -11,6 +11,7 @@ import type { AudioEngine } from '../audio/engine';
 import type { AssistMode } from '../sim/physics';
 import { CAMERA_MODES, CAMERA_LABELS, type CameraMode } from '../render/camera';
 import { attachTips } from './tips';
+import { LEVEL_BADGE, LEVEL_LABEL, LEVEL_PRESETS, LEVEL_SUMMARY, SIM_LEVELS, presetOf, type SimLevel } from '../game/sim-level';
 
 export const MODE_HELP = [
   'Normal: training mode. Low stick = motor off; the governor spools up as you raise it. Pitch −2° to +11°.',
@@ -50,6 +51,8 @@ export interface SettingsCallbacks {
   /** Emergencies: fail the tail rotor now; toggle random tail failures. */
   onFailTail(): void;
   onRandomFailures(on: boolean): void;
+  /** The ranking board the current settings qualify for (also looks at training gear and the site). */
+  boardLevel(): SimLevel;
   /** Spoken captions on / off. */
   onVoice(on: boolean): void;
   /** Radio link latency, ms. */
@@ -309,6 +312,46 @@ export class SettingsPanel {
   hold = false;
   assist: AssistMode = 'rate';
 
+  /** The level preset the settings match right now, or 'custom'. Wind is ignored indoors (it is always 0 there). */
+  get level(): SimLevel | 'custom' {
+    const im = this.input;
+    const gym = getSite() === 'gym';
+    const cur = { assist: this.assist, expo: im.shaping.aileron.expo, rate: im.shaping.aileron.rate, rexpo: im.shaping.rudder.expo, wind: this.wind.speed, gust: this.wind.gustiness, randomFailures: this.randomFailures };
+    if (gym) for (const l of SIM_LEVELS) if (presetOf({ ...cur, wind: LEVEL_PRESETS[l].wind, gust: LEVEL_PRESETS[l].gust }) === l) return l;
+    return presetOf(cur);
+  }
+
+  /** Apply a level preset: assist, rates and expo, wind and random failures, all saved like manual changes. */
+  applyLevel(level: SimLevel): void {
+    const p = LEVEL_PRESETS[level];
+    const im = this.input;
+    im.shaping.aileron.expo = p.expo; im.shaping.elevator.expo = p.expo;
+    im.shaping.aileron.rate = p.rate; im.shaping.elevator.rate = p.rate;
+    im.shaping.rudder.expo = p.rexpo;
+    if (getSite() !== 'gym') { this.wind.speed = p.wind; this.wind.gustiness = p.gust; }
+    this.randomFailures = p.randomFailures;
+    this.cb.onRandomFailures(p.randomFailures);
+    savePrefs({ expo: p.expo, rate: p.rate, rexpo: p.rexpo, wind: p.wind, gust: p.gust, randomFailures: p.randomFailures });
+    this.setAssist(p.assist);
+    this.render();
+  }
+
+  /** Repaint the level picker and its board line after any setting it depends on changed. */
+  refreshLevel(): void {
+    const sel = this.panel.querySelector('#level') as HTMLSelectElement | null;
+    if (sel) sel.value = this.level;
+    const hint = this.panel.querySelector('#level-hint');
+    if (hint) hint.innerHTML = this.levelHint();
+  }
+
+  private levelHint(): string {
+    const l = this.level;
+    const board = this.cb.boardLevel();
+    const what = l === 'custom' ? t('Custom: you changed a setting the presets set.') : t(LEVEL_SUMMARY[l]);
+    const gym = getSite() === 'gym' ? ` ${t('Indoors there is no wind, so the Pro board needs an outdoor site.')}` : '';
+    return `${what} ${t('Your flights count on the {badge} {level} board.', { badge: LEVEL_BADGE[board], level: t(LEVEL_LABEL[board]) })}${gym}`;
+  }
+
   /** Re-apply what the pilot set last time (model, input, assist, camera, wind, sound...). Call once after wiring. */
   /** True when nothing was ever saved on this device: show the welcome card once. */
   firstVisit = false;
@@ -354,7 +397,7 @@ export class SettingsPanel {
     if (p.minimap) this.setMinimap(true);
     if (p.tod === 'morning' || p.tod === 'evening') { this.tod = p.tod; this.cb.onTimeOfDay(p.tod); }
     if (p.gear) { this.gearOn = true; this.cb.onTrainingGear(true); }
-    if (p.wind !== undefined) this.wind.speed = p.wind;
+    if (p.wind !== undefined && getSite() !== 'gym') this.wind.speed = p.wind;
     if (p.windDir !== undefined) this.wind.fromDeg = p.windDir;
     if (p.gust !== undefined) this.wind.gustiness = p.gust;
     if (p.volume !== undefined) this.audio.setVolume(p.volume);
@@ -398,6 +441,12 @@ export class SettingsPanel {
       <h3>Settings <button id="close">×</button></h3>
       <label>Language ${sel('lang', [['en', 'English'], ['pt-BR', 'Português (Brasil)']], getLang())}</label>
       <label>Flying site ${sel('site', [['field', 'The field (default)'], ['gym', 'Indoor gym (micro-sized hall, no wind)'], ['lot', 'Parking lot (asphalt, poles, cars, a container to land on)'], ['hill', 'Hillside (a 10° slope and a 20° bank to land on; wind that climbs the hill)']], getSite())}</label>
+      <section>
+        <h4>Pilot level</h4>
+        <label>Level ${sel('level', [...SIM_LEVELS.map((l): [string, string] => [l, `${LEVEL_BADGE[l]} ${t(LEVEL_LABEL[l])}`]), ['custom', t('Custom')]], this.level)}</label>
+        <p class="hint" id="level-hint">${this.levelHint()}</p>
+        <p class="hint">A level only sets the assist, rates, wind and failures below; the physics are the same. Rankings use what you actually flew with, so changing a setting moves your flights to the board it qualifies for.</p>
+      </section>
       <p class="hint">v${__VERSION__} · build <code>${__COMMIT__}</code> (${__BUILD__.split(' ').slice(1).join(' ')}) · <a href="https://github.com/filipenevola/rc-heli-sim/blob/main/CHANGELOG.md" target="_blank" rel="noopener">Release log</a></p>
       <section>
         <h4>Helicopter</h4>
@@ -497,6 +546,7 @@ export class SettingsPanel {
       this.gearOn = (e.target as HTMLInputElement).checked;
       this.cb.onTrainingGear(this.gearOn);
       savePrefs({ gear: this.gearOn });
+      this.refreshLevel();
     });
     q<HTMLSelectElement>('#source').addEventListener('change', (e) => {
       const choice = (e.target as HTMLSelectElement).value as SourceChoice;
@@ -514,6 +564,11 @@ export class SettingsPanel {
       });
     });
     q<HTMLSelectElement>('#assist').addEventListener('change', (e) => this.setAssist((e.target as HTMLSelectElement).value as AssistMode));
+    q<HTMLSelectElement>('#level').addEventListener('change', (e) => {
+      const v = (e.target as HTMLSelectElement).value;
+      if (v === 'custom') this.refreshLevel(); // nothing to apply: Custom is whatever the sliders say
+      else this.applyLevel(v as SimLevel);
+    });
     q('#fail-tail').addEventListener('click', () => { this.cb.onFailTail(); this.toggle(); });
     q<HTMLInputElement>('#latency').addEventListener('input', (e) => {
       this.latencyMs = Number((e.target as HTMLInputElement).value);
@@ -530,6 +585,7 @@ export class SettingsPanel {
       this.randomFailures = (e.target as HTMLInputElement).checked;
       savePrefs({ randomFailures: this.randomFailures });
       this.cb.onRandomFailures(this.randomFailures);
+      this.refreshLevel();
     });
     {
       const status = q('#radio-status');
@@ -553,10 +609,10 @@ export class SettingsPanel {
         f(Number(el.value));
       });
     };
-    bind('expo', (v) => { im.shaping.aileron.expo = v; im.shaping.elevator.expo = v; savePrefs({ expo: v }); });
-    bind('rate', (v) => { im.shaping.aileron.rate = v; im.shaping.elevator.rate = v; savePrefs({ rate: v }); });
+    bind('expo', (v) => { im.shaping.aileron.expo = v; im.shaping.elevator.expo = v; savePrefs({ expo: v }); this.refreshLevel(); });
+    bind('rate', (v) => { im.shaping.aileron.rate = v; im.shaping.elevator.rate = v; savePrefs({ rate: v }); this.refreshLevel(); });
     bind('nrate', (v) => { im.normalRate = v; savePrefs({ nrate: v }); });
-    bind('rexpo', (v) => { im.shaping.rudder.expo = v; savePrefs({ rexpo: v }); });
+    bind('rexpo', (v) => { im.shaping.rudder.expo = v; savePrefs({ rexpo: v }); this.refreshLevel(); });
     bind('tilt', (v) => (im.motion.maxTiltDeg = v));
     q<HTMLSelectElement>('#spot').addEventListener('change', (e) => {
       this.spot = (e.target as HTMLSelectElement).value;
@@ -602,9 +658,9 @@ export class SettingsPanel {
       this.applyCamera();
     });
     bind('volume', (v) => this.audio.setVolume(v));
-    bind('wind', (v) => (this.wind.speed = v));
-    bind('winddir', (v) => (this.wind.fromDeg = v));
-    bind('gust', (v) => (this.wind.gustiness = v));
+    bind('wind', (v) => { this.wind.speed = v; savePrefs({ wind: v }); this.refreshLevel(); });
+    bind('winddir', (v) => { this.wind.fromDeg = v; savePrefs({ windDir: v }); });
+    bind('gust', (v) => { this.wind.gustiness = v; savePrefs({ gust: v }); this.refreshLevel(); });
 
     this.wizardStatus = q('#wizard-status');
     this.axisBars = q('#axis-bars');
@@ -756,6 +812,7 @@ export class SettingsPanel {
     const sel = this.panel.querySelector('#assist') as HTMLSelectElement | null;
     if (sel) sel.value = mode;
     this.cb.onAssist(mode);
+    this.refreshLevel();
   }
 
   private updateRecentre(): void {
