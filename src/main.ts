@@ -5,6 +5,7 @@ import { LAYER_GRASS, LAYER_HELI, setEnvironmentRenderer } from './render/enviro
 import { updateWash } from './render/wash';
 import { RotorSpray } from './render/spray';
 import { PostFX } from './render/post';
+import { createRenderer, showNoWebGl } from './render/webgl-check';
 import { HangarPanel, DEMO } from './ui/hangar';
 import { HeliMesh } from './render/heli-mesh';
 import { PilotCamera, CAMERA_LABELS } from './render/camera';
@@ -64,8 +65,20 @@ const quality: Quality = ((): Quality => {
   } catch { /* no prefs */ }
   return isPhone ? 'low' : 'high';
 })();
+// Language: the saved preference, else the browser's. Set before anything renders (the no-WebGL card too).
+{
+  let saved: Lang | undefined;
+  try { saved = (JSON.parse(localStorage.getItem('rc-heli-sim.prefs.v1') ?? '{}') as { lang?: Lang }).lang; } catch { /* no prefs */ }
+  setLang(saved ?? detectLang());
+}
 // With the HDR post chain the multisampling happens in its render target, not on the canvas.
-const renderer = new THREE.WebGLRenderer({ antialias: quality === 'low', powerPreference: 'high-performance' });
+const maybeRenderer = createRenderer({ antialias: quality === 'low', powerPreference: 'high-performance' });
+if (!maybeRenderer) {
+  // No WebGL in this browser: explain how to turn it back on, and stop here (nothing below works without it).
+  showNoWebGl(app);
+  throw new Error('WebGL is unavailable in this browser');
+}
+const renderer = maybeRenderer;
 // Low quality (phones) caps the pixel ratio: a 1080 × 2400 screen at full density is ~10 M pixels per pass.
 renderer.setPixelRatio(Math.min(window.devicePixelRatio, quality === 'low' ? 1.5 : 2));
 renderer.setSize(window.innerWidth, window.innerHeight);
@@ -171,12 +184,6 @@ const input: InputManager = new InputManager(ui);
 const hud = new Hud(ui);
 const help = new HelpPanel(ui);
 const profile = loadProfile();
-// Language: the saved preference, else the browser's. Set before any panel renders.
-{
-  let saved: Lang | undefined;
-  try { saved = (JSON.parse(localStorage.getItem('rc-heli-sim.prefs.v1') ?? '{}') as { lang?: Lang }).lang; } catch { /* no prefs */ }
-  setLang(saved ?? detectLang());
-}
 if (profile.setup?.[baseModel.id]) setModel(baseModel);
 const tracker = new ChallengeTracker(profile.completed, profile.challengeLevels);
 const flightTimer = new FlightTimer();

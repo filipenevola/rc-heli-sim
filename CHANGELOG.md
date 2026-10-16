@@ -3,6 +3,15 @@
 All notable changes to RC Heli Sim. The version shown in the game (Help and Settings) matches the latest
 entry here; the commit hash next to it identifies the exact build.
 
+## 0.85.1
+
+- Fix: a black page when the browser has WebGL turned off (Chrome does this after the graphics chip crashes a few times,
+  until it restarts, or when graphics acceleration is off). The game now retries without antialiasing and the
+  high-performance GPU request, and if there is still no WebGL it shows a card with how to turn it back on and a
+  Try again button. The browser smoke also loads the game with WebGL disabled and checks for that card.
+- Browser smoke: errors from Chrome's own built-in extensions no longer fail it.
+- `AGENTS.md` / `CLAUDE.md`: agent instructions (every change is pushed to `main`, which deploys).
+
 ## 0.85.0
 
 - Pilot levels: Beginner, Amateur and Pro (Settings → Pilot level, and on the welcome card). A level is a preset over
